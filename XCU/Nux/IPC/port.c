@@ -674,6 +674,7 @@ nux_status nux_port_move_right(nux_task_id source_owner,
     nux_rights granted;
     nux_object_id object_id = 0;
     nux_thread_id waiter = 0;
+    nux_thread_id sender_waiter = 0;
     nux_thread_id set_waiters[NUX_PORT_SET_LIMIT];
     nux_u32 set_waiter_count = 0;
 
@@ -759,6 +760,7 @@ nux_status nux_port_move_right(nux_task_id source_owner,
     }
     nux_arch_unlock(&port_lock);
     if (waiter) (void)nux_thread_wake(waiter);
+    if (sender_waiter) (void)nux_thread_wake(sender_waiter);
     for (nux_u32 i = 0; i < set_waiter_count; ++i)
         (void)nux_thread_wake(set_waiters[i]);
     return NUX_OK;
