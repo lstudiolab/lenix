@@ -58,4 +58,22 @@ _start:
     jmp 7b
 .size _start, .-_start
 
+
+/* First-party UEFI handoff: RDI points to the versioned Nux boot record. */
+.global _start_uefi
+.type _start_uefi,@function
+_start_uefi:
+    cli
+    cld
+    movq %rdi, %r12
+    andq $-16, %rsp
+    call nux_arch_early_init
+    movq %r12, %rdi
+    call nux_kernel_main
+8:
+    cli
+    hlt
+    jmp 8b
+.size _start_uefi, .-_start_uefi
+
 .section .note.GNU-stack,"",@progbits
