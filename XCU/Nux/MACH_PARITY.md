@@ -113,8 +113,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Per-task and per-thread exception ports
 - [ ] Exception delivery with identity and machine state
 - [ ] Exception reply/recovery and thread termination
-- [ ] Versioned system-call ABI
-- [ ] System-call dispatch and argument validation
+- [x] Versioned syscall dispatch registry and handler validation (Foundation; no user entry/return path yet)
+- [x] Kernel-side syscall dispatch with six-word argument contract and registered handlers
 - [ ] User-to-kernel and kernel-to-user transition assembly
 - [ ] System-call redirection/emulation hooks for compatibility servers
 - [ ] Debugger attach/detach authorization
@@ -178,7 +178,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, and x86 context switching\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
+## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
