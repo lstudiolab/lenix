@@ -99,7 +99,7 @@ test-thread:
 else
 test-thread:
 	mkdir -p Build
-	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Nux/Runtime/memory.c Nux/Runtime/boot.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Nux/Runtime/memory.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
 	./Build/thread_context_test
 endif
 
