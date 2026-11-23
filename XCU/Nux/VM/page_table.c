@@ -2,14 +2,14 @@
 #include <nux/status.h>
 #include <nux/memory.h>
 
-extern void nux_memset(void *dst,nux_u8 value,nux_size size);
+extern void *memset(void *dst,int value,nux_size size);
 
 static nux_u64 *table_ptr(nux_u64 pa) {
     return (nux_u64 *)nux_phys_to_virt(pa);
 }
 static nux_u64 alloc_table(void) {
     nux_u64 pa=nux_phys_alloc_page();
-    if(pa)nux_memset(nux_phys_to_virt(pa),0,NUX_PAGE_SIZE);
+    if(pa)memset(nux_phys_to_virt(pa),0,NUX_PAGE_SIZE);
     return pa;
 }
 
