@@ -443,7 +443,7 @@ static __attribute__((noreturn)) void enter_kernel(efi_u64 entry, efi_u64 stack_
     __asm__ volatile("mov %%cr4, %0" : "=r"(cr4));
     cr4 |= (1ULL << 4) | (1ULL << 5);
     __asm__ volatile("mov %0, %%cr4\nmov %1, %%cr3" : : "r"(cr4), "r"(root) : "memory");
-    __asm__ volatile("mov %1, %%rsp\\nandq $-16, %%rsp\\njmp *%%rax" : : "D"(argument), "S"(stack), "a"(target) : "memory");
+    __asm__ volatile("mov %1, %%rsp\nandq $-16, %%rsp\njmp *%%rax" : : "D"(argument), "S"(stack), "a"(target) : "memory");
     __builtin_unreachable();
 }
 #elif defined(__aarch64__)
@@ -515,9 +515,10 @@ static __attribute__((noreturn)) void enter_kernel(efi_u64 entry, efi_u64 stack_
         "msr sctlr_el1, %0\n"
         "dsb sy\n"
         "isb\n"
-        "mov x0, %1\n"
-        "br %2\n"
-        : : "r"(sctlr), "r"(argument), "r"(target) : "memory");
+        "mov sp, %1\n"
+        "mov x0, %2\n"
+        "br %3\n"
+        : : "r"(sctlr), "r"(stack), "r"(argument), "r"(target) : "memory");
     __builtin_unreachable();
 }
 #endif
