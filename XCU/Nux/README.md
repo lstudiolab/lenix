@@ -43,7 +43,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Boot | Limine handoff on ARM64 and x86-64 | Full CPU feature discovery and SMP bring-up |
 | Physical memory | Usable-region discovery, HHDM translation, page ownership bitmap, duplicate/invalid-free rejection | Boot reservations, zones, NUMA, reclaim, zeroing policy |
 | Runtime | Freestanding `memcpy`, `memmove`, `memset`, and `memcmp`, with host tests | Broader compiler runtime and memory object management |
-| Synchronization | Assembly spinlocks, bounded counting semaphores, nonblocking lock sets, condition object lifecycle | Blocking waits, waiter queues, condition/mutex atomic wait, ownership, priority inheritance |
+| Synchronization | Assembly spinlocks, bounded counting semaphores, nonblocking lock sets, condition object lifecycle | Blocking waits, waiter queues, condition/mutex atomic wait, ownership, priority inheritance |\n| Syscalls | Versioned kernel-side dispatch registry with six arguments and result validation | Architecture user entry/return, caller isolation, syscall authorization and ABI tests |
 | Tasks/threads | Separate registries, fixed kernel stacks, saved callee-saved contexts, ARM64/x86-64 context switch, cooperative kernel-thread scheduling | User-mode contexts, task address spaces, preemption, per-CPU queues, stack reclamation |
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
 | IPC | Capability-checked ports, FIFO bounded inline queues, port sets, backpressure, destruction/revocation | Blocking waits, deadlines, per-task namespaces, right transfer, out-of-line memory, RPC/notifications |
