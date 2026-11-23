@@ -24,6 +24,7 @@ int main(void)
     nux_syscall_word result = 99;
     if (nux_syscall_system_init() != NUX_OK) return 1;
     if (nux_syscall_dispatch(7, args, &result) != NUX_E_NOT_SUPPORTED) return 2;
+    if (nux_syscall_dispatch(0x100000000ULL, args, &result) != NUX_E_INVALID) return 11;
     if (nux_syscall_dispatch(NUX_SYSCALL_YIELD, args, &result) != NUX_OK) return 8;
     if (nux_syscall_invoke(NUX_SYSCALL_YIELD, args) != 0) return 9;
     if ((nux_i64)nux_syscall_invoke(999, args) != NUX_E_INVALID) return 10;
