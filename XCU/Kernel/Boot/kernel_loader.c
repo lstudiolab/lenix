@@ -354,7 +354,8 @@ static int capture_memory_map(efi_system_table *system, void *map_buffer,
     boot_info.memory_map = (efi_u64)(efi_uintn)memory_region_pointers;
     boot_info.memory_map_count = stored;
     boot_info.hhdm_offset = NUX_DIRECT_MAP_BASE;
-    boot_info.firmware_table = find_firmware_root(system);\n    if (boot_info.firmware_table >= NUX_PHYSICAL_LIMIT) boot_info.firmware_table = 0;
+    boot_info.firmware_table = find_firmware_root(system);
+    if (boot_info.firmware_table >= NUX_PHYSICAL_LIMIT) boot_info.firmware_table = 0;
     boot_info.flags = 0;
     return 1;
 }
@@ -399,7 +400,10 @@ static __attribute__((noreturn)) void enter_kernel(efi_u64 entry)
     register const nux_boot_info *argument __asm__("rdi") = &boot_info;
     register efi_u64 target __asm__("rax") = entry;
     efi_u64 root = (efi_u64)(efi_uintn)x86_pml4;
-    efi_u64 cr4;\n    __asm__ volatile("mov %%cr4, %0" : "=r"(cr4));\n    cr4 |= (1ULL << 4) | (1ULL << 5);\n    __asm__ volatile("mov %0, %%cr4\\nmov %1, %%cr3" : : "r"(cr4), "r"(root) : "memory");
+    efi_u64 cr4;
+    __asm__ volatile("mov %%cr4, %0" : "=r"(cr4));
+    cr4 |= (1ULL << 4) | (1ULL << 5);
+    __asm__ volatile("mov %0, %%cr4\nmov %1, %%cr3" : : "r"(cr4), "r"(root) : "memory");
     __asm__ volatile("jmp *%%rax" : : "D"(argument), "a"(target) : "memory");
     __builtin_unreachable();
 }
@@ -471,7 +475,8 @@ static __attribute__((noreturn)) void enter_kernel(efi_u64 entry)
         "msr sctlr_el1, %0\n"
         "dsb sy\n"
         "isb\n"
-        "br x16\n"
+        "mov x0, %1\n"
+        "br %2\n"
         : : "r"(sctlr), "r"(argument), "r"(target) : "memory");
     __builtin_unreachable();
 }
@@ -491,6 +496,14 @@ efi_status nux_kernel_loader_main(efi_handle image, efi_system_table *system)
     if (!system || system->header.signature != EFI_SYSTEM_TABLE_SIGNATURE ||
         !system->boot_services)
         return EFI_ERROR_BIT;
+
+    efi_u64 stack_pointer;
+#if defined(__x86_64__)
+    __asm__ volatile("mov %%rsp, %0" : "=r"(stack_pointer));
+#elif defined(__aarch64__)
+    __asm__ volatile("mov %0, sp" : "=r"(stack_pointer));
+#endif
+    if (!address_below_limit(stack_pointer, 1)) return fail(system, NUX_EFI_ERROR);
 
     print(system, loading);
     status = read_kernel(image, system, &kernel_buffer, &kernel_file_size);
