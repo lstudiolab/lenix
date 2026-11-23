@@ -70,5 +70,6 @@ int main(void)
     if (nux_port_create(task, 2, &orphan_send, &orphan_receive) != NUX_OK) return 20;
     if (nux_task_destroy(task) != NUX_OK) return 21;
     if (nux_port_send(orphan_send, &message, 0) != NUX_E_ACCESS) return 22;
+    if (nux_port_set_receive(set, &received, 0) != NUX_E_NOT_FOUND) return 23;
     return 0;
 }
