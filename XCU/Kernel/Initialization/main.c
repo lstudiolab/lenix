@@ -4,6 +4,7 @@
 #include <nux/task.h>
 #include <nux/thread.h>
 #include <nux/capability.h>
+#include <nux/port.h>
 #include "entry.h"
 
 #if defined(__aarch64__)
@@ -39,7 +40,10 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     if (nux_thread_system_init() != NUX_OK)
         nux_boot_failure(5);
 
-    nux_boot_state = 0x4e55580000000006ULL;
+    if (nux_port_system_init() != NUX_OK)
+        nux_boot_failure(6);
+
+    nux_boot_state = 0x4e55580000000007ULL;
 
     /*
      * Interrupts stay masked until architecture vector tables and timer
