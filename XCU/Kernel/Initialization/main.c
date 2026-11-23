@@ -29,6 +29,24 @@ void nux_kernel_main(const nux_boot_info *boot_info)
 {
     nux_boot_mark(NUX_BOOT_PHASE_ENTRY);
     if (boot_info == NUX_NULL) nux_boot_fail(1);
+    if (boot_info->signature != NUX_BOOT_INFO_SIGNATURE ||
+        boot_info->version != NUX_BOOT_INFO_VERSION ||
+        boot_info->structure_size < sizeof(*boot_info) ||
+        boot_info->memory_map == 0 || boot_info->memory_map_count == 0 ||
+        boot_info->hhdm_offset == 0 ||
+        boot_info->direct_map_base != boot_info->hhdm_offset ||
+        boot_info->direct_map_size < (64ULL * 1024ULL * 1024ULL * 1024ULL) ||
+        (boot_info->flags & NUX_BOOT_FLAG_IMAGE_VALIDATED) == 0)
+        nux_boot_fail(13);
+#if defined(__x86_64__)
+    if (boot_info->architecture != NUX_BOOT_ARCH_X86_64) nux_boot_fail(14);
+#elif defined(__aarch64__)
+    if (boot_info->architecture != NUX_BOOT_ARCH_AARCH64) nux_boot_fail(14);
+#endif
+    if (boot_info->kernel_virtual_base != 0xffffffff80000000ULL ||
+        boot_info->kernel_image_size == 0 ||
+        boot_info->kernel_physical_base >= 0x100000000ULL)
+        nux_boot_fail(15);
     nux_boot_mark(NUX_BOOT_PHASE_MEMORY);
     if (nux_memory_init(boot_info) != NUX_OK) nux_boot_fail(2);
     nux_boot_mark(NUX_BOOT_PHASE_ACPI);
