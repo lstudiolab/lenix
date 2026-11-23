@@ -5,12 +5,13 @@
 static nux_u8 image[0x3000];
 static nux_u32 maps, writes, protects, unmaps;
 static nux_u32 fail_stack_map;
+static nux_u64 captured_stack[10];
 nux_status nux_task_get_address_space(nux_task_id task,nux_u64 *space)
 {if(task!=7||!space)return NUX_E_INVALID;*space=42;return NUX_OK;}
 nux_status nux_vm_map(nux_u64 space,nux_vm_address *address,nux_vm_size size,nux_u32 prot,nux_memory_object_id object,nux_u64 offset)
 {(void)size;(void)prot;(void)object;(void)offset;if(space!=42||!*address)return NUX_E_INVALID;if(fail_stack_map&&*address==NUX_ELF_STACK_TOP-NUX_ELF_STACK_SIZE)return NUX_E_NO_MEMORY;++maps;return NUX_OK;}
 nux_status nux_vm_write(nux_u64 space,nux_vm_address address,const void *data,nux_size size)
-{(void)address;(void)data;(void)size;if(space!=42)return NUX_E_INVALID;++writes;return NUX_OK;}
+{if(space!=42)return NUX_E_INVALID;if(address==NUX_ELF_STACK_TOP-80&&size==sizeof(captured_stack)){const nux_u64 *words=(const nux_u64 *)data;for(nux_u32 i=0;i<10;i++)captured_stack[i]=words[i];}++writes;return NUX_OK;}
 nux_status nux_vm_protect(nux_u64 space,nux_vm_address address,nux_vm_size size,nux_u32 prot)
 {(void)address;(void)size;(void)prot;if(space!=42)return NUX_E_INVALID;++protects;return NUX_OK;}
 nux_status nux_vm_unmap(nux_u64 space,nux_vm_address address,nux_vm_size size)
@@ -47,7 +48,11 @@ int main(void)
     if(result.entry!=0x10000080||result.segment_count!=2||maps!=3||writes!=3||protects!=2)return 2;
     if(result.stack_base!=0x00007fff00000000ULL-65536ULL||
        result.stack_pointer!=NUX_ELF_STACK_TOP-80ULL||
-       result.stack_size!=65536ULL||(result.stack_pointer&15ULL))return 8;
+       result.stack_size!=NUX_ELF_STACK_SIZE||(result.stack_pointer&15ULL))return 8;
+    if(captured_stack[0]!=0||captured_stack[1]!=0||captured_stack[2]!=0||
+       captured_stack[3]!=6||captured_stack[4]!=NUX_VM_PAGE_SIZE||
+       captured_stack[5]!=9||captured_stack[6]!=result.entry||
+       captured_stack[7]!=0||captured_stack[8]!=0)return 11;
     fail_stack_map=1;
     if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_NO_MEMORY)return 9;
     if(result.entry||result.stack_pointer||unmaps!=2)return 10;
