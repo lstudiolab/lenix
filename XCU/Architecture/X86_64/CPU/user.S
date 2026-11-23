@@ -1,7 +1,7 @@
 .section .text
-.global nux_arch_user_enter
+.global nux_arch_enter_user
 .type nux_arch_enter_user,@function
-nux_arch_user_enter:
+nux_arch_enter_user:
     movq %rdi, %r12
     movq %rsi, %r13
     movq %rdx, %r14
