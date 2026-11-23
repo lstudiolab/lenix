@@ -79,7 +79,7 @@ test-boot:
 
 test-boot-protocol:
 	mkdir -p Build
-	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -I Kernel/Boot Nux/Tests/boot_protocol_test.c -o Build/boot_protocol_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -I Nux/Include -I Kernel/Boot Nux/Tests/boot_protocol_test.c -o Build/boot_protocol_test
 	./Build/boot_protocol_test
 
 test-runtime:
