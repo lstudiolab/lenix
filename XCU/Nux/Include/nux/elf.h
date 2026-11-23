@@ -2,6 +2,7 @@
 #define NUX_ELF_H
 #include <nux/types.h>
 #include <nux/status.h>
+#include <nux/task.h>
 
 #define NUX_ELF_STACK_SIZE (64ULL * 1024ULL)
 #define NUX_ELF_STACK_TOP 0x00007fff00000000ULL
