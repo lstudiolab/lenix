@@ -101,7 +101,7 @@ nux_status nux_arch_vm_root_create(nux_u64 *out) {
     if(!kernel_root){
         nux_u64 tcr,mair;
         __asm__ volatile("mrs %0, tcr_el1":"=r"(tcr));
-        tcr=(tcr&~0x7fbfULL)|16ULL|(1ULL<<8)|(1ULL<<10)|(3ULL<<12);
+        tcr=(tcr&~(0x3fULL|(1ULL<<7)|(3ULL<<8)|(3ULL<<10)|(3ULL<<12)|(3ULL<<14)|(1ULL<<37)))|16ULL|(1ULL<<8)|(1ULL<<10)|(3ULL<<12);
         __asm__ volatile("msr tcr_el1, %0; isb"::"r"(tcr):"memory");
         __asm__ volatile("mrs %0, mair_el1":"=r"(mair));mair=(mair&~0xffULL)|0xffULL;
         __asm__ volatile("msr mair_el1, %0; isb"::"r"(mair):"memory");
