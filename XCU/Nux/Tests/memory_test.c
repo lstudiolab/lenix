@@ -7,7 +7,7 @@ typedef struct {
     nux_u64 type;
 } test_memmap_entry;
 
-static nux_u8 arena[5 * NUX_PAGE_SIZE] __attribute__((aligned(NUX_PAGE_SIZE)));
+static nux_u8 arena[6 * NUX_PAGE_SIZE] __attribute__((aligned(NUX_PAGE_SIZE)));
 
 void nux_arch_lock(volatile nux_u32 *lock)
 {
@@ -19,7 +19,7 @@ void nux_arch_unlock(volatile nux_u32 *lock) { *lock = 0; }
 
 int main(void)
 {
-    test_memmap_entry entry = { .base = 0, .length = 5 * NUX_PAGE_SIZE, .type = 0 };
+    test_memmap_entry entry = { .base = 0, .length = 6 * NUX_PAGE_SIZE, .type = 0 };
     test_memmap_entry *entries[] = { &entry };
     nux_boot_info boot = {
         .memory_map = (nux_u64)(nux_uptr)entries,
