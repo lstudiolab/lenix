@@ -39,8 +39,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 - [x] Initial task registry and task state model (Foundation; not a complete task implementation)
 - [ ] Task creation from executable image
-- [x] Task destruction gated on live-thread check, address-space release, and owner-port/port-set cleanup (Foundation; task-scoped non-port capabilities remain)
-- [ ] Task suspension, resume, termination, and restart
+- [x] Task destruction gated on live-thread check, address-space release, owner-port/port-set cleanup, and task capability-space revocation (Foundation)
+- [x] Task suspension and resume with scheduler exclusion (Foundation; restart and full termination policy remain)
 - [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
 - [x] Address-space teardown after all task threads terminate (Foundation; inheritance and per-task accounting remain)
 - [x] Independent per-task capability spaces with fixed 255-handle quotas (port objects remain in a global kernel registry)
@@ -59,7 +59,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Fixed kernel stacks for cooperative kernel threads (Foundation; user stacks and stack reclamation remain)
 - [ ] Thread-local storage and per-CPU state
 - [ ] Thread naming, information, and accounting
-- [x] Thread-to-processor-set affinity metadata and CPU-set membership (Foundation; scheduler enforcement and migration remain)
+- [x] Thread-to-processor-set affinity metadata and CPU-set membership (Foundation; current-CPU eligibility is enforced, SMP migration remains)
 - [ ] Thread exception state and special ports
 
 ### 3. Scheduling and execution
@@ -102,6 +102,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Fixed-capacity sparse address-space objects (Foundation; task creation allocates and records one address space)
 - [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (Foundation; hardware runtime validation pending)
 - [x] Anonymous page-backed mappings and exact-region unmap/protect operations (Foundation; partial-range operations and region query remain)
+- [x] Static ELF64 PT_LOAD executable loader for both architectures with segment validation, W^X permissions, rollback, and initial user stack/auxv construction (Foundation; user-mode entry remains)
 - [ ] Demand paging and page-fault resolution
 - [x] Anonymous page-backed memory objects (Foundation; fixed maximum object size)
 - [ ] Named memory entries and transferable mapping rights
@@ -112,7 +113,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Page locking, unlocking, wiring, and unwiring
 - [ ] Memory object attributes, caching, and purgeability
 - [ ] Memory pressure, reclaim, and per-task accounting
-- [ ] Guard pages, W^X enforcement, and mapping validation
+- [x] W^X validation for ELF segments and VM protection requests
+- [ ] Guard pages and broader mapping validation
 
 ## 6. Synchronization and wait primitives
 
@@ -202,7 +204,7 @@ Distributed IPC is an optional extension, not a prerequisite for a local microke
 ## Runtime support
 
 - [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives
-- [x] Host-side regression tests for runtime primitives, IPC queues (create/send/receive/backpressure/buffer sizing/port sets/revocation), physical page ownership, semaphores, lock sets, x86 context switching, syscall dispatch, VM objects, and software timers
+- [x] Host-side regression tests for runtime primitives, per-task capabilities and rights derivation/transfer/quotas, IPC queues and port sets, ACPI topology parsing, processor sets, physical page ownership, semaphores, lock sets, x86 context switching, syscall dispatch, VM reads/writes, ELF loading/rollback/stack layout, and software timers
 - [ ] Full compiler runtime support and sanitizer/fuzz coverage
 
 ## Public interface headers
@@ -225,11 +227,11 @@ These headers are interface declarations only unless the implementation status a
 ## Implementation sequence
 
 1. Stabilize boot handoff, add memory reservations and page zeroing, and harden allocator tests.
-2. Implement architecture page tables, address spaces, faults, and memory objects.
-3. Add user-mode task loading, user stacks, privilege transitions, and syscall entry/return.
+2. Complete user-mode execution: privilege transitions, user-thread bootstrap, syscall entry/return, and task exit.
+3. Add demand paging, page-fault resolution, COW, and external pagers.
 4. Complete IPC with out-of-line memory, blocking waits, deadlines, and RPC/reply.
 5. Add interrupt controllers, architecture timers, preemptive scheduling, and time accounting.
-6. Implement recoverable exception ports and architecture syscall entry/return.
+6. Implement recoverable exception ports and user fault delivery.
 7. Add bootstrap service management and user-space pager/driver servers.
 8. Add SMP, host/device controls, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
 
