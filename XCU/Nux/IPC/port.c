@@ -475,7 +475,20 @@ nux_status nux_port_set_create(nux_task_id owner, nux_port_set_id *out)
         set->id = next_port_set_id++;
         if (!set->id) set->id = next_port_set_id++;
         *out = set->id;
+        nux_port_set_id created_id = set->id;
         nux_arch_unlock(&port_lock);
+        if (nux_task_get(owner, &task) != NUX_OK ||
+            task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING) {
+            nux_arch_lock(&port_lock);
+            set = nux_port_set_find(created_id);
+            if (set && set->owner == owner) {
+                set->active = 0;
+                set->count = 0;
+            }
+            nux_arch_unlock(&port_lock);
+            *out = 0;
+            return NUX_E_ACCESS;
+        }
         return NUX_OK;
     }
     nux_arch_unlock(&port_lock);
