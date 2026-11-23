@@ -101,6 +101,7 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
     nux_task_info task;
     nux_u32 slot = NUX_PORT_LIMIT;
     nux_object_id object_id;
+    nux_capability send_handle, receive_handle;
 
     if (!owner || !send || !receive) return NUX_E_INVALID;
     if (nux_task_get(owner, &task) != NUX_OK ||
@@ -206,7 +207,6 @@ nux_status nux_port_task_destroy(nux_task_id owner)
 nux_status nux_port_destroy(nux_capability control)
 {
     nux_object_id object_id;
-    nux_capability send_handle, receive_handle;
     nux_status status = nux_capability_check(
         control, NUX_OBJECT_PORT, NUX_RIGHT_CONTROL, &object_id);
     if (status != NUX_OK) return status;
