@@ -11,6 +11,8 @@
 #define NUX_VM_INHERIT_COPY 1u
 #define NUX_VM_INHERIT_SHARE 2u
 #define NUX_VM_PAGE_SIZE 4096ULL
+#define NUX_VM_REGION_COW 1u
+#define NUX_VM_REGION_DEMAND 2u
 #define NUX_VM_OBJECT_MAX_PAGES 256u
 typedef nux_u64 nux_vm_address;
 typedef nux_u64 nux_vm_size;
@@ -22,6 +24,7 @@ nux_status nux_vm_space_destroy(nux_u64 space_id);
 nux_status nux_vm_space_activate(nux_u64 space_id);
 nux_u64 nux_vm_active_space_id(void);
 nux_status nux_vm_map(nux_u64 space_id, nux_vm_address *address, nux_vm_size size, nux_u32 protection, nux_memory_object_id object, nux_u64 offset);
+nux_status nux_vm_map_lazy(nux_u64 space_id, nux_vm_address *address, nux_vm_size size, nux_u32 protection);
 nux_status nux_vm_unmap(nux_u64 space_id, nux_vm_address address, nux_vm_size size);
 nux_status nux_vm_write(nux_u64 space_id, nux_vm_address address, const void *source, nux_size size);
 nux_status nux_vm_read(nux_u64 space_id, nux_vm_address address, void *destination, nux_size size);
