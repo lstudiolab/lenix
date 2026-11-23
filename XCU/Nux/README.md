@@ -43,14 +43,14 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Boot | Limine handoff on ARM64 and x86-64 | Full CPU feature discovery and SMP bring-up |
 | Physical memory | Usable-region discovery, HHDM translation, page ownership bitmap, duplicate/invalid-free rejection | Boot reservations, zones, NUMA, reclaim, zeroing policy |
 | Runtime | Freestanding `memcpy`, `memmove`, `memset`, and `memcmp`, with host tests | Broader compiler runtime and memory object management |
-| Synchronization | Assembly spinlock primitives on both targets | Interrupt-safe lock classes, wait queues, priority inheritance |
+| Synchronization | Assembly spinlocks, bounded counting semaphores, nonblocking lock sets, condition object lifecycle | Blocking waits, waiter queues, condition/mutex atomic wait, ownership, priority inheritance |
 | Tasks | Fixed-capacity task registry and round-robin selection policy | Separate task/thread objects, stacks, saved contexts, lifecycle cleanup |
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
 | IPC | Capability-checked ports, FIFO bounded inline queues, port sets, backpressure, destruction/revocation | Blocking waits, deadlines, per-task namespaces, right transfer, out-of-line memory, RPC/notifications |
 | VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
 | Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; fatal exception capture | Recoverable exception ports, interrupt controllers, timer IRQs, syscall ABI |
 
-The physical allocator currently tracks up to 64 GiB of usable physical pages with a static ownership bitmap; larger usable maps fail initialization instead of being silently truncated. Boot-time reservation exclusions and page zeroing are still pending.\n\nThe current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
+The physical allocator currently tracks up to 64 GiB of usable physical pages with a static ownership bitmap; larger usable maps fail initialization instead of being silently truncated. Boot-time reservation exclusions and page zeroing are still pending.\n\nThe current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Synchronization waits are nonblocking; condition waits, wakeups, and priority inheritance require a functioning scheduler. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
 
 ## Next implementation order
 
