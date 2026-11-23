@@ -30,6 +30,7 @@ typedef struct nux_task_info {
 
 nux_status nux_task_system_init(void);
 nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *id);
+nux_status nux_task_destroy(nux_task_id id);
 nux_status nux_task_set_state(nux_task_id id, nux_task_state state);
 nux_status nux_task_get(nux_task_id id, nux_task_info *out);
 nux_status nux_task_get_address_space(nux_task_id id, nux_u64 *space_id);
