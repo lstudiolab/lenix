@@ -20,6 +20,7 @@ nux_status nux_port_task_destroy(nux_task_id owner);
 nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit, nux_capability *send, nux_capability *receive);
 nux_status nux_port_destroy(nux_task_id owner, nux_capability control);
 nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_message *message, nux_u64 timeout_ns);
+nux_status nux_port_send_once(nux_task_id sender, nux_capability send_once, const nux_message *message);
 nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_message *message, nux_u64 timeout_ns);
 nux_status nux_port_move_right(nux_task_id source_owner, nux_capability source, nux_task_id destination, nux_port_right_kind right, nux_capability *out);
 nux_status nux_port_set_create(nux_task_id owner, nux_port_set_id *out);
