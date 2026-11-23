@@ -244,7 +244,11 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
                 break;
             }
         }
-        if (!region || !(region->protection & NUX_VM_PROT_READ)) {
+        if (!region) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (!(region->protection & NUX_VM_PROT_READ)) {
             nux_arch_unlock(&vm_lock);
             return NUX_E_ACCESS;
         }
