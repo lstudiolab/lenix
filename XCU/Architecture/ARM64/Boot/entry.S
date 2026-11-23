@@ -9,13 +9,13 @@
 /* Both ELF entry names now use the first-party UEFI handoff ABI. */
 _start:
 _start_uefi:
+    mov x19, x0
 #ifdef NUX_QEMU_SEMIHOST
     mov x0, #0x04
     adr x1, .Lnux_start_trace
     hlt #0xf000
 #endif
     msr daifset, #0xf
-    mov x19, x0
     bl nux_arch_early_init
 #ifdef NUX_QEMU_SEMIHOST
     mov x0, #0x04
