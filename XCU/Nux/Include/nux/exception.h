@@ -3,6 +3,7 @@
 #include <nux/types.h>
 #include <nux/status.h>
 #include <nux/capability.h>
+#include <nux/thread.h>
 typedef enum { NUX_EXCEPTION_BAD_ACCESS=1, NUX_EXCEPTION_BAD_INSTRUCTION, NUX_EXCEPTION_ARITHMETIC, NUX_EXCEPTION_BREAKPOINT, NUX_EXCEPTION_GUARD, NUX_EXCEPTION_RESOURCE } nux_exception_kind;
 typedef struct { nux_exception_kind kind; nux_u64 code; nux_u64 subcode; nux_u64 address; nux_u32 architecture_vector; nux_u32 reserved; } nux_exception;
 typedef enum { NUX_EXCEPTION_DEFAULT=0, NUX_EXCEPTION_STATE, NUX_EXCEPTION_STATE_IDENTITY } nux_exception_behavior;
