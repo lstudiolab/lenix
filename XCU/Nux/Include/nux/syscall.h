@@ -13,5 +13,4 @@ nux_status nux_syscall_system_init(void);
 nux_status nux_syscall_register(nux_u32 number, nux_syscall_handler handler, nux_u32 flags);
 nux_status nux_syscall_dispatch(nux_u32 number, const nux_syscall_word arguments[6], nux_syscall_word *result);
 nux_syscall_word nux_syscall_invoke(nux_u64 number, const nux_syscall_word arguments[6]);
-void nux_arch_syscall_entry(void);
 #endif
