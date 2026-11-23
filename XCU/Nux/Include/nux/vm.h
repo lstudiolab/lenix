@@ -3,6 +3,7 @@
 #include <nux/types.h>
 #include <nux/status.h>
 #include <nux/object.h>
+#include <nux/capability.h>
 #define NUX_VM_PROT_READ 1u
 #define NUX_VM_PROT_WRITE 2u
 #define NUX_VM_PROT_EXEC 4u
