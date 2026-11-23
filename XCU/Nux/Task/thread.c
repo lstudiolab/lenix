@@ -480,7 +480,7 @@ nux_status nux_thread_yield(void)
     for (nux_u32 n = 0; n < NUX_THREAD_LIMIT; ++n) {
         nux_u32 i = (scheduler_cursor + n) % NUX_THREAD_LIMIT;
         nux_thread_entry *candidate = &threads[i];
-        if (!candidate->kernel_thread ||
+        if ((!candidate->kernel_thread && !candidate->user_thread) ||
             candidate->info.state != NUX_THREAD_READY ||
             !nux_thread_task_runnable(candidate->info.task) ||
             !nux_processor_set_cpu_allowed(candidate->info.processor_set,
