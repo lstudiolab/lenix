@@ -43,17 +43,20 @@ jobs:
           cat XCU/Build/qemu-x86.log || true
           cat XCU/Build/qemu-serial.log || true
           tail -n 80 XCU/Build/qemu-cpu.log || true
+          grep -q 'NUX:USER_EXIT' XCU/Build/qemu-x86.log
           grep -q 'NUX:READY' XCU/Build/qemu-x86.log
       - name: Boot AArch64 image under QEMU
         run: |
           cp /usr/share/AAVMF/AAVMF_VARS.fd XCU/Build/AAVMF_VARS.fd
           set +e
-          timeout 15s qemu-system-aarch64 -machine virt -cpu cortex-a72 -m 1G -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd -drive if=pflash,format=raw,file=XCU/Build/AAVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/lenix-aarch64-qemu-uefi.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -semihosting-config enable=on,target=native -display none -serial file:XCU/Build/qemu-arm-serial.log -monitor none -no-reboot -no-shutdown > XCU/Build/qemu-arm.log 2>&1
+          timeout 15s qemu-system-aarch64 -machine virt -cpu cortex-a72 -m 1G -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd -drive if=pflash,format=raw,file=XCU/Build/AAVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/lenix-aarch64-qemu-uefi.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -semihosting-config enable=on,target=native -display none -serial file:XCU/Build/qemu-arm-serial.log -monitor none -d int,cpu_reset -D XCU/Build/qemu-arm-cpu.log -no-reboot -no-shutdown > XCU/Build/qemu-arm.log 2>&1
           qemu_status=$?
           set -e
           echo "QEMU ARM exit status: $qemu_status"
           cat XCU/Build/qemu-arm.log || true
           cat XCU/Build/qemu-arm-serial.log || true
+          tail -n 120 XCU/Build/qemu-arm-cpu.log || true
+          grep -q 'NUX:USER_EXIT' XCU/Build/qemu-arm.log
           grep -q 'NUX:READY' XCU/Build/qemu-arm.log
       - name: Publish kernels and boot images
         if: always()
