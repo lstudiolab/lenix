@@ -61,17 +61,17 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 - [x] Generation-checked capability handles and rights validation (Foundation; global table only)
 - [ ] Per-task capability namespaces
-- [ ] Port creation, destruction, ownership, and queue limits
-- [ ] Send, receive, and send-once rights
+- [x] Port creation/destruction and bounded queue metadata (Foundation; owner metadata is not yet a task namespace)
+- [x] Capability-checked send/receive rights (Foundation; send-once and per-task right namespaces remain)
 - [ ] Right copy, move, make-send, and transfer
 - [ ] Port death, no-senders, and lifecycle notifications
-- [ ] Port sets and wait-on-any semantics
-- [ ] Ordered reliable message queues with backpressure
+- [x] Port sets with nonblocking wait-on-any scan (Foundation; scheduler-backed blocking waits remain)
+- [x] FIFO bounded inline-message queues with backpressure
 - [ ] Message send/receive timeouts and interruption
 - [ ] Inline and out-of-line message payloads
 - [ ] Atomic transfer of port rights and memory descriptors
-- [ ] Message validation, size limits, and resource accounting
-- [ ] Synchronous RPC and asynchronous messaging
+- [x] Inline message validation, size limits, and fixed-pool resource accounting
+- [x] Asynchronous bounded messaging (synchronous RPC/reply protocol remains)
 - [ ] Reply ports and transaction correlation
 - [ ] IPC notification delivery
 - [ ] Kernel-object ports and service-object ports
@@ -95,7 +95,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Memory pressure, reclaim, and per-task accounting
 - [ ] Guard pages, W^X enforcement, and mapping validation
 
-### 6. Synchronization and wait primitives
+#- [x] Host IPC regression test covers create/send/receive/backpressure/buffer sizing/port sets/revocation\n\n## 6. Synchronization and wait primitives
 
 - [ ] Counting semaphores with wait, post, and post-all
 - [ ] Notification objects with state
