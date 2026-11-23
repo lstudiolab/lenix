@@ -76,20 +76,20 @@ jobs:
           grep -q 'Lenix Kernel Loader' XCU/Build/boot/firstparty/arm.log
           grep -q 'NUX:USER_EXIT' XCU/Build/boot/firstparty/arm.log
           grep -q 'NUX:READY' XCU/Build/boot/firstparty/arm.log
-      - name: Print x86 kernel entry symbol map
+      - name: Inspect first-party x86-64 kernel entry
         run: |
-          x86_64-linux-gnu-addr2line -f -C -e XCU/Build/x86_64/nux.elf 0xffffffff8000042b
-          x86_64-linux-gnu-objdump -d --start-address=0xffffffff80000400 --stop-address=0xffffffff80000460 XCU/Build/x86_64/nux.elf
+          nm -n XCU/Build/x86_64/nux.elf | grep -E '(_start_uefi|nux_arch_early_init|nux_kernel_main)'
+          x86_64-linux-gnu-objdump -d --disassemble=_start_uefi XCU/Build/x86_64/nux.elf
       - name: Package UEFI boot images
         run: make -C XCU iso uefi-disk uefi-disk-aarch64-qemu
       - name: Inspect x86-64 kernel entry disassembly
         run: |
           nm -n XCU/Build/x86_64/nux.elf | head -n 80
           objdump -d --start-address=0xffffffff800003e0 --stop-address=0xffffffff80000480 XCU/Build/x86_64/nux.elf
-      - name: Inspect ARM64 exception and user-entry addresses
+      - name: Inspect first-party AArch64 kernel entry
         run: |
-          aarch64-linux-gnu-addr2line -f -e XCU/Build/aarch64/nux.elf 0xffffffff80000924 || true
-          aarch64-linux-gnu-objdump -d --start-address=0xffffffff800008e0 --stop-address=0xffffffff80000960 XCU/Build/aarch64/nux.elf || true
+          nm -n XCU/Build/aarch64/nux.elf | grep -E '(_start_uefi|nux_arch_early_init|nux_kernel_main)'
+          aarch64-linux-gnu-objdump -d --disassemble=_start_uefi XCU/Build/aarch64/nux.elf
       - name: Boot x86-64 image under QEMU
         run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/OVMF_VARS.fd
