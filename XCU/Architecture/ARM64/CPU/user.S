@@ -3,9 +3,9 @@
 .global nux_arch_user_enter
 .type nux_arch_user_enter,%function
 nux_arch_user_enter:
-    msr sp_el1, x3
     msr spsel, #1
     isb
+    mov sp, x3
     msr sp_el0, x1
     mov x3, x2
     msr elr_el1, x0
