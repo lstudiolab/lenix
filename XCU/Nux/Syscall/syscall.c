@@ -3,6 +3,7 @@
 #include <nux/task.h>
 #include <nux/vm.h>
 #include <nux/port.h>
+#include <nux/capability.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -178,7 +179,9 @@ static nux_status syscall_port_make_send(nux_syscall_word receive_handle,
     if (status != NUX_OK) return status;
     status = nux_port_make_send(task, (nux_capability)receive_handle, &send);
     if (status != NUX_OK) return status;
-    return syscall_copy_out(space, output, &send, sizeof(send));
+    status = syscall_copy_out(space, output, &send, sizeof(send));
+    if (status != NUX_OK) (void)nux_capability_revoke(task, send);
+    return status;
 }
 
 static nux_status syscall_port_make_send_once(nux_syscall_word receive_handle,
@@ -194,7 +197,9 @@ static nux_status syscall_port_make_send_once(nux_syscall_word receive_handle,
     if (status != NUX_OK) return status;
     status = nux_port_make_send_once(task, (nux_capability)receive_handle, &send_once);
     if (status != NUX_OK) return status;
-    return syscall_copy_out(space, output, &send_once, sizeof(send_once));
+    status = syscall_copy_out(space, output, &send_once, sizeof(send_once));
+    if (status != NUX_OK) (void)nux_capability_revoke(task, send_once);
+    return status;
 }
 
 nux_status nux_syscall_system_init(void)
