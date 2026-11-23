@@ -21,7 +21,7 @@ static nux_u32 service_name_equal(const char *left, const char *right,
 {
     for (nux_size i = 0; i < length; ++i)
         if (left[i] != right[i]) return 0;
-    return left[length] == '\\0' && right[length] == '\\0';
+    return left[length] == '\0' && right[length] == '\0';
 }
 
 static nux_service_entry *service_find(const char *name, nux_size length)
@@ -37,7 +37,7 @@ nux_status nux_bootstrap_system_init(void)
 {
     nux_arch_lock(&bootstrap_lock);
     for (nux_u32 i = 0; i < NUX_BOOTSTRAP_SERVICE_LIMIT; ++i) {
-        services[i].name[0] = '\\0';
+        services[i].name[0] = '\0';
         services[i].service_port = 0;
         services[i].owner_task = 0;
         services[i].flags = 0;
@@ -66,7 +66,7 @@ nux_status nux_bootstrap_register(const char *name, nux_capability service_port)
         nux_service_entry *entry = &services[i];
         if (entry->service_port) continue;
         for (nux_size j = 0; j < length; ++j) entry->name[j] = name[j];
-        entry->name[length] = '\\0';
+        entry->name[length] = '\0';
         entry->service_port = service_port;
         entry->owner_task = owner;
         entry->flags = 0;
@@ -120,7 +120,7 @@ nux_status nux_bootstrap_unregister(const char *name)
         nux_arch_unlock(&bootstrap_lock);
         return NUX_E_ACCESS;
     }
-    entry->name[0] = '\\0';
+    entry->name[0] = '\0';
     entry->service_port = 0;
     entry->owner_task = 0;
     entry->flags = 0;
@@ -134,7 +134,7 @@ void nux_bootstrap_task_destroy(nux_task_id owner)
     nux_arch_lock(&bootstrap_lock);
     for (nux_u32 i = 0; i < NUX_BOOTSTRAP_SERVICE_LIMIT; ++i) {
         if (services[i].owner_task != owner) continue;
-        services[i].name[0] = '\\0';
+        services[i].name[0] = '\0';
         services[i].service_port = 0;
         services[i].owner_task = 0;
         services[i].flags = 0;
