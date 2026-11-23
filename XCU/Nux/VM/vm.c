@@ -109,6 +109,28 @@ static nux_status cow_resolve_locked(nux_vm_space *space,
     }
     return nux_phys_free_page(old_page);
 }
+static nux_status demand_resolve_locked(nux_vm_space *space,
+                                        nux_vm_region *region,
+                                        nux_u64 address)
+{
+    if (!(region->flags & NUX_VM_REGION_DEMAND) || region->object)
+        return NUX_E_NOT_FOUND;
+    nux_u64 page = address & ~(NUX_VM_PAGE_SIZE - 1);
+    if (nux_arch_vm_translate(space->root, page)) return NUX_OK;
+    nux_u64 physical = nux_phys_alloc_page();
+    if (!physical) return NUX_E_NO_MEMORY;
+    void *memory = nux_phys_to_virt(physical);
+    if (!memory) {
+        (void)nux_phys_free_page(physical);
+        return NUX_E_ACCESS;
+    }
+    memset(memory, 0, NUX_VM_PAGE_SIZE);
+    nux_status status = nux_arch_vm_map(space->root, page, physical,
+                                        region->protection);
+    if (status != NUX_OK) (void)nux_phys_free_page(physical);
+    return status;
+}
+
 static nux_status choose_address(nux_vm_space *s,nux_u64 size,nux_u64 *out) {
     nux_u64 at=NUX_VM_USER_BASE;
     for(nux_u32 i=0;i<s->count;i++) {
@@ -191,6 +213,32 @@ nux_status nux_vm_map(nux_u64 id,nux_vm_address *address,nux_vm_size size,nux_u3
     }
     *address=va;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
+nux_status nux_vm_map_lazy(nux_u64 id,nux_vm_address *address,
+                            nux_vm_size size,nux_u32 prot)
+{
+    if(!address||!size||protection_valid(prot)!=NUX_OK||
+       (size&(NUX_VM_PAGE_SIZE-1)))
+        return NUX_E_INVALID;
+    nux_arch_lock(&vm_lock);
+    nux_vm_space *space=space_find(id);
+    if(!space){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
+    nux_u64 va=*address;
+    if(!va){
+        nux_status status=choose_address(space,size,&va);
+        if(status!=NUX_OK){nux_arch_unlock(&vm_lock);return status;}
+    }
+    if((va&(NUX_VM_PAGE_SIZE-1))||va<NUX_VM_USER_BASE||
+       va>=NUX_VM_USER_END||size>NUX_VM_USER_END-va){
+        nux_arch_unlock(&vm_lock);return NUX_E_INVALID;
+    }
+    nux_vm_region region={va,size,prot,NUX_VM_INHERIT_NONE,
+                          NUX_VM_REGION_DEMAND,0,0,0};
+    nux_status status=region_insert(space,region);
+    if(status==NUX_OK)*address=va;
+    nux_arch_unlock(&vm_lock);
+    return status;
+}
+
 nux_status nux_vm_unmap(nux_u64 id,nux_vm_address va,nux_vm_size size) {
     if(!size||(va&(NUX_VM_PAGE_SIZE-1))||(size&(NUX_VM_PAGE_SIZE-1)))return NUX_E_INVALID;
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
@@ -239,6 +287,14 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
             return NUX_E_ACCESS;
         }
         nux_u64 page = cursor & ~(NUX_VM_PAGE_SIZE - 1);
+        if (!nux_arch_vm_translate(space->root, page) &&
+            (region->flags & NUX_VM_REGION_DEMAND)) {
+            nux_status demand = demand_resolve_locked(space, region, page);
+            if (demand != NUX_OK) {
+                nux_arch_unlock(&vm_lock);
+                return demand;
+            }
+        }
         if (region->flags & NUX_VM_REGION_COW) {
             nux_status cow = cow_resolve_locked(space, region, page);
             if (cow != NUX_OK) {
@@ -320,6 +376,14 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
         }
         nux_u64 page = cursor & ~(NUX_VM_PAGE_SIZE - 1);
         nux_u64 physical = nux_arch_vm_translate(space->root, page);
+        if (!physical && (region->flags & NUX_VM_REGION_DEMAND)) {
+            nux_status demand = demand_resolve_locked(space, region, page);
+            if (demand != NUX_OK) {
+                nux_arch_unlock(&vm_lock);
+                return demand;
+            }
+            physical = nux_arch_vm_translate(space->root, page);
+        }
         if (!physical || !nux_phys_to_virt(physical)) {
             nux_arch_unlock(&vm_lock);
             return NUX_E_NOT_FOUND;
@@ -365,7 +429,11 @@ nux_status nux_vm_protect(nux_u64 id,nux_vm_address va,nux_vm_size size,nux_u32 
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     for(nux_u32 i=0;i<s->count;i++)if(s->regions[i].start==va&&s->regions[i].size==size){
         if((s->regions[i].flags&NUX_VM_REGION_COW)&&(prot&NUX_VM_PROT_WRITE)){nux_arch_unlock(&vm_lock);return NUX_E_ACCESS;}
-        for(nux_u64 off=0;off<size;off+=NUX_VM_PAGE_SIZE){nux_status st=nux_arch_vm_protect(s->root,va+off,prot);if(st!=NUX_OK){nux_arch_unlock(&vm_lock);return st;}}
+        for(nux_u64 off=0;off<size;off+=NUX_VM_PAGE_SIZE){
+            if(!nux_arch_vm_translate(s->root,va+off))continue;
+            nux_status st=nux_arch_vm_protect(s->root,va+off,prot);
+            if(st!=NUX_OK){nux_arch_unlock(&vm_lock);return st;}
+        }
         s->regions[i].protection=prot;nux_arch_unlock(&vm_lock);return NUX_OK;
     }
     nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;
@@ -384,7 +452,9 @@ nux_status nux_vm_fault(nux_u64 id,nux_vm_address va,nux_u32 access) {
         if(va>=r->start&&va-r->start<r->size){
             if((r->protection&access)!=access){nux_arch_unlock(&vm_lock);return NUX_E_ACCESS;}
             nux_status st;
-            if((access&NUX_VM_PROT_WRITE)&&(r->flags&NUX_VM_REGION_COW))
+            if(!nux_arch_vm_translate(s->root,va)&&(r->flags&NUX_VM_REGION_DEMAND))
+                st=demand_resolve_locked(s,r,va);
+            else if((access&NUX_VM_PROT_WRITE)&&(r->flags&NUX_VM_REGION_COW))
                 st=cow_resolve_locked(s,r,va);
             else
                 st=nux_arch_vm_translate(s->root,va)?NUX_OK:NUX_E_NOT_FOUND;
@@ -437,7 +507,7 @@ nux_status nux_vm_copy_on_write(nux_u64 source,nux_u64 destination,nux_vm_addres
     for(nux_u32 i=0;i<src->count;i++)
         if(src->regions[i].start==va&&src->regions[i].size==size){region=&src->regions[i];break;}
     if(!region){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
-    if(region->object){nux_arch_unlock(&vm_lock);return NUX_E_NOT_SUPPORTED;}
+    if(region->object||(region->flags&NUX_VM_REGION_DEMAND)){nux_arch_unlock(&vm_lock);return NUX_E_NOT_SUPPORTED;}
     if(!(region->protection&NUX_VM_PROT_WRITE)){nux_arch_unlock(&vm_lock);return NUX_E_ACCESS;}
 
     nux_vm_region copy=*region;
