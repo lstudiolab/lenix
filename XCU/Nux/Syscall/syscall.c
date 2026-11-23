@@ -61,7 +61,7 @@ nux_status nux_syscall_register(nux_u32 number, nux_syscall_handler handler,
     return NUX_OK;
 }
 
-nux_status nux_syscall_dispatch(nux_u32 number,
+nux_status nux_syscall_dispatch(nux_u64 number,
                                 const nux_syscall_word arguments[6],
                                 nux_syscall_word *result)
 {
@@ -83,6 +83,6 @@ nux_syscall_word nux_syscall_invoke(nux_u64 number,
     nux_syscall_word result = 0;
     if (number >= NUX_SYSCALL_LIMIT)
         return (nux_syscall_word)(nux_i64)NUX_E_INVALID;
-    nux_status status = nux_syscall_dispatch((nux_u32)number, arguments, &result);
+    nux_status status = nux_syscall_dispatch(number, arguments, &result);
     return status == NUX_OK ? result : (nux_syscall_word)(nux_i64)status;
 }
