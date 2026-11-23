@@ -1,4 +1,5 @@
 #include <nux/bootstrap.h>
+#include <nux/thread.h>
 #include <nux/object.h>
 
 static nux_task_id current_task = 1;
