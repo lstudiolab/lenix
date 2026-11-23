@@ -5,7 +5,7 @@ void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
 nux_status nux_thread_set_processor_set(nux_u32 thread,nux_u32 set){(void)thread;(void)set;return NUX_OK;}
 nux_u32 nux_thread_processor_set_busy(nux_u32 set){(void)set;return 0;}
-nux_u64 nux_processor_test_hardware_id(void){return 0x80000000ULL;}
+nux_u64 nux_processor_test_hardware_id(void){return 0x800000ULL;}
 nux_status nux_acpi_get_info(nux_acpi_info *out)
 {
     if (!out) return NUX_E_INVALID;
