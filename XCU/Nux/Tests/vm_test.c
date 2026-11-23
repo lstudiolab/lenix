@@ -1,5 +1,6 @@
 #include <nux/vm.h>
 #include <nux/memory.h>
+#include <nux/task.h>
 
 #define PAGE_COUNT 128u
 #define MAP_LIMIT 512u
@@ -47,8 +48,18 @@ nux_status nux_capability_check(nux_capability cap,nux_object_type type,nux_righ
     return NUX_OK;
 }
 int main(void){
+    nux_task_id task_a=0,task_b=0;
+    nux_u64 task_space_a=0,task_space_b=0;
     nux_u64 space=0; nux_vm_address address=0; nux_memory_object_id object=0;
     if(nux_vm_system_init()!=NUX_OK)return 1;
+    if(nux_task_system_init()!=NUX_OK)return 19;
+    if(nux_task_create("vm-task-a",10,&task_a)!=NUX_OK)return 20;
+    if(nux_task_create("vm-task-b",10,&task_b)!=NUX_OK)return 21;
+    if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_OK)return 22;
+    if(nux_task_get_address_space(task_b,&task_space_b)!=NUX_OK)return 23;
+    if(!task_space_a||!task_space_b||task_space_a==task_space_b)return 24;
+    if(nux_vm_space_destroy(task_space_a)!=NUX_OK)return 25;
+    if(nux_vm_space_destroy(task_space_b)!=NUX_OK)return 26;
     if(nux_vm_space_create(&space)!=NUX_OK)return 2;
     if(nux_vm_map(space,&address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 3;
     if(address<0x10000000ULL||nux_vm_fault(space,address,NUX_VM_PROT_READ)!=NUX_OK)return 4;
