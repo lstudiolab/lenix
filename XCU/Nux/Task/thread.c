@@ -1,5 +1,6 @@
 #include <nux/thread.h>
 #include <nux/time.h>
+#include <nux/vm.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -357,6 +358,16 @@ nux_status nux_thread_yield(void)
     }
 
     if (next_thread) {
+        nux_u64 address_space = 0;
+        nux_status vm_status = nux_task_get_address_space(
+            next_thread->info.task, &address_space);
+        if (vm_status == NUX_OK)
+            vm_status = nux_vm_space_activate(address_space);
+        if (vm_status != NUX_OK) {
+            if (old_thread) old_thread->info.state = NUX_THREAD_RUNNING;
+            nux_arch_unlock(&thread_lock);
+            return vm_status;
+        }
         next_thread->info.state = NUX_THREAD_RUNNING;
         current_thread_id = next_thread->info.id;
         thread_slice_start_ns = now_ns;
@@ -379,6 +390,7 @@ nux_status nux_thread_yield(void)
     }
 
     if (old_thread) {
+        (void)nux_vm_space_activate(0);
         current_thread_id = 0;
         thread_slice_start_ns = 0;
         nux_arch_unlock(&thread_lock);
