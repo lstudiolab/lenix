@@ -5,6 +5,7 @@
 .extern nux_kernel_main
 .extern limine_memmap_request
 .extern limine_hhdm_request
+.extern limine_rsdp_request
 
 _start:
     msr daifset, #0xf
