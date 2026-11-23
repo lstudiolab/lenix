@@ -2,6 +2,18 @@
 #include <nux/capability.h>
 #include <nux/port.h>
 
+static nux_u64 test_next_space = 1;
+nux_status nux_vm_space_create(nux_u64 *out)
+{
+    if (!out) return NUX_E_INVALID;
+    *out = test_next_space++;
+    return NUX_OK;
+}
+nux_status nux_vm_space_destroy(nux_u64 id)
+{
+    return id ? NUX_OK : NUX_E_INVALID;
+}
+
 void nux_arch_lock(volatile nux_u32 *lock)
 {
     while (*lock) { }
