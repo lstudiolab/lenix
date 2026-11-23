@@ -5,6 +5,7 @@
 .extern nux_kernel_main
 .extern limine_memmap_request
 .extern limine_hhdm_request
+.extern limine_rsdp_request
 
 _start:
     movb $0x45, %al
@@ -39,14 +40,22 @@ _start:
 3:
     movq $0, 16(%rsp)
 4:
+    movq limine_rsdp_request+40(%rip), %rax
+    testq %rax, %rax
+    jz 5f
+    movq 8(%rax), %rdx
+    movq %rdx, 24(%rsp)
+    jmp 6f
+5:
     movq $0, 24(%rsp)
+6:
     movq $0, 32(%rsp)
     movq %rsp, %rdi
     call nux_kernel_main
-5:
+7:
     cli
     hlt
-    jmp 5b
+    jmp 7b
 .size _start, .-_start
 
 .section .note.GNU-stack,"",@progbits
