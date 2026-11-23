@@ -16,6 +16,22 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 
 ## Feature inventory
 
+### 0. Firmware boot and kernel startup
+
+- [x] UEFI-to-Limine boot protocol handoff on x86-64 and AArch64 (Foundation; boot image packaging remains)
+- [x] Explicit Limine request delimiters retained by architecture linker scripts
+- [x] x86-64 entry stack alignment, interrupt masking, and IDT installation
+- [x] AArch64 EL2/VHE normalization to EL1h before entering the common kernel
+- [x] AArch64 kernel/user translation split: TTBR1 retains kernel mappings and TTBR0 starts from an empty root
+- [x] Common staged initialization with debugger-visible phase and failure code
+- [ ] Bootable UEFI image generation and Secure Boot signing
+- [ ] Firmware console and early serial/framebuffer diagnostics
+- [ ] ACPI/Device Tree discovery and CPU feature enumeration
+- [ ] Timer and interrupt-controller initialization before enabling interrupts
+- [ ] Launch the first isolated user-space bootstrap task
+- [ ] QEMU and physical-machine boot qualification on both architectures
+
+
 Legend: **Foundation** = some code exists; **Interface** = public contract declared; **Planned** = implementation remains.
 
 ### 1. Tasks and resource containers
