@@ -411,6 +411,28 @@ nux_status nux_port_move_right(nux_task_id source_owner,
         *out = 0;
         return status;
     }
+    if (right == NUX_PORT_RIGHT_RECEIVE) {
+        nux_arch_lock(&port_lock);
+        nux_port_entry *port = nux_port_find(object_id);
+        if (!port) {
+            nux_arch_unlock(&port_lock);
+            (void)nux_capability_revoke(destination, *out);
+            *out = 0;
+            return NUX_E_NOT_FOUND;
+        }
+        for (nux_u32 i = 0; i < NUX_PORT_SET_LIMIT; ++i) {
+            nux_port_set_entry *set = &port_sets[i];
+            if (!set->active || set->owner != source_owner) continue;
+            for (nux_u32 j = 0; j < set->count;) {
+                if (set->ports[j] != source) { ++j; continue; }
+                for (nux_u32 k = j + 1; k < set->count; ++k)
+                    set->ports[k - 1] = set->ports[k];
+                --set->count;
+            }
+        }
+        port->owner = destination;
+        nux_arch_unlock(&port_lock);
+    }
     return NUX_OK;
 }
 
