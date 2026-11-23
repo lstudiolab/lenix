@@ -137,7 +137,8 @@ nux_status nux_task_destroy(nux_task_id id)
 
 nux_status nux_task_set_state(nux_task_id id, nux_task_state state)
 {
-    if (!id || state < NUX_TASK_READY || state > NUX_TASK_DYING)
+    if (!id || state < NUX_TASK_READY || state > NUX_TASK_DYING ||
+        state == NUX_TASK_RUNNING || state == NUX_TASK_DYING)
         return NUX_E_INVALID;
     nux_arch_lock(&task_lock);
     for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
