@@ -73,6 +73,7 @@ nux_status nux_thread_set_time_constraint(nux_thread_id thread, nux_u64 period_n
                                           nux_u64 budget_ns, nux_u64 deadline_ns);
 nux_status nux_thread_yield(void);
 nux_status nux_thread_exit_current(void);
+nux_status nux_thread_exit_current(void);
 nux_status nux_thread_set_processor_set(nux_thread_id thread, nux_u32 set);
 nux_u32 nux_thread_processor_set_busy(nux_u32 set);
 #endif
