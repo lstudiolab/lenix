@@ -235,6 +235,12 @@ boot-manager:
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/boot_manager.c -o Build/boot/manager-aarch64.obj
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_entry.S -o Build/boot/entry-aarch64.obj
 	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/BOOTAA64.EFI Build/boot/manager-aarch64.obj Build/boot/entry-aarch64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/kernel_loader.c -o Build/boot/kernel-loader-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_kernel_entry.S -o Build/boot/kernel-entry-x86_64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_kernel_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/NUX-X64.EFI Build/boot/kernel-loader-x86_64.obj Build/boot/kernel-entry-x86_64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/kernel_loader.c -o Build/boot/kernel-loader-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_kernel_entry.S -o Build/boot/kernel-entry-aarch64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_kernel_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/NUX-AA64.EFI Build/boot/kernel-loader-aarch64.obj Build/boot/kernel-entry-aarch64.obj
 
 boot-manager-smoke:
 	mkdir -p Build/boot/smoke
