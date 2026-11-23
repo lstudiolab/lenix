@@ -4,7 +4,8 @@
     { '\\', 'E','F','I','\\','L','E','N','I','X','\\','N','U','X','.','E','L','F',0 }
 #define NUX_KERNEL_VIRTUAL_BASE 0xffffffff80000000ULL
 #define NUX_DIRECT_MAP_BASE 0xffff800000000000ULL
-#define NUX_PHYSICAL_LIMIT 0x100000000ULL
+#define NUX_PHYSICAL_LIMIT (64ULL * 1024ULL * 1024ULL * 1024ULL)
+#define NUX_IDENTITY_LIMIT 0x100000000ULL
 #define NUX_KERNEL_MAP_LIMIT (64ULL * 1024ULL * 1024ULL)
 #define NUX_BOOT_STACK_PAGES 16u
 #define NUX_PAGE_SIZE 4096ULL
@@ -90,7 +91,7 @@ static efi_u64 x86_pdpt_low[512] __attribute__((aligned(4096)));
 static efi_u64 x86_pdpt_direct[512] __attribute__((aligned(4096)));
 static efi_u64 x86_pdpt_kernel[512] __attribute__((aligned(4096)));
 static efi_u64 x86_pd_low[4][512] __attribute__((aligned(4096)));
-static efi_u64 x86_pd_direct[4][512] __attribute__((aligned(4096)));
+static efi_u64 x86_pd_direct[64][512] __attribute__((aligned(4096)));
 static efi_u64 x86_pd_kernel[512] __attribute__((aligned(4096)));
 #elif defined(__aarch64__)
 static efi_u64 arm_ttbr0[512] __attribute__((aligned(4096)));
@@ -99,7 +100,7 @@ static efi_u64 arm_l1_identity[512] __attribute__((aligned(4096)));
 static efi_u64 arm_l1_direct[512] __attribute__((aligned(4096)));
 static efi_u64 arm_l1_kernel[512] __attribute__((aligned(4096)));
 static efi_u64 arm_l2_identity[4][512] __attribute__((aligned(4096)));
-static efi_u64 arm_l2_direct[4][512] __attribute__((aligned(4096)));
+static efi_u64 arm_l2_direct[64][512] __attribute__((aligned(4096)));
 static efi_u64 arm_l2_kernel[512] __attribute__((aligned(4096)));
 #endif
 
@@ -167,6 +168,12 @@ static int address_below_limit(efi_u64 address, efi_u64 length)
            length <= NUX_PHYSICAL_LIMIT - address;
 }
 
+static int address_identity_mapped(efi_u64 address, efi_u64 length)
+{
+    return address < NUX_IDENTITY_LIMIT &&
+           length <= NUX_IDENTITY_LIMIT - address;
+}
+
 static efi_status read_kernel(efi_handle image, efi_system_table *system,
                               void **buffer_out, efi_u64 *size_out)
 {
@@ -184,8 +191,8 @@ static efi_status read_kernel(efi_handle image, efi_system_table *system,
     status = system->boot_services->handle_protocol(
         image, &loaded_image_guid, (void **)&loaded);
     if (EFI_ERROR(status) || !loaded) return status ? status : NUX_EFI_ERROR;
-    if (!address_below_limit((efi_u64)(efi_uintn)loaded->image_base,
-                             loaded->image_size))
+    if (!address_identity_mapped((efi_u64)(efi_uintn)loaded->image_base,
+                                 loaded->image_size))
         return NUX_EFI_ERROR;
 
     device_handle = loaded->device_handle;
@@ -315,8 +322,8 @@ static efi_status allocate_kernel(efi_system_table *system, const void *buffer,
         EFI_ALLOCATE_MAX_ADDRESS, EFI_LOADER_DATA, pages, &allocation_base);
     if (EFI_ERROR(status)) return status;
     physical = align_up(allocation_base, NUX_LARGE_PAGE_SIZE);
-    if (!physical || !address_below_limit(allocation_base, pages << 12) ||
-        !address_below_limit(physical, span))
+    if (!physical || !address_identity_mapped(allocation_base, pages << 12) ||
+        !address_identity_mapped(physical, span))
         return NUX_EFI_ERROR;
 
     zero_memory((void *)(efi_uintn)physical, span);
@@ -385,15 +392,17 @@ static int capture_memory_map(efi_system_table *system, void *map_buffer,
         memory_regions[stored].length = length;
         memory_regions[stored].type =
             descriptor->type == EFI_CONVENTIONAL_MEMORY ? 0ULL : 1ULL;
-        memory_region_pointers[stored] = &memory_regions[stored];
+        memory_region_pointers[stored] = (nux_memmap_entry *)(efi_uintn)(\
+            NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)&memory_regions[stored]);
         ++stored;
     }
     if (!stored) return 0;
-    boot_info.memory_map = (efi_u64)(efi_uintn)memory_region_pointers;
+    boot_info.memory_map = NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)memory_region_pointers;
     boot_info.memory_map_count = stored;
     boot_info.hhdm_offset = NUX_DIRECT_MAP_BASE;
     boot_info.firmware_table = find_firmware_root(system);
     if (boot_info.firmware_table >= NUX_PHYSICAL_LIMIT) boot_info.firmware_table = 0;
+    else if (boot_info.firmware_table) boot_info.firmware_table += NUX_DIRECT_MAP_BASE;
     boot_info.flags = 0;
     return 1;
 }
@@ -408,10 +417,10 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
     zero_memory(x86_pd_low, sizeof(x86_pd_low));
     zero_memory(x86_pd_direct, sizeof(x86_pd_direct));
     zero_memory(x86_pd_kernel, sizeof(x86_pd_kernel));
-    if (!address_below_limit((efi_u64)(efi_uintn)x86_pml4, sizeof(x86_pml4)) ||
-        !address_below_limit((efi_u64)(efi_uintn)x86_pdpt_low, sizeof(x86_pdpt_low)) ||
-        !address_below_limit((efi_u64)(efi_uintn)x86_pdpt_direct, sizeof(x86_pdpt_direct)) ||
-        !address_below_limit((efi_u64)(efi_uintn)x86_pdpt_kernel, sizeof(x86_pdpt_kernel)))
+    if (!address_identity_mapped((efi_u64)(efi_uintn)x86_pml4, sizeof(x86_pml4)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)x86_pdpt_low, sizeof(x86_pdpt_low)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)x86_pdpt_direct, sizeof(x86_pdpt_direct)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)x86_pdpt_kernel, sizeof(x86_pdpt_kernel)))
         return 0;
 
     x86_pml4[0] = (efi_u64)(efi_uintn)x86_pdpt_low | 3ULL;
@@ -419,10 +428,15 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
     x86_pml4[511] = (efi_u64)(efi_uintn)x86_pdpt_kernel | 3ULL;
     for (efi_u32 directory = 0; directory < 4; ++directory) {
         x86_pdpt_low[directory] = (efi_u64)(efi_uintn)x86_pd_low[directory] | 3ULL;
-        x86_pdpt_direct[directory] = (efi_u64)(efi_uintn)x86_pd_direct[directory] | 3ULL;
         for (efi_u32 page = 0; page < 512; ++page) {
             efi_u64 physical = ((efi_u64)directory * 512ULL + page) * NUX_LARGE_PAGE_SIZE;
             x86_pd_low[directory][page] = physical | 0x83ULL;
+        }
+    }
+    for (efi_u32 directory = 0; directory < 64; ++directory) {
+        x86_pdpt_direct[directory] = (efi_u64)(efi_uintn)x86_pd_direct[directory] | 3ULL;
+        for (efi_u32 page = 0; page < 512; ++page) {
+            efi_u64 physical = ((efi_u64)directory * 512ULL + page) * NUX_LARGE_PAGE_SIZE;
             x86_pd_direct[directory][page] = physical | 0x83ULL;
         }
     }
@@ -435,7 +449,8 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
 
 static __attribute__((noreturn)) void enter_kernel(efi_u64 entry, efi_u64 stack_top)
 {
-    register const nux_boot_info *argument __asm__("rdi") = &boot_info;
+    register const nux_boot_info *argument __asm__("rdi") =\
+        (const nux_boot_info *)(efi_uintn)(NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)&boot_info);
     register efi_u64 target __asm__("rax") = entry;
     register efi_u64 stack __asm__("rsi") = stack_top;
     efi_u64 root = (efi_u64)(efi_uintn)x86_pml4;
@@ -458,11 +473,11 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
     zero_memory(arm_l2_direct, sizeof(arm_l2_direct));
     zero_memory(arm_l2_kernel, sizeof(arm_l2_kernel));
 
-    if (!address_below_limit((efi_u64)(efi_uintn)arm_ttbr0, sizeof(arm_ttbr0)) ||
-        !address_below_limit((efi_u64)(efi_uintn)arm_ttbr1, sizeof(arm_ttbr1)) ||
-        !address_below_limit((efi_u64)(efi_uintn)arm_l1_identity, sizeof(arm_l1_identity)) ||
-        !address_below_limit((efi_u64)(efi_uintn)arm_l1_direct, sizeof(arm_l1_direct)) ||
-        !address_below_limit((efi_u64)(efi_uintn)arm_l1_kernel, sizeof(arm_l1_kernel)))
+    if (!address_identity_mapped((efi_u64)(efi_uintn)arm_ttbr0, sizeof(arm_ttbr0)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)arm_ttbr1, sizeof(arm_ttbr1)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)arm_l1_identity, sizeof(arm_l1_identity)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)arm_l1_direct, sizeof(arm_l1_direct)) ||
+        !address_identity_mapped((efi_u64)(efi_uintn)arm_l1_kernel, sizeof(arm_l1_kernel)))
         return 0;
 
     arm_ttbr0[0] = (efi_u64)(efi_uintn)arm_l1_identity | 3ULL;
@@ -470,10 +485,15 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
     arm_ttbr1[511] = (efi_u64)(efi_uintn)arm_l1_kernel | 3ULL;
     for (efi_u32 directory = 0; directory < 4; ++directory) {
         arm_l1_identity[directory] = (efi_u64)(efi_uintn)arm_l2_identity[directory] | 3ULL;
-        arm_l1_direct[directory] = (efi_u64)(efi_uintn)arm_l2_direct[directory] | 3ULL;
         for (efi_u32 page = 0; page < 512; ++page) {
             efi_u64 physical = ((efi_u64)directory * 512ULL + page) * NUX_LARGE_PAGE_SIZE;
             arm_l2_identity[directory][page] = physical | 0x701ULL;
+        }
+    }
+    for (efi_u32 directory = 0; directory < 64; ++directory) {
+        arm_l1_direct[directory] = (efi_u64)(efi_uintn)arm_l2_direct[directory] | 3ULL;
+        for (efi_u32 page = 0; page < 512; ++page) {
+            efi_u64 physical = ((efi_u64)directory * 512ULL + page) * NUX_LARGE_PAGE_SIZE;
             arm_l2_direct[directory][page] = physical | 0x701ULL;
         }
     }
@@ -486,7 +506,8 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
 
 static __attribute__((noreturn)) void enter_kernel(efi_u64 entry, efi_u64 stack_top)
 {
-    register const nux_boot_info *argument __asm__("x0") = &boot_info;
+    register const nux_boot_info *argument __asm__("x0") =\
+        (const nux_boot_info *)(efi_uintn)(NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)&boot_info);
     register efi_u64 target __asm__("x16") = entry;
     register efi_u64 stack __asm__("x17") = stack_top;
     efi_u64 ttbr0 = (efi_u64)(efi_uintn)arm_ttbr0;
@@ -544,7 +565,7 @@ efi_status nux_kernel_loader_main(efi_handle image, efi_system_table *system)
 #elif defined(__aarch64__)
     __asm__ volatile("mov %0, sp" : "=r"(stack_pointer));
 #endif
-    if (!address_below_limit(stack_pointer, 1)) return fail(system, NUX_EFI_ERROR);
+    if (!address_identity_mapped(stack_pointer, 1)) return fail(system, NUX_EFI_ERROR);
 
     print(system, loading);
     status = read_kernel(image, system, &kernel_buffer, &kernel_file_size);
@@ -565,8 +586,8 @@ efi_status nux_kernel_loader_main(efi_handle image, efi_system_table *system)
         EFI_ALLOCATE_MAX_ADDRESS, EFI_LOADER_DATA,
         NUX_BOOT_STACK_PAGES, &boot_stack_physical);
     if (EFI_ERROR(status) ||
-        !address_below_limit(boot_stack_physical,
-                             (efi_u64)NUX_BOOT_STACK_PAGES * NUX_PAGE_SIZE))
+        !address_identity_mapped(boot_stack_physical,
+                                 (efi_u64)NUX_BOOT_STACK_PAGES * NUX_PAGE_SIZE))
         return fail(system, status ? status : NUX_EFI_ERROR);
     zero_memory((void *)(efi_uintn)boot_stack_physical,
                 (efi_u64)NUX_BOOT_STACK_PAGES * NUX_PAGE_SIZE);
