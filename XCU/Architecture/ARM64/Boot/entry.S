@@ -36,7 +36,17 @@ _start:
 3:
     str xzr, [sp, #16]
 4:
-    stp xzr, xzr, [sp, #24]
+    adrp x9, limine_rsdp_request
+    add x9, x9, :lo12:limine_rsdp_request
+    ldr x10, [x9, #40]
+    cbz x10, 5f
+    ldr x11, [x10, #8]
+    str x11, [sp, #24]
+    b 6f
+5:
+    str xzr, [sp, #24]
+6:
+    str xzr, [sp, #32]
     mov x0, sp
     bl nux_kernel_main
 5:
