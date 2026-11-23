@@ -1,7 +1,7 @@
 .section .text
-.global nux_arch_enter_user
+.global nux_arch_user_enter
 .type nux_arch_enter_user,@function
-nux_arch_enter_user:
+nux_arch_user_enter:
     movq %rdi, %r12
     movq %rsi, %r13
     movq %rdx, %r14
@@ -39,9 +39,4 @@ nux_arch_load_gdt:
     ret
 .size nux_arch_load_gdt, .-nux_arch_load_gdt
 
-.global nux_arch_syscall_entry
-.type nux_arch_syscall_entry,@function
-nux_arch_syscall_entry:
-    int $0x80
-    ret
-.size nux_arch_syscall_entry, .-nux_arch_syscall_entry
+.section .note.GNU-stack,"",@progbits
