@@ -100,7 +100,7 @@ nux_task_id nux_scheduler_choose(void)
 {
     nux_task_id chosen = 0;
     nux_arch_lock(&task_lock);
-    for (nux_u32 n = 0; n < NUX_TASK_LIMIT; ++n) {
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i)\n        if (tasks[i].state == NUX_TASK_RUNNING) tasks[i].state = NUX_TASK_READY;\n    current_id = 0;\n    for (nux_u32 n = 0; n < NUX_TASK_LIMIT; ++n) {
         nux_u32 i = (cursor + n) % NUX_TASK_LIMIT;
         if (tasks[i].state != NUX_TASK_READY && tasks[i].state != NUX_TASK_RUNNING)
             continue;
