@@ -1,37 +1,129 @@
 #include <nux/capability.h>
+
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
-typedef struct { nux_u32 generation; nux_object_id object_id; nux_rights rights; nux_object_type type; nux_u8 active; } nux_capability_entry;
+
+typedef struct {
+    nux_u32 generation;
+    nux_task_id owner;
+    nux_object_id object_id;
+    nux_rights rights;
+    nux_object_type type;
+    nux_u8 active;
+} nux_capability_entry;
+
 static nux_capability_entry entries[NUX_CAPABILITY_LIMIT];
 static volatile nux_u32 cap_lock;
-nux_status nux_capability_system_init(void) {
- nux_arch_lock(&cap_lock);
- for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT;i++){entries[i].generation=1;entries[i].object_id=0;entries[i].rights=0;entries[i].type=NUX_OBJECT_NONE;entries[i].active=0;}
- nux_arch_unlock(&cap_lock);return NUX_OK;
-}
-nux_status nux_capability_create(nux_object_type type,nux_object_id object_id,nux_rights rights,nux_capability *out) {
- const nux_rights allowed=NUX_RIGHT_READ|NUX_RIGHT_WRITE|NUX_RIGHT_SEND|NUX_RIGHT_RECEIVE|NUX_RIGHT_MAP|NUX_RIGHT_CONTROL|NUX_RIGHT_TRANSFER;
- if(!out||type<=NUX_OBJECT_NONE||type>NUX_OBJECT_MEMORY||!object_id||!rights||(rights&~allowed))return NUX_E_INVALID;
- nux_arch_lock(&cap_lock);
- for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT;i++){nux_capability_entry *e=&entries[i];if(e->active)continue;e->active=1;e->type=type;e->object_id=object_id;e->rights=rights;*out=(e->generation<<8)|(i+1);nux_arch_unlock(&cap_lock);return NUX_OK;}
- nux_arch_unlock(&cap_lock);return NUX_E_LIMIT;
-}
-nux_status nux_capability_check(nux_capability cap,nux_object_type type,nux_rights required,nux_object_id *object_id) {
- nux_u32 slot=cap&0xffu,generation=cap>>8;if(!slot||slot>NUX_CAPABILITY_LIMIT||!generation||!object_id||type==NUX_OBJECT_NONE)return NUX_E_INVALID;
- nux_arch_lock(&cap_lock);nux_capability_entry *e=&entries[slot-1];
- if(!e->active||e->generation!=generation||e->type!=type){nux_arch_unlock(&cap_lock);return NUX_E_ACCESS;}
- if((e->rights&required)!=required){nux_arch_unlock(&cap_lock);return NUX_E_ACCESS;}
- *object_id=e->object_id;nux_arch_unlock(&cap_lock);return NUX_OK;
-}
-nux_status nux_capability_revoke(nux_capability cap) {
- nux_u32 slot=cap&0xffu,generation=cap>>8;if(!slot||slot>NUX_CAPABILITY_LIMIT||!generation)return NUX_E_INVALID;
- nux_arch_lock(&cap_lock);nux_capability_entry *e=&entries[slot-1];
- if(!e->active||e->generation!=generation){nux_arch_unlock(&cap_lock);return NUX_E_NOT_FOUND;}
- e->active=0;e->object_id=0;e->rights=0;e->type=NUX_OBJECT_NONE;if(++e->generation==0||e->generation>0x00ffffffu)e->generation=1;
- nux_arch_unlock(&cap_lock);return NUX_OK;
+
+static void nux_capability_entry_revoke(nux_capability_entry *entry)
+{
+    entry->active = 0;
+    entry->owner = 0;
+    entry->object_id = 0;
+    entry->rights = 0;
+    entry->type = NUX_OBJECT_NONE;
+    if (++entry->generation == 0 || entry->generation > 0x00ffffffu)
+        entry->generation = 1;
 }
 
-nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_id)
+nux_status nux_capability_system_init(void)
+{
+    nux_arch_lock(&cap_lock);
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        entries[i].generation = 1;
+        entries[i].owner = 0;
+        entries[i].object_id = 0;
+        entries[i].rights = 0;
+        entries[i].type = NUX_OBJECT_NONE;
+        entries[i].active = 0;
+    }
+    nux_arch_unlock(&cap_lock);
+    return NUX_OK;
+}
+
+nux_status nux_capability_create(nux_task_id owner, nux_object_type type,
+                                 nux_object_id object_id, nux_rights rights,
+                                 nux_capability *out)
+{
+    const nux_rights allowed = NUX_RIGHT_READ | NUX_RIGHT_WRITE |
+        NUX_RIGHT_SEND | NUX_RIGHT_RECEIVE | NUX_RIGHT_MAP |
+        NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER;
+    nux_task_info task;
+    if (!owner || !out || type <= NUX_OBJECT_NONE ||
+        type > NUX_OBJECT_MEMORY || !object_id || !rights ||
+        (rights & ~allowed))
+        return NUX_E_INVALID;
+    if (nux_task_get(owner, &task) != NUX_OK ||
+        task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING)
+        return NUX_E_ACCESS;
+
+    nux_arch_lock(&cap_lock);
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        nux_capability_entry *entry = &entries[i];
+        if (entry->active) continue;
+        entry->active = 1;
+        entry->owner = owner;
+        entry->type = type;
+        entry->object_id = object_id;
+        entry->rights = rights;
+        *out = (entry->generation << 8) | (i + 1);
+        nux_arch_unlock(&cap_lock);
+        return NUX_OK;
+    }
+    nux_arch_unlock(&cap_lock);
+    return NUX_E_LIMIT;
+}
+
+nux_status nux_capability_check(nux_task_id owner, nux_capability cap,
+                                nux_object_type type, nux_rights required,
+                                nux_object_id *object_id)
+{
+    nux_u32 slot = cap & 0xffu;
+    nux_u32 generation = cap >> 8;
+    if (!owner || !slot || slot > NUX_CAPABILITY_LIMIT || !generation ||
+        !object_id || type == NUX_OBJECT_NONE)
+        return NUX_E_INVALID;
+
+    nux_arch_lock(&cap_lock);
+    nux_capability_entry *entry = &entries[slot - 1];
+    if (!entry->active || entry->generation != generation ||
+        entry->owner != owner || entry->type != type) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    if ((entry->rights & required) != required) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    *object_id = entry->object_id;
+    nux_arch_unlock(&cap_lock);
+    return NUX_OK;
+}
+
+nux_status nux_capability_revoke(nux_task_id owner, nux_capability cap)
+{
+    nux_u32 slot = cap & 0xffu;
+    nux_u32 generation = cap >> 8;
+    if (!owner || !slot || slot > NUX_CAPABILITY_LIMIT || !generation)
+        return NUX_E_INVALID;
+
+    nux_arch_lock(&cap_lock);
+    nux_capability_entry *entry = &entries[slot - 1];
+    if (!entry->active || entry->generation != generation) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_NOT_FOUND;
+    }
+    if (entry->owner != owner) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    nux_capability_entry_revoke(entry);
+    nux_arch_unlock(&cap_lock);
+    return NUX_OK;
+}
+
+nux_u32 nux_capability_revoke_object(nux_object_type type,
+                                     nux_object_id object_id)
 {
     nux_u32 revoked = 0;
     if (type <= NUX_OBJECT_NONE || type > NUX_OBJECT_MEMORY || !object_id)
@@ -42,12 +134,22 @@ nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_
         if (!entry->active || entry->type != type ||
             entry->object_id != object_id)
             continue;
-        entry->active = 0;
-        entry->object_id = 0;
-        entry->rights = 0;
-        entry->type = NUX_OBJECT_NONE;
-        if (++entry->generation == 0 || entry->generation > 0x00ffffffu)
-            entry->generation = 1;
+        nux_capability_entry_revoke(entry);
+        ++revoked;
+    }
+    nux_arch_unlock(&cap_lock);
+    return revoked;
+}
+
+nux_u32 nux_capability_revoke_task(nux_task_id owner)
+{
+    nux_u32 revoked = 0;
+    if (!owner) return 0;
+    nux_arch_lock(&cap_lock);
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        nux_capability_entry *entry = &entries[i];
+        if (!entry->active || entry->owner != owner) continue;
+        nux_capability_entry_revoke(entry);
         ++revoked;
     }
     nux_arch_unlock(&cap_lock);
