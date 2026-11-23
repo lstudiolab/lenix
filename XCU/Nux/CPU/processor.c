@@ -89,7 +89,7 @@ nux_status nux_processor_system_init(void)
              processor_total < NUX_CPU_LIMIT; ++i) {
             nux_acpi_cpu *source = &topology.cpus[i];
             if (!(source->flags & 3u)) continue;
-#if defined(__x86_64__)
+#if defined(NUX_PROCESSOR_TEST_X86_64) || (!defined(NUX_PROCESSOR_TEST) && defined(__x86_64__))
             if (source->x2apic == 2) continue;
             nux_u64 hardware_id = source->hardware_id;
 #else
