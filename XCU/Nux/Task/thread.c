@@ -2,16 +2,60 @@
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
+extern void nux_arch_context_switch(nux_arch_context *old_context,
+                                    const nux_arch_context *new_context);
 
 typedef struct {
     nux_thread_info info;
     nux_machine_state machine;
+    nux_arch_context context;
+    nux_thread_entry_fn entry;
+    void *argument;
     nux_u8 machine_state_valid;
+    nux_u8 kernel_thread;
+    nux_u8 reserved[6];
+    nux_u8 stack[NUX_KERNEL_THREAD_STACK_SIZE] __attribute__((aligned(16)));
 } nux_thread_entry;
 
 static nux_thread_entry threads[NUX_THREAD_LIMIT];
+static nux_arch_context idle_context;
 static volatile nux_u32 thread_lock;
 static nux_thread_id next_thread_id;
+static nux_thread_id current_thread_id;
+static nux_u32 scheduler_cursor;
+
+static nux_thread_entry *nux_thread_find(nux_thread_id id)
+{
+    for (nux_u32 i = 0; i < NUX_THREAD_LIMIT; ++i)
+        if (threads[i].info.id == id) return &threads[i];
+    return NUX_NULL;
+}
+
+static void nux_thread_bootstrap(nux_thread_id id)
+{
+    nux_thread_entry_fn entry = NUX_NULL;
+    void *argument = NUX_NULL;
+
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *thread = nux_thread_find(id);
+    if (thread && thread->kernel_thread) {
+        entry = thread->entry;
+        argument = thread->argument;
+    }
+    nux_arch_unlock(&thread_lock);
+
+    if (entry) entry(argument);
+    (void)nux_thread_terminate(id);
+    (void)nux_thread_yield();
+
+    for (;;) {
+#if defined(__aarch64__)
+        __asm__ volatile("msr daifset, #0xf; wfe" ::: "memory");
+#else
+        __asm__ volatile("cli; hlt" ::: "memory");
+#endif
+    }
+}
 
 nux_status nux_thread_system_init(void)
 {
@@ -27,9 +71,14 @@ nux_status nux_thread_system_init(void)
         threads[i].info.deadline_ns = 0;
         threads[i].info.period_ns = 0;
         threads[i].info.budget_ns = 0;
+        threads[i].entry = NUX_NULL;
+        threads[i].argument = NUX_NULL;
         threads[i].machine_state_valid = 0;
+        threads[i].kernel_thread = 0;
     }
     next_thread_id = 1;
+    current_thread_id = 0;
+    scheduler_cursor = 0;
     nux_arch_unlock(&thread_lock);
     return NUX_OK;
 }
@@ -62,7 +111,10 @@ nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *o
         entry->info.deadline_ns = 0;
         entry->info.period_ns = 0;
         entry->info.budget_ns = 0;
+        entry->entry = NUX_NULL;
+        entry->argument = NUX_NULL;
         entry->machine_state_valid = 0;
+        entry->kernel_thread = 0;
         *out = id;
         nux_arch_unlock(&thread_lock);
         return NUX_OK;
@@ -71,11 +123,59 @@ nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *o
     return NUX_E_LIMIT;
 }
 
-static nux_thread_entry *nux_thread_find(nux_thread_id id)
+nux_status nux_thread_create_kernel(nux_task_id task, nux_thread_entry_fn entry,
+                                    void *argument, nux_u8 priority,
+                                    nux_thread_id *out)
 {
-    for (nux_u32 i = 0; i < NUX_THREAD_LIMIT; ++i)
-        if (threads[i].info.id == id) return &threads[i];
-    return NUX_NULL;
+    nux_thread_id id;
+    if (!entry || !out) return NUX_E_INVALID;
+    nux_status status = nux_thread_create(task, priority, &id);
+    if (status != NUX_OK) return status;
+
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *thread = nux_thread_find(id);
+    if (!thread) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_BAD_STATE;
+    }
+    thread->entry = entry;
+    thread->argument = argument;
+    thread->kernel_thread = 1;
+    nux_uptr top = (nux_uptr)(thread->stack + sizeof(thread->stack));
+#if defined(__x86_64__)
+    top &= ~(nux_uptr)0xf;
+    top -= sizeof(nux_u64);
+    *((nux_u64 *)top) = 0;
+    thread->context.rbx = 0;
+    thread->context.rbp = 0;
+    thread->context.r12 = 0;
+    thread->context.r13 = 0;
+    thread->context.r14 = 0;
+    thread->context.r15 = 0;
+    thread->context.rsp = top;
+    thread->context.rip = (nux_u64)(nux_uptr)nux_thread_bootstrap;
+    thread->context.rdi = id;
+#elif defined(__aarch64__)
+    top &= ~(nux_uptr)0xf;
+    thread->context.x19 = 0;
+    thread->context.x20 = 0;
+    thread->context.x21 = 0;
+    thread->context.x22 = 0;
+    thread->context.x23 = 0;
+    thread->context.x24 = 0;
+    thread->context.x25 = 0;
+    thread->context.x26 = 0;
+    thread->context.x27 = 0;
+    thread->context.x28 = 0;
+    thread->context.x29 = 0;
+    thread->context.x30 = 0;
+    thread->context.sp = top;
+    thread->context.pc = (nux_u64)(nux_uptr)nux_thread_bootstrap;
+    thread->context.x0 = id;
+#endif
+    *out = id;
+    nux_arch_unlock(&thread_lock);
+    return NUX_OK;
 }
 
 nux_status nux_thread_terminate(nux_thread_id id)
@@ -86,6 +186,10 @@ nux_status nux_thread_terminate(nux_thread_id id)
     if (entry == NUX_NULL || entry->info.state == NUX_THREAD_TERMINATED) {
         nux_arch_unlock(&thread_lock);
         return NUX_E_NOT_FOUND;
+    }
+    if (entry->info.state == NUX_THREAD_RUNNING && id != current_thread_id) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_BUSY;
     }
     entry->info.state = NUX_THREAD_TERMINATED;
     entry->machine_state_valid = 0;
@@ -217,8 +321,55 @@ nux_status nux_thread_set_time_constraint(nux_thread_id id, nux_u64 period_ns,
 
 nux_status nux_thread_yield(void)
 {
-    /* A yield is unsafe until the architecture dispatcher can save and
-       restore real contexts. Never pretend that metadata selection is a
-       context switch. */
-    return NUX_E_NOT_SUPPORTED;
+    nux_thread_entry *old_thread;
+    nux_thread_entry *next_thread = NUX_NULL;
+    nux_arch_context *old_context;
+    nux_thread_id old_id;
+
+    nux_arch_lock(&thread_lock);
+    old_id = current_thread_id;
+    old_thread = old_id ? nux_thread_find(old_id) : NUX_NULL;
+    if (old_thread && old_thread->info.state == NUX_THREAD_RUNNING)
+        old_thread->info.state = NUX_THREAD_READY;
+
+    for (nux_u32 n = 0; n < NUX_THREAD_LIMIT; ++n) {
+        nux_u32 i = (scheduler_cursor + n) % NUX_THREAD_LIMIT;
+        nux_thread_entry *candidate = &threads[i];
+        if (!candidate->kernel_thread ||
+            candidate->info.state != NUX_THREAD_READY)
+            continue;
+        next_thread = candidate;
+        scheduler_cursor = (i + 1) % NUX_THREAD_LIMIT;
+        break;
+    }
+
+    if (next_thread) {
+        next_thread->info.state = NUX_THREAD_RUNNING;
+        current_thread_id = next_thread->info.id;
+        if (next_thread == old_thread) {
+            nux_arch_unlock(&thread_lock);
+            return NUX_OK;
+        }
+        old_context = old_thread ? &old_thread->context : &idle_context;
+        nux_arch_unlock(&thread_lock);
+        nux_arch_context_switch(old_context, &next_thread->context);
+        return NUX_OK;
+    }
+
+    if (old_thread && old_thread->info.state == NUX_THREAD_READY) {
+        old_thread->info.state = NUX_THREAD_RUNNING;
+        current_thread_id = old_thread->info.id;
+        nux_arch_unlock(&thread_lock);
+        return NUX_OK;
+    }
+
+    if (old_thread) {
+        current_thread_id = 0;
+        nux_arch_unlock(&thread_lock);
+        nux_arch_context_switch(&old_thread->context, &idle_context);
+        return NUX_OK;
+    }
+
+    nux_arch_unlock(&thread_lock);
+    return NUX_E_WOULD_BLOCK;
 }
