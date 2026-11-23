@@ -329,11 +329,13 @@ nux_status nux_thread_yield(void)
     nux_thread_entry *next_thread = NUX_NULL;
     nux_arch_context *old_context;
     nux_thread_id old_id;
+    nux_thread_state old_state = NUX_THREAD_NEW;
 
     (void)nux_timer_poll();
     nux_arch_lock(&thread_lock);
     old_id = current_thread_id;
     old_thread = old_id ? nux_thread_find(old_id) : NUX_NULL;
+    if (old_thread) old_state = old_thread->info.state;
     nux_u64 now_ns = nux_clock_now(NUX_CLOCK_MONOTONIC);
     if (old_thread && thread_slice_start_ns && now_ns >= thread_slice_start_ns) {
         nux_u64 elapsed = now_ns - thread_slice_start_ns;
@@ -364,7 +366,7 @@ nux_status nux_thread_yield(void)
         if (vm_status == NUX_OK)
             vm_status = nux_vm_space_activate(address_space);
         if (vm_status != NUX_OK) {
-            if (old_thread) old_thread->info.state = NUX_THREAD_RUNNING;
+            if (old_thread) old_thread->info.state = old_state;
             nux_arch_unlock(&thread_lock);
             return vm_status;
         }
