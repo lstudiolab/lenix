@@ -43,6 +43,12 @@ The boot manager must provide Nux with:
 
 The kernel must reject an unknown handoff version, invalid descriptor sizes, arithmetic overflow, overlapping untrusted ranges, missing required memory-map data, or a kernel image whose architecture/entry point does not match the running machine.
 
+## Current implementation status (2026-11-23)
+
+The repository now builds first-party x86-64 and AArch64 UEFI applications. The first-party boot-manager smoke path is exercised under OVMF/AAVMF in QEMU on both architectures: firmware starts `BOOTX64.EFI` or `BOOTAA64.EFI`, the Lenix manager opens `\\EFI\\LENIX\\NUX.EFI`, validates a PE32+ EFI payload for the matching machine, and starts that child image. The smoke child currently prints `NUX:EFI_STAGE2_OK`; it is a boot-chain test payload, **not the Nux kernel**. This verifies the first-party firmware entry and EFI-to-EFI handoff, not a complete first-party operating-system boot.
+
+The production kernel is still emitted as ELF and still uses the existing Limine protocol path. The first-party manager currently expects an EFI PE/COFF child, so the actual Nux kernel has not yet been migrated to the first-party handoff. The boot protocol, ELF segment loader, final UEFI memory-map capture, `ExitBootServices`, architecture page-table setup, and kernel entry conversion remain required before removing Limine.
+
 ## Migration policy
 
 The existing Limine path is a temporary development dependency and is not the target architecture. It must not be described as the Lenix boot implementation. Limine references, protocol requests, downloaded binaries, and packaging steps are removed only when the first-party EFI path has equivalent tested functionality on both architectures. The final CI gate must boot first-party EFI images under x86-64 and AArch64 UEFI firmware and assert that Nux reaches its user-space bootstrap milestone.
@@ -50,8 +56,8 @@ The existing Limine path is a temporary development dependency and is not the ta
 ## Implementation gates
 
 - [ ] Define and test the versioned first-party boot handoff ABI.
-- [ ] Implement the x86-64 EFI entry and first-party boot manager.
-- [ ] Implement the AArch64 EFI entry and first-party boot manager.
+- [x] Implement the x86-64 EFI entry and first-party boot manager smoke path under QEMU.
+- [x] Implement the AArch64 EFI entry and first-party boot manager smoke path under QEMU.
 - [ ] Implement bounded ELF/PE image validation and physical-memory reservation.
 - [ ] Implement manifest signature verification and recovery policy.
 - [ ] Implement correct final memory-map capture and ExitBootServices retry handling.
