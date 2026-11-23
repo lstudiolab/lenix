@@ -22,6 +22,10 @@ jobs:
           sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 qemu-system-arm ovmf qemu-efi-aarch64 mtools
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all
+      - name: Print x86 kernel entry symbol map
+        run: |
+          x86_64-linux-gnu-addr2line -f -C -e XCU/Build/x86_64/nux.elf 0xffffffff8000042b
+          x86_64-linux-gnu-objdump -d --start-address=0xffffffff80000400 --stop-address=0xffffffff80000460 XCU/Build/x86_64/nux.elf
       - name: Package UEFI boot images
         run: make -C XCU iso uefi-disk uefi-disk-aarch64-qemu
       - name: Boot x86-64 image under QEMU
