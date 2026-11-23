@@ -87,6 +87,22 @@ nux_status nux_thread_system_init(void)
     return NUX_OK;
 }
 
+nux_u32 nux_thread_task_busy(nux_task_id task)
+{
+    nux_u32 busy = 0;
+    if (!task) return 0;
+    nux_arch_lock(&thread_lock);
+    for (nux_u32 i = 0; i < NUX_THREAD_LIMIT; ++i) {
+        if (threads[i].info.id && threads[i].info.task == task &&
+            threads[i].info.state != NUX_THREAD_TERMINATED) {
+            busy = 1;
+            break;
+        }
+    }
+    nux_arch_unlock(&thread_lock);
+    return busy;
+}
+
 nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *out)
 {
     nux_task_info task_info;
