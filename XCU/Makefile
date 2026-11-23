@@ -8,8 +8,8 @@ COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pi
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c
 
-.PHONY: all headers x86_64 aarch64 test-runtime test-ipc clean
-all: headers x86_64 aarch64 test-runtime test-ipc
+.PHONY: all headers x86_64 aarch64 test-runtime test-ipc test-memory clean
+all: headers x86_64 aarch64 test-runtime test-ipc test-memory
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -42,6 +42,11 @@ test-ipc:
 	mkdir -p Build
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/ipc_test.c Nux/IPC/port.c Nux/Capability/capability.c Nux/Task/task.c Nux/Runtime/memory.c -o Build/ipc_test
 	./Build/ipc_test
+
+test-memory:
+	mkdir -p Build
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include -I Kernel/Entry Nux/Tests/memory_test.c Nux/Memory/physical.c Nux/Runtime/memory.c -o Build/memory_test
+	./Build/memory_test
 
 clean:
 	rm -rf Build
