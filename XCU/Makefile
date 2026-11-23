@@ -26,8 +26,8 @@ endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
-all: headers test-capability test-acpi test-processor x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
+.PHONY: all headers boot-manager test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
+all: headers boot-manager test-capability test-acpi test-processor x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -215,3 +215,16 @@ uefi-disk-aarch64-qemu: aarch64-qemu $(LIMINE_DIR)/limine
 	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/limine.conf
 	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/boot/limine/limine.conf
 	mcopy -i Build/lenix-aarch64-qemu-uefi.img Build/aarch64-qemu/nux.elf ::/boot/nux.elf
+
+BOOT_CC ?= clang
+BOOT_LD ?= lld-link
+BOOT_FLAGS := -ffreestanding -fno-stack-protector -fno-builtin -fshort-wchar -Wall -Wextra -Werror
+
+boot-manager:
+	mkdir -p Build/boot
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/boot_manager.c -o Build/boot/manager-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_entry.S -o Build/boot/entry-x86_64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/BOOTX64.EFI Build/boot/manager-x86_64.obj Build/boot/entry-x86_64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/boot_manager.c -o Build/boot/manager-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_entry.S -o Build/boot/entry-aarch64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/BOOTAA64.EFI Build/boot/manager-aarch64.obj Build/boot/entry-aarch64.obj

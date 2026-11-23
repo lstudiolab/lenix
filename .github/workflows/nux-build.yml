@@ -19,7 +19,7 @@ jobs:
       - name: Install cross toolchains and ISO tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 qemu-system-arm ovmf qemu-efi-aarch64 mtools
+          sudo apt-get install -y make clang lld gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 qemu-system-arm ovmf qemu-efi-aarch64 mtools
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all NUX_QEMU_SEMIHOST=1
       - name: Print x86 kernel entry symbol map
