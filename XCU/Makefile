@@ -38,7 +38,7 @@ aarch64:
 
 test-runtime:
 	mkdir -p Build
-	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin Nux/Tests/runtime_test.c Nux/Runtime/memory.c -o Build/runtime_test
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/runtime_test.c Nux/Runtime/memory.c -o Build/runtime_test
 	./Build/runtime_test
 
 test-ipc:
