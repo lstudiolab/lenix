@@ -17,6 +17,8 @@ typedef enum nux_task_state {
     NUX_TASK_DYING
 } nux_task_state;
 
+typedef void (*nux_task_destroy_hook)(nux_task_id task);
+
 typedef struct nux_task_info {
     nux_task_id id;
     nux_task_state state;
@@ -31,6 +33,7 @@ typedef struct nux_task_info {
 nux_status nux_task_system_init(void);
 nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *id);
 nux_status nux_task_destroy(nux_task_id id);
+void nux_task_set_destroy_hook(nux_task_destroy_hook hook);
 nux_status nux_task_set_state(nux_task_id id, nux_task_state state);
 nux_status nux_task_suspend(nux_task_id id);
 nux_status nux_task_resume(nux_task_id id);

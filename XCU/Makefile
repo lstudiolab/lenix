@@ -24,10 +24,10 @@ ifeq ($(NUX_QEMU_SEMIHOST),1)
 ARM_CFLAGS += -DNUX_QEMU_SEMIHOST
 endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
-C_SOURCES := Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
+C_SOURCES := Nux/Runtime/boot.c Nux/Bootstrap/bootstrap.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers boot-manager boot-manager-smoke boot-kernel-uefi boot-kernel-uefi-smoke uefi-firstparty uefi-firstparty-x86_64 uefi-firstparty-aarch64 uefi-firstparty-aarch64-qemu x86_64-uefi aarch64-uefi aarch64-qemu-uefi test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
-all: headers boot-manager boot-kernel-uefi test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
+.PHONY: all headers boot-manager boot-manager-smoke boot-kernel-uefi boot-kernel-uefi-smoke uefi-firstparty uefi-firstparty-x86_64 uefi-firstparty-aarch64 uefi-firstparty-aarch64-qemu x86_64-uefi aarch64-uefi aarch64-qemu-uefi test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf test-bootstrap clean
+all: headers boot-manager boot-kernel-uefi test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf test-bootstrap
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -140,6 +140,11 @@ test-time:
 	mkdir -p Build
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/time_test.c Nux/Time/time.c -o Build/time_test
 	./Build/time_test
+
+test-bootstrap:
+	mkdir -p Build
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -I Nux/Include Nux/Tests/bootstrap_test.c Nux/Bootstrap/bootstrap.c -o Build/bootstrap_test
+	./Build/bootstrap_test
 
 clean:
 	rm -rf Build
