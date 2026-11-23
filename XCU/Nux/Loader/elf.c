@@ -77,6 +77,9 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
 
     if (!task || !image || !result || image_size < ELF_HEADER_SIZE)
         return NUX_E_INVALID;
+    result->entry = 0;
+    result->segment_count = 0;
+    result->reserved = 0;
     header = (const elf64_header *)bytes;
     if (bytes[0] != 0x7f || bytes[1] != 'E' || bytes[2] != 'L' ||
         bytes[3] != 'F' || header->ident[4] != ELF_CLASS_64 ||
@@ -96,8 +99,10 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     for (nux_u32 i = 0; i < header->phnum; ++i) {
         const elf64_program *program = (const elf64_program *)
             (bytes + header->phoff + (nux_u64)i * header->phentsize);
-        if (program->type == ELF_PT_DYNAMIC || program->type == ELF_PT_INTERP)
-            return NUX_E_NOT_SUPPORTED;
+        if (program->type == ELF_PT_DYNAMIC || program->type == ELF_PT_INTERP) {
+            failure_status = NUX_E_NOT_SUPPORTED;
+            goto load_failed;
+        }
         if (program->type != ELF_PT_LOAD || !program->memsz) continue;
         if (program->memsz < program->filesz ||
             program->offset > image_size ||
@@ -109,7 +114,10 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
             (program->flags & ~(ELF_PF_R | ELF_PF_W | ELF_PF_X)) ||
             !(program->flags & ELF_PF_R) ||
             (program->align > 1 &&
-             (program->align & (program->align - 1))))
+             (program->align & (program->align - 1))) ||
+            (program->align > 1 &&
+             (program->vaddr % program->align) !=
+                (program->offset % program->align)))
             goto invalid_image;
 
         nux_u64 start = align_down_page(program->vaddr);
