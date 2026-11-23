@@ -26,8 +26,8 @@ endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers boot-manager boot-manager-smoke test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
-all: headers boot-manager test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
+.PHONY: all headers boot-manager boot-manager-smoke test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
+all: headers boot-manager test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -54,6 +54,13 @@ aarch64:
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/context.S -o Build/aarch64/context.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/user.S -o Build/aarch64/user.o
 	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64/nux.elf Build/aarch64/*.o
+
+test-boot-image:
+	mkdir -p Build
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -DLENIX_PE_EXPECT_MACHINE=0x8664u -I Kernel/Boot Kernel/Boot/pe_image_test.c -o Build/pe_image_test_x86_64
+	./Build/pe_image_test_x86_64
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -DLENIX_PE_EXPECT_MACHINE=0xaa64u -I Kernel/Boot Kernel/Boot/pe_image_test.c -o Build/pe_image_test_aarch64
+	./Build/pe_image_test_aarch64
 
 test-processor:
 	mkdir -p Build
