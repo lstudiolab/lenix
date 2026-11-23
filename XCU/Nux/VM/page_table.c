@@ -78,7 +78,8 @@ void nux_arch_vm_root_destroy(nux_u64 root) {
 }
 nux_status nux_arch_vm_activate(nux_u64 root) {
     if(root&&(root&4095))return NUX_E_INVALID;
-    if(!root)root=kernel_root;if(!root)return NUX_E_BAD_STATE;
+    if(!root)root=kernel_root;
+    if(!root)return NUX_E_BAD_STATE;
     __asm__ volatile("mov %0,%%cr3"::"r"(root):"memory");return NUX_OK;
 }
 #elif defined(__aarch64__)
@@ -139,7 +140,8 @@ static void free_tree(nux_u64 pa,nux_u32 level) {
 }
 void nux_arch_vm_root_destroy(nux_u64 root) { if(root)free_tree(root,0); }
 nux_status nux_arch_vm_activate(nux_u64 root) {
-    if(root&&(root&4095))return NUX_E_INVALID;if(!root)root=kernel_root;
+    if(root&&(root&4095))return NUX_E_INVALID;
+    if(!root)root=kernel_root;
     __asm__ volatile("dsb ishst; msr ttbr0_el1, %0; tlbi vmalle1is; dsb ish; isb"::"r"(root):"memory");return NUX_OK;
 }
 #else
