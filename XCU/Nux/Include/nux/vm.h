@@ -11,13 +11,12 @@
 #define NUX_VM_INHERIT_COPY 1u
 #define NUX_VM_INHERIT_SHARE 2u
 #define NUX_VM_PAGE_SIZE 4096ULL
-#define NUX_VM_REGION_COW (1u << 0)
 #define NUX_VM_OBJECT_MAX_PAGES 256u
-#define NUX_VM_REGION_COW 1u
+#define NUX_VM_REGION_COW (1u << 0)
 typedef nux_u64 nux_vm_address;
 typedef nux_u64 nux_vm_size;
 typedef nux_u64 nux_memory_object_id;
-typedef struct { nux_vm_address start; nux_vm_size size; nux_u32 protection; nux_u32 inheritance; nux_u32 flags; nux_memory_object_id object; nux_u64 object_offset; nux_u32 flags; nux_u32 reserved; } nux_vm_region;
+typedef struct { nux_vm_address start; nux_vm_size size; nux_u32 protection; nux_u32 inheritance; nux_u32 flags; nux_memory_object_id object; nux_u64 object_offset; nux_u32 reserved; } nux_vm_region;
 nux_status nux_vm_system_init(void);
 nux_status nux_vm_space_create(nux_u64 *space_id);
 nux_status nux_vm_space_destroy(nux_u64 space_id);
