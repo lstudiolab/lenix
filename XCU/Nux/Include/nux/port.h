@@ -31,5 +31,6 @@ nux_status nux_port_set_create(nux_task_id owner, nux_port_set_id *out);
 nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id set, nux_capability receive);
 nux_status nux_port_set_remove(nux_task_id owner, nux_port_set_id set, nux_capability receive);
 nux_status nux_port_set_receive(nux_task_id owner, nux_port_set_id set, nux_message *message, nux_u64 timeout_ns);
+nux_status nux_port_set_receive_wait(nux_task_id owner, nux_port_set_id set, nux_message *message, nux_u64 timeout_ns);
 nux_status nux_port_request_notification(nux_task_id owner, nux_capability receive, nux_u32 event, nux_capability notify_port);
 #endif
