@@ -7,8 +7,12 @@ COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pi
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Capability/capability.c
 
-.PHONY: all x86_64 aarch64 clean
-all: x86_64 aarch64
+.PHONY: all headers x86_64 aarch64 clean
+all: headers x86_64 aarch64
+
+headers:
+\t$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
+\t$(CC_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -fsyntax-only Nux/Tests/header_check.c
 
 x86_64:
 	mkdir -p Build/x86_64
