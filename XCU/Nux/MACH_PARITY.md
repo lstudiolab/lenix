@@ -79,7 +79,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 5. Virtual memory and memory objects
 
-- [x] Initial physical page allocator (Foundation; reservation/reclaim work remains)
+- [x] Physical page allocator with region tracking, allocation bitmap, and duplicate-free rejection (Foundation; boot reservations/reclaim work remains)
 - [ ] Per-task sparse virtual address spaces
 - [ ] Architecture page-table management and address-space switching
 - [ ] Map, unmap, remap, protect, and region-query operations
@@ -178,7 +178,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for the runtime primitives\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
+## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, and physical page ownership\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
