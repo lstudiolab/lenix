@@ -1,4 +1,5 @@
 #include "uefi.h"
+#include "entry.h"
 
 #define NUX_KERNEL_PATH \
     { '\\', 'E','F','I','\\','L','E','N','I','X','\\','N','U','X','.','E','L','F',0 }
@@ -51,14 +52,6 @@ typedef struct nux_memmap_entry {
     efi_u64 length;
     efi_u64 type;
 } nux_memmap_entry;
-
-typedef struct nux_boot_info {
-    efi_u64 memory_map;
-    efi_u64 memory_map_count;
-    efi_u64 hhdm_offset;
-    efi_u64 firmware_table;
-    efi_u64 flags;
-} nux_boot_info;
 
 static const efi_guid loaded_image_guid = {
     0x5b1b31a1, 0x9562, 0x11d2, {0x8e,0x3f,0x00,0xa0,0xc9,0x69,0x72,0x3b}
@@ -599,6 +592,21 @@ efi_status nux_kernel_loader_main(efi_handle image, efi_system_table *system)
     for (efi_u32 attempt = 0; attempt < 4; ++attempt) {
         if (!capture_memory_map(system, memory_map_buffer, &map_key))
             return fail(system, NUX_EFI_ERROR);
+        boot_info.signature = NUX_BOOT_INFO_SIGNATURE;
+        boot_info.version = NUX_BOOT_INFO_VERSION;
+        boot_info.structure_size = sizeof(boot_info);
+#if defined(__x86_64__)
+        boot_info.architecture = NUX_BOOT_ARCH_X86_64;
+#elif defined(__aarch64__)
+        boot_info.architecture = NUX_BOOT_ARCH_AARCH64;
+#endif
+        boot_info.reserved = 0;
+        boot_info.flags = NUX_BOOT_FLAG_IMAGE_VALIDATED;
+        boot_info.kernel_physical_base = kernel_physical;
+        boot_info.kernel_virtual_base = NUX_KERNEL_VIRTUAL_BASE;
+        boot_info.kernel_image_size = kernel_span;
+        boot_info.direct_map_base = NUX_DIRECT_MAP_BASE;
+        boot_info.direct_map_size = NUX_PHYSICAL_LIMIT;
         status = system->boot_services->exit_boot_services(image, map_key);
         if (!EFI_ERROR(status)) {
             exited = 1;
