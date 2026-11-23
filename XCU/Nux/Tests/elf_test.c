@@ -4,7 +4,6 @@
 
 static nux_u8 image[0x3000];
 static nux_u32 maps, writes, protects, unmaps;
-static nux_u64 last_entry;
 static nux_u32 fail_stack_map;
 nux_status nux_task_get_address_space(nux_task_id task,nux_u64 *space)
 {if(task!=7||!space)return NUX_E_INVALID;*space=42;return NUX_OK;}
