@@ -40,7 +40,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 
 | Area | Current implementation | Not yet implemented |
 |---|---|---|
-| Boot | Limine handoff on ARM64 and x86-64 | Full CPU feature discovery and SMP bring-up |
+| Boot | Delimited Limine requests, common staged kernel startup, debugger-visible boot phases, x86-64 entry/IDT, ARM64 EL2-to-EL1 normalization and VBAR setup, separate ARM64 TTBR0 user root | Bootable image packaging, CPU feature discovery, console, interrupt controllers, SMP, init/bootstrap handoff |
 | Physical memory | Usable-region discovery, HHDM translation, page ownership bitmap, duplicate/invalid-free rejection | Boot reservations, zones, NUMA, reclaim, zeroing policy |
 | Runtime | Freestanding `memcpy`, `memmove`, `memset`, and `memcmp`, with host tests | Broader compiler runtime and memory object management |
 | Synchronization | Assembly spinlocks, bounded counting semaphores, nonblocking lock sets, condition object lifecycle | Blocking waits, waiter queues, condition/mutex atomic wait, ownership, priority inheritance |
@@ -53,7 +53,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 
 The physical allocator currently tracks up to 64 GiB of usable physical pages with a static ownership bitmap; larger usable maps fail initialization instead of being silently truncated. Bootloader-reserved ranges are excluded by the bootloader memory map; explicit kernel-owned reservations, reclaim policies, and allocator page zeroing remain pending. Page-table and anonymous mapping allocations are zeroed before use.
 
-The scheduler now performs cooperative context switches between kernel threads on ARM64 and x86-64. Each task creation allocates a distinct address space and exposes its identifier through the task API; task-owned address spaces are covered by VM integration tests, and the cooperative scheduler activates the selected thread's task address space before switching contexts. Task destruction and resource reclamation are not yet implemented. The scheduler is not preemptive, does not yet launch user tasks, and does not save floating-point state; x86 kernel C is therefore compiled without SIMD/FPU use. Kernel stacks are statically reserved per thread until a safe stack reaper exists. Address-space and page-table code is present for both targets, and scheduler handoff now selects the owning task's address space. Hardware page-table activation and privilege isolation have not been validated on hardware or under an emulator. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Synchronization waits are nonblocking; condition waits, wakeups, and priority inheritance require a functioning scheduler. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
+The scheduler now performs cooperative context switches between kernel threads on ARM64 and x86-64. Each task creation allocates a distinct address space and exposes its identifier through the task API; task-owned address spaces are covered by VM integration tests, and the cooperative scheduler activates the selected thread's task address space before switching contexts. Task destruction and resource reclamation are not yet implemented. The scheduler is not preemptive, does not yet launch user tasks, and does not save floating-point state; x86 kernel C is therefore compiled without SIMD/FPU use. Kernel stacks are statically reserved per thread until a safe stack reaper exists. Address-space and page-table code is present for both targets, and scheduler handoff now selects the owning task's address space. Hardware page-table activation and privilege isolation have not been validated on hardware or under an emulator. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Synchronization waits are nonblocking; condition waits, wakeups, and priority inheritance require a functioning scheduler. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel. The boot path now follows a macOS/XNU-shaped sequence (UEFI, boot manager, architecture entry, staged kernel initialization, then user-space bootstrap), but uses Limine rather than Apple's proprietary boot.efi. On ARM64, the kernel explicitly normalizes a Limine EL2/VHE handoff to EL1 and keeps kernel mappings in TTBR1 while TTBR0 is reserved for task address spaces.
 
 ## Next implementation order
 
@@ -67,3 +67,16 @@ The scheduler now performs cooperative context switches between kernel threads o
 8. Add bootstrap service management, host/device interfaces, SMP, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
 
 Kernel implementation code is restricted to C and assembly. Only AArch64 and x86-64 are supported targets.
+
+
+## Building from macOS
+
+The Makefile selects Clang/LLD ELF cross-targets automatically on macOS. Install the LLVM toolchain and GNU Make:
+
+```sh
+brew install llvm make qemu
+export PATH="$(brew --prefix llvm)/bin:$(brew --prefix make)/libexec/gnubin:$PATH"
+make -C XCU clean all
+```
+
+This produces the same x86-64 and AArch64 ELF kernels as the Linux cross-build. It does not yet produce a signed Apple boot image or boot on Apple Silicon through Apple's native boot chain; the current firmware boot contract is UEFI plus Limine.
