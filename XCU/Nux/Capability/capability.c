@@ -69,6 +69,17 @@ nux_status nux_capability_create(nux_task_id owner, nux_object_type type,
         entry->rights = rights;
         *out = (entry->generation << 8) | (i + 1);
         nux_arch_unlock(&cap_lock);
+
+        /*
+         * Revalidate after publishing the handle. This closes the race where
+         * task teardown begins between the initial owner check and insertion.
+         */
+        if (nux_task_get(owner, &task) != NUX_OK ||
+            task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING) {
+            (void)nux_capability_revoke(owner, *out);
+            *out = 0;
+            return NUX_E_ACCESS;
+        }
         return NUX_OK;
     }
     nux_arch_unlock(&cap_lock);
