@@ -1,6 +1,9 @@
 #include <nux/bootstrap.h>
 #include <nux/thread.h>
 #include <nux/object.h>
+#include <nux/elf.h>
+#include <nux/task.h>
+#include <nux/vm.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -140,4 +143,31 @@ void nux_bootstrap_task_destroy(nux_task_id owner)
         services[i].flags = 0;
     }
     nux_arch_unlock(&bootstrap_lock);
+}
+
+nux_status nux_bootstrap_start_initial_task(nux_u64 image_address,
+                                             nux_u64 image_size,
+                                             nux_u32 *task_id)
+{
+    nux_task_id task = 0;
+    nux_thread_id thread = 0;
+    nux_elf_load_result loaded;
+    if (!image_address || !image_size || !task_id ||
+        image_size > (nux_u64)(nux_size)-1)
+        return NUX_E_INVALID;
+    *task_id = 0;
+
+    nux_status status = nux_task_create("bootstrap", 31, &task);
+    if (status != NUX_OK) return status;
+    status = nux_elf_load(task, (const void *)(nux_uptr)image_address,
+                          (nux_size)image_size, &loaded);
+    if (status == NUX_OK)
+        status = nux_thread_create_user(task, loaded.entry,
+                                        loaded.stack_pointer, 0, 31, &thread);
+    if (status != NUX_OK) {
+        (void)nux_task_destroy(task);
+        return status;
+    }
+    *task_id = task;
+    return NUX_OK;
 }
