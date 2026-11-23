@@ -46,8 +46,12 @@ int main(void)
     if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_OK)return 1;
     if(result.entry!=0x10000080||result.segment_count!=2||maps!=2||writes!=2||protects!=2)return 2;
     if(nux_elf_load(7,image,100,&result)!=NUX_E_BAD_STATE)return 3;
-    put64(image+64+56+40,4);
-    if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_BAD_STATE)return 4;
+    put32(image+64+56,2);
+    if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_NOT_SUPPORTED)return 4;
     if(unmaps!=1)return 5;
+    put32(image+64+56,1);
+    put64(image+64+56+40,4);
+    if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_BAD_STATE)return 6;
+    if(unmaps!=2)return 7;
     return 0;
 }
