@@ -128,7 +128,7 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
     ports[slot].receive_capability = 0;
     nux_arch_unlock(&port_lock);
 
-    nux_capability send_handle, receive_handle;
+
     nux_status status = nux_capability_create(
         NUX_OBJECT_PORT, object_id, NUX_RIGHT_SEND | NUX_RIGHT_TRANSFER,
         &send_handle);
@@ -171,16 +171,14 @@ nux_status nux_port_task_destroy(nux_task_id owner)
     nux_arch_unlock(&port_lock);
 
     for (;;) {
-        nux_capability send_handle = 0;
-        nux_capability receive_handle = 0;
+        nux_object_id object_id = 0;
         nux_u32 found = 0;
 
         nux_arch_lock(&port_lock);
         for (nux_u32 i = 0; i < NUX_PORT_LIMIT; ++i) {
             nux_port_entry *port = &ports[i];
             if (!port->active || port->owner != owner) continue;
-            send_handle = port->send_capability;
-            receive_handle = port->receive_capability;
+            object_id = port->object_id;
             while (port->count) {
                 nux_u16 encoded = port->queue[port->head];
                 if (encoded && encoded <= NUX_PORT_MESSAGE_POOL_LIMIT)
@@ -200,8 +198,7 @@ nux_status nux_port_task_destroy(nux_task_id owner)
         nux_arch_unlock(&port_lock);
 
         if (!found) break;
-        if (send_handle) (void)nux_capability_revoke(send_handle);
-        if (receive_handle) (void)nux_capability_revoke(receive_handle);
+        if (object_id) (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
     }
     return NUX_OK;
 }
@@ -220,8 +217,7 @@ nux_status nux_port_destroy(nux_capability control)
         nux_arch_unlock(&port_lock);
         return NUX_E_NOT_FOUND;
     }
-    send_handle = port->send_capability;
-    receive_handle = port->receive_capability;
+
     while (port->count) {
         nux_u16 encoded = port->queue[port->head];
         if (encoded) messages[encoded - 1].active = 0;
@@ -231,8 +227,7 @@ nux_status nux_port_destroy(nux_capability control)
     port->active = 0;
     nux_arch_unlock(&port_lock);
 
-    if (send_handle) nux_capability_revoke(send_handle);
-    if (receive_handle) nux_capability_revoke(receive_handle);
+    (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
     return NUX_OK;
 }
 
