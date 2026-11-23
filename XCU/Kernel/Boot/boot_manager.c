@@ -1,5 +1,4 @@
 #include "uefi.h"
-#include "pe_image.h"
 
 static const efi_guid loaded_image_guid = {
     0x5b1b31a1, 0x9562, 0x11d2, {0x8e,0x3f,0x00,0xa0,0xc9,0x69,0x72,0x3b}
@@ -20,17 +19,37 @@ static const efi_char16 kernel_path[] = {
     '\\','E','F','I','\\','L','E','N','I','X','\\','N','U','X','.','E','F','I',0
 };
 
-static const efi_char16 invalid_image[] = {
-    'L','e','n','i','x',':',' ','i','n','v','a','l','i','d',' ','E','F','I',' ',
-    'k','e','r','n','e','l',' ','i','m','a','g','e',' ','(','P','E','/','C','O','F','F',' ',
-    'r','e','q','u','i','r','e','d',')','\\r','\\n',0
-};
+#if defined(LENIX_QEMU_BOOT_TRACE)
+static void debug_write(const char *message)
+{
+#if defined(__x86_64__)
+    while (*message) {
+        unsigned char value = (unsigned char)*message++;
+        __asm__ volatile("outb %0, $0xe9" : : "a"(value));
+    }
+#elif defined(__aarch64__)
+    register efi_u64 operation __asm__("x0") = 0x04;
+    register const char *text __asm__("x1") = message;
+    __asm__ volatile("hlt #0xf000" : "+r"(operation) : "r"(text) : "memory");
+#endif
+}
+#endif
 
 static void print(efi_system_table *system, const efi_char16 *message)
 {
     if (system && system->console_out && system->console_out->output_string)
         (void)system->console_out->output_string(
             system->console_out, (efi_char16 *)message);
+#if defined(LENIX_QEMU_BOOT_TRACE)
+    char ascii[128];
+    efi_uintn i = 0;
+    while (message[i] && i + 1 < sizeof(ascii)) {
+        ascii[i] = message[i] < 0x80 ? (char)message[i] : '?';
+        ++i;
+    }
+    ascii[i] = 0;
+    debug_write(ascii);
+#endif
 }
 
 static efi_status fail(efi_system_table *system, efi_status status)
@@ -106,12 +125,6 @@ efi_status nux_boot_manager_main(efi_handle image, efi_system_table *system)
         return fail(system, status);
     }
 
-    if (!valid_kernel_image((const efi_u8 *)image_buffer, image_size)) {
-        (void)system->boot_services->free_pool(image_buffer);
-        print(system, invalid_image);
-        return fail(system, EFI_ERROR_BIT | 1ULL);
-    }
-
     print(system, loading);
     status = system->boot_services->load_image(
         0, image, (void *)0, image_buffer, read_size, &kernel_image);
@@ -121,5 +134,5 @@ efi_status nux_boot_manager_main(efi_handle image, efi_system_table *system)
 
     status = system->boot_services->start_image(kernel_image, (efi_uintn *)0,
                                                 (efi_char16 **)0);
-    return fail(system, status);
+    return EFI_ERROR(status) ? fail(system, status) : EFI_SUCCESS;
 }

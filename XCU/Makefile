@@ -26,7 +26,7 @@ endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers boot-manager test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
+.PHONY: all headers boot-manager boot-manager-smoke test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
 all: headers boot-manager test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
 
 headers:
@@ -228,3 +228,29 @@ boot-manager:
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/boot_manager.c -o Build/boot/manager-aarch64.obj
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_entry.S -o Build/boot/entry-aarch64.obj
 	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/BOOTAA64.EFI Build/boot/manager-aarch64.obj Build/boot/entry-aarch64.obj
+
+boot-manager-smoke:
+	mkdir -p Build/boot/smoke
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -DLENIX_QEMU_BOOT_TRACE -c Kernel/Boot/boot_manager.c -o Build/boot/smoke/manager-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -DLENIX_QEMU_BOOT_TRACE -c Kernel/Boot/boot_smoke.c -o Build/boot/smoke/nux-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_entry.S -o Build/boot/smoke/entry-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_smoke_entry.S -o Build/boot/smoke/smoke-entry-x86_64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/smoke/BOOTX64.EFI Build/boot/smoke/manager-x86_64.obj Build/boot/smoke/entry-x86_64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_smoke_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/smoke/NUX-X64.EFI Build/boot/smoke/nux-x86_64.obj Build/boot/smoke/smoke-entry-x86_64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -DLENIX_QEMU_BOOT_TRACE -c Kernel/Boot/boot_manager.c -o Build/boot/smoke/manager-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -DLENIX_QEMU_BOOT_TRACE -c Kernel/Boot/boot_smoke.c -o Build/boot/smoke/nux-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_entry.S -o Build/boot/smoke/entry-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_smoke_entry.S -o Build/boot/smoke/smoke-entry-aarch64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/smoke/BOOTAA64.EFI Build/boot/smoke/manager-aarch64.obj Build/boot/smoke/entry-aarch64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_smoke_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/smoke/NUX-AA64.EFI Build/boot/smoke/nux-aarch64.obj Build/boot/smoke/smoke-entry-aarch64.obj
+	rm -f Build/boot/smoke/lenix-firstparty-x86_64.img Build/boot/smoke/lenix-firstparty-aarch64.img
+	dd if=/dev/zero of=Build/boot/smoke/lenix-firstparty-x86_64.img bs=1M count=128
+	mformat -i Build/boot/smoke/lenix-firstparty-x86_64.img -F ::
+	mmd -i Build/boot/smoke/lenix-firstparty-x86_64.img ::/EFI ::/EFI/BOOT ::/EFI/LENIX
+	mcopy -i Build/boot/smoke/lenix-firstparty-x86_64.img Build/boot/smoke/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
+	mcopy -i Build/boot/smoke/lenix-firstparty-x86_64.img Build/boot/smoke/NUX-X64.EFI ::/EFI/LENIX/NUX.EFI
+	dd if=/dev/zero of=Build/boot/smoke/lenix-firstparty-aarch64.img bs=1M count=128
+	mformat -i Build/boot/smoke/lenix-firstparty-aarch64.img -F ::
+	mmd -i Build/boot/smoke/lenix-firstparty-aarch64.img ::/EFI ::/EFI/BOOT ::/EFI/LENIX
+	mcopy -i Build/boot/smoke/lenix-firstparty-aarch64.img Build/boot/smoke/BOOTAA64.EFI ::/EFI/BOOT/BOOTAA64.EFI
+	mcopy -i Build/boot/smoke/lenix-firstparty-aarch64.img Build/boot/smoke/NUX-AA64.EFI ::/EFI/LENIX/NUX.EFI

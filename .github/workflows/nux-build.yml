@@ -22,6 +22,30 @@ jobs:
           sudo apt-get install -y make clang lld gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 qemu-system-arm ovmf qemu-efi-aarch64 mtools
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all NUX_QEMU_SEMIHOST=1
+      - name: Build first-party EFI boot-chain smoke images
+        run: make -C XCU boot-manager-smoke
+      - name: Boot first-party x86-64 EFI chain
+        run: |
+          cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/boot/smoke/OVMF_VARS.fd
+          set +e
+          timeout 10s qemu-system-x86_64 -machine q35 -m 512M -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd -drive if=pflash,format=raw,file=XCU/Build/boot/smoke/OVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/boot/smoke/lenix-firstparty-x86_64.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -display none -serial none -debugcon file:XCU/Build/boot/smoke/x86.log -global isa-debugcon.iobase=0xe9 -no-reboot -no-shutdown
+          qemu_status=$?
+          set -e
+          test "$qemu_status" -eq 124
+          grep -q 'Lenix Boot Manager' XCU/Build/boot/smoke/x86.log
+          grep -q 'Loading Nux kernel image' XCU/Build/boot/smoke/x86.log
+          grep -q 'NUX:EFI_STAGE2_OK' XCU/Build/boot/smoke/x86.log
+      - name: Boot first-party AArch64 EFI chain
+        run: |
+          cp /usr/share/AAVMF/AAVMF_VARS.fd XCU/Build/boot/smoke/AAVMF_VARS.fd
+          set +e
+          timeout 10s qemu-system-aarch64 -machine virt -cpu cortex-a72 -m 512M -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd -drive if=pflash,format=raw,file=XCU/Build/boot/smoke/AAVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/boot/smoke/lenix-firstparty-aarch64.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -semihosting-config enable=on,target=native -display none -serial none -no-reboot -no-shutdown > XCU/Build/boot/smoke/arm.log 2>&1
+          qemu_status=$?
+          set -e
+          test "$qemu_status" -eq 124
+          grep -q 'Lenix Boot Manager' XCU/Build/boot/smoke/arm.log
+          grep -q 'Loading Nux kernel image' XCU/Build/boot/smoke/arm.log
+          grep -q 'NUX:EFI_STAGE2_OK' XCU/Build/boot/smoke/arm.log
       - name: Print x86 kernel entry symbol map
         run: |
           x86_64-linux-gnu-addr2line -f -C -e XCU/Build/x86_64/nux.elf 0xffffffff8000042b
@@ -72,6 +96,9 @@ jobs:
             XCU/Build/x86_64/nux.elf
             XCU/Build/boot/BOOTX64.EFI
             XCU/Build/boot/BOOTAA64.EFI
+            XCU/Build/boot/smoke/lenix-firstparty-x86_64.img
+            XCU/Build/boot/smoke/lenix-firstparty-aarch64.img
+            XCU/Build/boot/smoke/*.log
             XCU/Build/aarch64/nux.elf
             XCU/Build/lenix-x86_64.iso
             XCU/Build/lenix-aarch64.iso
