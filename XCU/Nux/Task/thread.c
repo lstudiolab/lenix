@@ -612,8 +612,7 @@ static void nux_thread_user_entry(void *argument)
     }
     nux_arch_unlock(&thread_lock);
     if (!entry || !stack || !kernel_stack_top) return;
-    nux_arch_set_kernel_stack(kernel_stack_top);
-    nux_arch_user_enter(entry, stack, user_argument);
+    nux_arch_user_enter(entry, stack, user_argument, kernel_stack_top);
 }
 
 nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
