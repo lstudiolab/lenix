@@ -129,7 +129,7 @@ nux_status nux_vm_map(nux_u64 id,nux_vm_address *address,nux_vm_size size,nux_u3
     }
     if(mapped!=pages){
         while(mapped){--mapped;nux_u64 pa=nux_arch_vm_translate(root,va+(nux_u64)mapped*NUX_VM_PAGE_SIZE);(void)nux_arch_vm_unmap(root,va+(nux_u64)mapped*NUX_VM_PAGE_SIZE);if(!o)(void)nux_phys_free_page(pa&~(NUX_VM_PAGE_SIZE-1));}
-        (void)region_remove(s,s->count-1);nux_arch_unlock(&vm_lock);return st;
+        for(nux_u32 i=0;i<s->count;i++)if(s->regions[i].start==va){(void)region_remove(s,i);break;}nux_arch_unlock(&vm_lock);return st;
     }
     *address=va;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
