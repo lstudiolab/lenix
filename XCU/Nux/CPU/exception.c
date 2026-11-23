@@ -76,12 +76,8 @@ static void nux_arch_dispatch_user_syscall(nux_u64 number,
                                            const nux_u64 arguments[6],
                                            nux_u64 *return_value)
 {
-    if (number >= NUX_SYSCALL_LIMIT) {
-        *return_value = (nux_u64)(nux_i64)NUX_E_INVALID;
-        return;
-    }
     nux_u64 result = 0;
-    nux_status status = nux_syscall_dispatch((nux_u32)number,
+    nux_status status = nux_syscall_dispatch(number,
         (const nux_syscall_word *)arguments, &result);
     *return_value = status == NUX_OK ? result : (nux_u64)(nux_i64)status;
 }
