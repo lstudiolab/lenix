@@ -232,19 +232,21 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
     return NUX_OK;
 }
 
-nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_message *message,
-                         nux_u64 timeout_ns)
+static nux_status nux_port_send_internal(nux_capability send,
+                                           const nux_message *message,
+                                           nux_u64 timeout_ns,
+                                           nux_u32 send_once)
 {
     nux_object_id object_id;
     nux_status status;
+    nux_rights required = send_once ? NUX_RIGHT_SEND_ONCE : NUX_RIGHT_SEND;
     if (timeout_ns) return NUX_E_NOT_SUPPORTED;
     if (!message || message->inline_size > NUX_MESSAGE_INLINE_MAX ||
         (message->inline_size && !message->inline_data) ||
         message->descriptor_count != 0 ||
         message->kind > (nux_u32)NUX_PORT_MSG_RPC)
         return NUX_E_INVALID;
-    status = nux_capability_check(sender, send, NUX_OBJECT_PORT,
-                                  NUX_RIGHT_SEND, &object_id);
+    status = nux_capability_check(send, NUX_OBJECT_PORT, required, &object_id);
     if (status != NUX_OK) return status;
 
     nux_arch_lock(&port_lock);
@@ -261,6 +263,16 @@ nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_mess
     if (index < 0) {
         nux_arch_unlock(&port_lock);
         return NUX_E_WOULD_BLOCK;
+    }
+    if (send_once) {
+        nux_object_id consumed_object = 0;
+        status = nux_capability_consume(send, NUX_OBJECT_PORT,
+                                        NUX_RIGHT_SEND_ONCE, &consumed_object);
+        if (status != NUX_OK || consumed_object != object_id) {
+            messages[index].active = 0;
+            nux_arch_unlock(&port_lock);
+            return status == NUX_OK ? NUX_E_ACCESS : status;
+        }
     }
 
     nux_port_message_slot *slot = &messages[index];
@@ -280,6 +292,18 @@ nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_mess
     ++port->count;
     nux_arch_unlock(&port_lock);
     return NUX_OK;
+}
+
+nux_status nux_port_send(nux_capability send, const nux_message *message,
+                         nux_u64 timeout_ns)
+{
+    return nux_port_send_internal(send, message, timeout_ns, 0);
+}
+
+nux_status nux_port_send_once(nux_capability send_once,
+                              const nux_message *message)
+{
+    return nux_port_send_internal(send_once, message, 0, 1);
 }
 
 nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_message *message,
