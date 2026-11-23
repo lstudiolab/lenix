@@ -46,7 +46,7 @@ x86_64:
 
 aarch64:
 	mkdir -p Build/aarch64
-	@for source in $(C_SOURCES); do object=Build/aarch64/$$(echo $$source | tr '/.' '__').o; $(CC_ARM) $(ARM_CFLAGS) -c $source -o $$object || exit 1; done
+	@for source in $(C_SOURCES); do object=Build/aarch64/$(echo $source | tr '/.' '__').o; $(CC_ARM) $(ARM_CFLAGS) -c $source -o $object || exit 1; done
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/Boot/entry.S -o Build/aarch64/entry.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/early.S -o Build/aarch64/early.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64/lock.o
