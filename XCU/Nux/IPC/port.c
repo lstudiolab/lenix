@@ -144,6 +144,12 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
     }
 
     nux_arch_lock(&port_lock);
+    if (!ports[slot].active || ports[slot].object_id != object_id ||
+        ports[slot].owner != owner) {
+        nux_arch_unlock(&port_lock);
+        (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
+        return NUX_E_BAD_STATE;
+    }
     ports[slot].send_capability = send_handle;
     ports[slot].receive_capability = receive_handle;
     nux_arch_unlock(&port_lock);
@@ -153,8 +159,10 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
 
 rollback:
     nux_arch_lock(&port_lock);
-    ports[slot].active = 0;
+    if (ports[slot].active && ports[slot].object_id == object_id)
+        ports[slot].active = 0;
     nux_arch_unlock(&port_lock);
+    (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
     return status;
 }
 
