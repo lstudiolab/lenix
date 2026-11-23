@@ -4,6 +4,7 @@
 #include <nux/object.h>
 #include <nux/memory.h>
 #include <nux/task.h>
+#include <nux/elf.h>
 #include <nux/thread.h>
 #include <nux/capability.h>
 #include <nux/port.h>
