@@ -41,7 +41,10 @@ nux_u64 nux_arch_vm_translate(nux_u64 root,nux_u64 va){
     return 0;
 }
 nux_status nux_capability_check(nux_capability cap,nux_object_type type,nux_rights rights,nux_object_id *out){
-    if(!cap||type!=NUX_OBJECT_PORT||rights!=NUX_RIGHT_SEND||!out)return NUX_E_ACCESS;*out=1;return NUX_OK;
+    if(!cap||type!=NUX_OBJECT_PORT||rights!=NUX_RIGHT_SEND||!out)
+        return NUX_E_ACCESS;
+    *out=1;
+    return NUX_OK;
 }
 int main(void){
     nux_u64 space=0; nux_vm_address address=0; nux_memory_object_id object=0;
