@@ -26,7 +26,13 @@ jobs:
         run: make -C XCU iso
       - name: Boot x86-64 image under QEMU
         run: |
-          timeout 15s qemu-system-x86_64 -machine q35 -m 1G -cdrom XCU/Build/lenix-x86_64.iso -display none -serial none -monitor none -debugcon file:XCU/Build/qemu-x86.log -global isa-debugcon.iobase=0xe9 -no-reboot -no-shutdown || test $? -eq 124
+          set +e
+          timeout 12s qemu-system-x86_64 -machine q35 -m 1G -boot order=d -cdrom XCU/Build/lenix-x86_64.iso -display none -serial none -monitor none -debugcon file:XCU/Build/qemu-x86.log -global isa-debugcon.iobase=0xe9 -d int,cpu_reset -D XCU/Build/qemu-cpu.log -no-reboot -no-shutdown
+          qemu_status=$?
+          set -e
+          echo "QEMU exit status: $qemu_status"
+          cat XCU/Build/qemu-x86.log || true
+          tail -n 80 XCU/Build/qemu-cpu.log || true
           grep -q 'NUX:READY' XCU/Build/qemu-x86.log
       - name: Publish kernels and boot images
         uses: actions/upload-artifact@v4
