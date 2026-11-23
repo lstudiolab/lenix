@@ -329,9 +329,11 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
     }
 
     nux_thread_id waiter = port->receiver_waiter;
+    nux_thread_id sender_waiter = port->sender_waiter;
     nux_thread_id set_waiters[NUX_PORT_SET_LIMIT];
     nux_u32 set_waiter_count = 0;
     port->receiver_waiter = 0;
+    port->sender_waiter = 0;
     while (port->count) {
         nux_u16 encoded = port->queue[port->head];
         if (encoded) messages[encoded - 1].active = 0;
@@ -357,6 +359,7 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
     }
     nux_arch_unlock(&port_lock);
     if (waiter) (void)nux_thread_wake(waiter);
+    if (sender_waiter) (void)nux_thread_wake(sender_waiter);
     for (nux_u32 i = 0; i < set_waiter_count; ++i)
         (void)nux_thread_wake(set_waiters[i]);
 
@@ -459,6 +462,58 @@ nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_mess
     return nux_port_send_internal(sender, send, message, timeout_ns, 0);
 }
 
+nux_status nux_port_send_wait(nux_task_id sender, nux_capability send,
+                               const nux_message *message, nux_u64 timeout_ns)
+{
+    if (!message) return NUX_E_INVALID;
+    if (timeout_ns) return NUX_E_NOT_SUPPORTED;
+
+    for (;;) {
+        nux_status status = nux_port_send(sender, send, message, 0);
+        if (status != NUX_E_WOULD_BLOCK) return status;
+
+        nux_object_id object_id = 0;
+        status = nux_capability_check(sender, send, NUX_OBJECT_PORT,
+                                      NUX_RIGHT_SEND, &object_id);
+        if (status != NUX_OK) return status;
+
+        nux_arch_lock(&port_lock);
+        nux_port_entry *port = nux_port_find(object_id);
+        if (!port) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (port->count < port->queue_limit) {
+            nux_arch_unlock(&port_lock);
+            continue;
+        }
+        if (port->sender_waiter) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_BUSY;
+        }
+
+        nux_thread_id waiter = 0;
+        status = nux_thread_prepare_wait_current(&waiter);
+        if (status != NUX_OK) {
+            nux_arch_unlock(&port_lock);
+            return status;
+        }
+        port->sender_waiter = waiter;
+        nux_arch_unlock(&port_lock);
+
+        status = nux_thread_yield();
+        nux_arch_lock(&port_lock);
+        port = nux_port_find(object_id);
+        if (port && port->sender_waiter == waiter)
+            port->sender_waiter = 0;
+        nux_arch_unlock(&port_lock);
+        if (status != NUX_OK) {
+            (void)nux_thread_wake(waiter);
+            return status;
+        }
+    }
+}
+
 nux_status nux_port_send_once(nux_task_id sender, nux_capability send_once,
                               const nux_message *message)
 {
@@ -529,7 +584,10 @@ nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_me
     port->queue[port->head] = 0;
     port->head = (port->head + 1) % port->queue_limit;
     --port->count;
+    nux_thread_id sender_waiter = port->sender_waiter;
+    port->sender_waiter = 0;
     nux_arch_unlock(&port_lock);
+    if (sender_waiter) (void)nux_thread_wake(sender_waiter);
     return NUX_OK;
 }
 
