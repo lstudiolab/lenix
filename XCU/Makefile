@@ -26,8 +26,8 @@ endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers boot-manager boot-manager-smoke test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
-all: headers boot-manager test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
+.PHONY: all headers boot-manager boot-manager-smoke boot-kernel-uefi x86_64-uefi aarch64-uefi aarch64-qemu-uefi test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
+all: headers boot-manager boot-kernel-uefi test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -235,6 +235,23 @@ boot-manager:
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/boot_manager.c -o Build/boot/manager-aarch64.obj
 	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_entry.S -o Build/boot/entry-aarch64.obj
 	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/BOOTAA64.EFI Build/boot/manager-aarch64.obj Build/boot/entry-aarch64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/kernel_loader.c -o Build/boot/kernel-loader-x86_64.obj
+	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_kernel_entry.S -o Build/boot/kernel-entry-x86_64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_kernel_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/NUX-X64.EFI Build/boot/kernel-loader-x86_64.obj Build/boot/kernel-entry-x86_64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/kernel_loader.c -o Build/boot/kernel-loader-aarch64.obj
+	$(BOOT_CC) --target=aarch64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/ARM64/Boot/uefi_kernel_entry.S -o Build/boot/kernel-entry-aarch64.obj
+	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_kernel_entry /nodefaultlib /machine:arm64 /dynamicbase /out:Build/boot/NUX-AA64.EFI Build/boot/kernel-loader-aarch64.obj Build/boot/kernel-entry-aarch64.obj
+
+x86_64-uefi: x86_64
+	$(LD_X86) $(LDFLAGS) -Wl,-T,Kernel/Linker/x86_64-uefi.ld -o Build/x86_64/nux-uefi.elf Build/x86_64/*.o
+
+aarch64-uefi: aarch64
+	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64-uefi.ld -o Build/aarch64/nux-uefi.elf Build/aarch64/*.o
+
+aarch64-qemu-uefi: aarch64-qemu
+	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64-uefi.ld -o Build/aarch64-qemu/nux-uefi.elf Build/aarch64-qemu/*.o
+
+boot-kernel-uefi: x86_64-uefi aarch64-uefi
 	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Kernel/Boot/kernel_loader.c -o Build/boot/kernel-loader-x86_64.obj
 	$(BOOT_CC) --target=x86_64-pc-win32-coff $(BOOT_FLAGS) -c Architecture/X86_64/Boot/uefi_kernel_entry.S -o Build/boot/kernel-entry-x86_64.obj
 	$(BOOT_LD) /nologo /subsystem:efi_application /entry:efi_kernel_entry /nodefaultlib /machine:x64 /dynamicbase /out:Build/boot/NUX-X64.EFI Build/boot/kernel-loader-x86_64.obj Build/boot/kernel-entry-x86_64.obj
