@@ -24,7 +24,7 @@ ifeq ($(NUX_QEMU_SEMIHOST),1)
 ARM_CFLAGS += -DNUX_QEMU_SEMIHOST
 endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
-C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
+C_SOURCES := Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/ipc_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
 .PHONY: all headers boot-manager boot-manager-smoke boot-kernel-uefi boot-kernel-uefi-smoke uefi-firstparty uefi-firstparty-x86_64 uefi-firstparty-aarch64 uefi-firstparty-aarch64-qemu x86_64-uefi aarch64-uefi aarch64-qemu-uefi test-boot-image test-boot-protocol test-capability test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf clean
 all: headers boot-manager boot-kernel-uefi test-boot-image test-capability test-acpi test-processor x86_64 aarch64 test-boot test-boot-protocol test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time test-elf
@@ -144,63 +144,30 @@ test-time:
 clean:
 	rm -rf Build
 
-LIMINE_VERSION := 12.11.1
-LIMINE_SHA256 := 953aba25c23abc6d6b4e85e20ec8b9f3a8605450a26997103fa3fddf00e658e6
-LIMINE_ARCHIVE := Build/limine-binary.tar.gz
-LIMINE_DIR := Build/limine-binary
-
-$(LIMINE_ARCHIVE):
-	mkdir -p Build
-	curl -fL -o $@ https://github.com/Limine-Bootloader/Limine/releases/download/v$(LIMINE_VERSION)/limine-binary.tar.gz
-	printf '%s  %s\n' '$(LIMINE_SHA256)' '$@' | shasum -a 256 -c -
-
-$(LIMINE_DIR)/limine: $(LIMINE_ARCHIVE)
-	rm -rf $(LIMINE_DIR)
-	tar -xzf $(LIMINE_ARCHIVE) -C Build
-	$(MAKE) -C $(LIMINE_DIR) CC="$(HOST_CC)"
-
 iso: iso-x86_64 iso-aarch64
 
-iso-x86_64: x86_64 $(LIMINE_DIR)/limine
+iso-x86_64: uefi-firstparty-x86_64
 	rm -rf Build/iso-x86_64
-	mkdir -p Build/iso-x86_64/boot/limine Build/iso-x86_64/EFI/BOOT
-	cp limine.conf Build/iso-x86_64/boot/limine/limine.conf
-	cp Build/x86_64/nux.elf Build/iso-x86_64/boot/nux.elf
-	cp $(LIMINE_DIR)/limine-bios.sys $(LIMINE_DIR)/limine-bios-cd.bin $(LIMINE_DIR)/limine-uefi-cd.bin Build/iso-x86_64/boot/limine/
-	cp $(LIMINE_DIR)/BOOTX64.EFI Build/iso-x86_64/EFI/BOOT/
-	xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-x86_64 -o Build/lenix-x86_64.iso
-	$(LIMINE_DIR)/limine bios-install Build/lenix-x86_64.iso
+	mkdir -p Build/iso-x86_64
+	cp Build/lenix-x86_64-firstparty.img Build/iso-x86_64/efi.img
+	xorriso -as mkisofs -R -r -J -V LENIX --efi-boot efi.img -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-x86_64 -o Build/lenix-x86_64.iso
 
-iso-aarch64: aarch64 $(LIMINE_DIR)/limine
+iso-aarch64: uefi-firstparty-aarch64
 	rm -rf Build/iso-aarch64
-	mkdir -p Build/iso-aarch64/boot/limine Build/iso-aarch64/EFI/BOOT
-	cp limine.conf Build/iso-aarch64/boot/limine/limine.conf
-	cp Build/aarch64/nux.elf Build/iso-aarch64/boot/nux.elf
-	cp $(LIMINE_DIR)/limine-uefi-cd.bin Build/iso-aarch64/boot/limine/
-	cp $(LIMINE_DIR)/BOOTAA64.EFI Build/iso-aarch64/EFI/BOOT/
-	xorriso -as mkisofs -R -r -J -hfsplus -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-aarch64 -o Build/lenix-aarch64.iso
+	mkdir -p Build/iso-aarch64
+	cp Build/lenix-aarch64-firstparty.img Build/iso-aarch64/efi.img
+	xorriso -as mkisofs -R -r -J -V LENIX --efi-boot efi.img -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-aarch64 -o Build/lenix-aarch64.iso
 
 uefi-disk: uefi-disk-x86_64 uefi-disk-aarch64
 
-uefi-disk-x86_64: x86_64 $(LIMINE_DIR)/limine
-	rm -f Build/lenix-x86_64-uefi.img
-	dd if=/dev/zero of=Build/lenix-x86_64-uefi.img bs=1048576 count=128
-	mformat -i Build/lenix-x86_64-uefi.img -F ::
-	mmd -i Build/lenix-x86_64-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
-	mcopy -i Build/lenix-x86_64-uefi.img $(LIMINE_DIR)/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
-	mcopy -i Build/lenix-x86_64-uefi.img limine.conf ::/limine.conf
-	mcopy -i Build/lenix-x86_64-uefi.img limine.conf ::/boot/limine/limine.conf
-	mcopy -i Build/lenix-x86_64-uefi.img Build/x86_64/nux.elf ::/boot/nux.elf
+uefi-disk-x86_64: uefi-firstparty-x86_64
+	cp Build/lenix-x86_64-firstparty.img Build/lenix-x86_64-uefi.img
 
-uefi-disk-aarch64: aarch64 $(LIMINE_DIR)/limine
-	rm -f Build/lenix-aarch64-uefi.img
-	dd if=/dev/zero of=Build/lenix-aarch64-uefi.img bs=1M count=128
-	mformat -i Build/lenix-aarch64-uefi.img -F ::
-	mmd -i Build/lenix-aarch64-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
-	mcopy -i Build/lenix-aarch64-uefi.img $(LIMINE_DIR)/BOOTAA64.EFI ::/EFI/BOOT/BOOTAA64.EFI
-	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/limine.conf
-	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/boot/limine/limine.conf
-	mcopy -i Build/lenix-aarch64-uefi.img Build/aarch64/nux.elf ::/boot/nux.elf
+uefi-disk-aarch64: uefi-firstparty-aarch64
+	cp Build/lenix-aarch64-firstparty.img Build/lenix-aarch64-uefi.img
+
+uefi-disk-aarch64-qemu: uefi-firstparty-aarch64-qemu
+	cp Build/lenix-aarch64-qemu-firstparty.img Build/lenix-aarch64-qemu-uefi.img
 
 aarch64-qemu:
 	mkdir -p Build/aarch64-qemu
