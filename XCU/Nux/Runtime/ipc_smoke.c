@@ -62,13 +62,11 @@ static void ipc_sender(void *argument)
     };
     if (nux_port_send(ipc_task, ipc_send, &message, 0) != NUX_OK)
         ipc_failed = 1;
-    if (nux_thread_yield() != NUX_OK) ipc_failed = 1;
-
     message.id = 0x4e555853u;
     message.inline_size = sizeof(set_sent);
     message.inline_data = (void *)set_sent;
     message.inline_capacity = sizeof(set_sent);
-    if (nux_port_send(ipc_task, ipc_send, &message, 0) != NUX_OK)
+    if (nux_port_send_wait(ipc_task, ipc_send, &message, 0) != NUX_OK)
         ipc_failed = 1;
     sender_done = 1;
 }
@@ -86,7 +84,7 @@ nux_status nux_ipc_smoke_test(void)
 
     status = nux_task_create("Nux blocking IPC smoke", 10, &ipc_task);
     if (status != NUX_OK) return status;
-    status = nux_port_create(ipc_task, 4, &ipc_send, &ipc_receive);
+    status = nux_port_create(ipc_task, 1, &ipc_send, &ipc_receive);
     if (status != NUX_OK) goto failed;
     status = nux_port_set_create(ipc_task, &ipc_set);
     if (status != NUX_OK) goto failed;
