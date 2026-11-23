@@ -109,7 +109,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 7. Exceptions, traps, and system calls
 
 - [x] AArch64 EL1 exception vector table and x86-64 IDT with 256 vector stubs (Foundation; fatal capture only, no recovery or TSS/IST setup)
-- [ ] Fault classification, recoverable kernel exception handling, and panic diagnostics
+- [x] Fatal exception capture records vector, architecture syndrome/error code, and fault address (Foundation; stops the CPU safely)\n- [ ] Fault classification, recoverable kernel exception handling, and panic diagnostics
 - [ ] Per-task and per-thread exception ports
 - [ ] Exception delivery with identity and machine state
 - [ ] Exception reply/recovery and thread termination
@@ -178,7 +178,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Public interface headers
+## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for the runtime primitives\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
