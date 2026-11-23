@@ -174,22 +174,26 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
         nux_arch_unlock(&vm_lock);
         return NUX_E_NOT_FOUND;
     }
-    nux_vm_region *region = NUX_NULL;
-    for (nux_u32 i = 0; i < space->count; ++i) {
-        nux_vm_region *candidate = &space->regions[i];
-        if (address >= candidate->start &&
-            address - candidate->start <= candidate->size &&
-            size <= candidate->size - (address - candidate->start)) {
-            region = candidate;
-            break;
-        }
-    }
-    if (!region || !(region->protection & NUX_VM_PROT_WRITE)) {
-        nux_arch_unlock(&vm_lock);
-        return NUX_E_ACCESS;
-    }
+
     nux_u64 end = address + size;
     for (nux_u64 cursor = address; cursor < end;) {
+        nux_vm_region *region = NUX_NULL;
+        for (nux_u32 i = 0; i < space->count; ++i) {
+            nux_vm_region *candidate = &space->regions[i];
+            if (cursor >= candidate->start &&
+                cursor - candidate->start < candidate->size) {
+                region = candidate;
+                break;
+            }
+        }
+        if (!region) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (!(region->protection & NUX_VM_PROT_WRITE)) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_ACCESS;
+        }
         nux_u64 page = cursor & ~(NUX_VM_PAGE_SIZE - 1);
         nux_u64 physical = nux_arch_vm_translate(space->root, page);
         if (!physical || !nux_phys_to_virt(physical)) {
@@ -198,11 +202,23 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
         }
         nux_u64 amount = NUX_VM_PAGE_SIZE -
             (cursor & (NUX_VM_PAGE_SIZE - 1));
+        nux_u64 region_remaining = region->start + region->size - cursor;
         if (amount > end - cursor) amount = end - cursor;
+        if (amount > region_remaining) amount = region_remaining;
         cursor += amount;
     }
+
     nux_u64 cursor = address;
     while (cursor < end) {
+        nux_vm_region *region = NUX_NULL;
+        for (nux_u32 i = 0; i < space->count; ++i) {
+            nux_vm_region *candidate = &space->regions[i];
+            if (cursor >= candidate->start &&
+                cursor - candidate->start < candidate->size) {
+                region = candidate;
+                break;
+            }
+        }
         nux_u64 page = cursor & ~(NUX_VM_PAGE_SIZE - 1);
         nux_u64 physical = nux_arch_vm_translate(space->root, page);
         nux_u64 offset = cursor & (NUX_VM_PAGE_SIZE - 1);
@@ -210,21 +226,14 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
         nux_u64 region_remaining = region->start + region->size - cursor;
         if (amount > end - cursor) amount = end - cursor;
         if (amount > region_remaining) amount = region_remaining;
-        nux_u8 *mapped = (nux_u8 *)nux_phys_to_virt(physical);
-        if (!mapped) {
-            nux_arch_unlock(&vm_lock);
-            return NUX_E_BAD_STATE;
-        }
-        nux_u8 *output = mapped + offset;
-        for (nux_u64 i = 0; i < amount; ++i)
-            output[i] = input[i];
+        nux_u8 *output = (nux_u8 *)nux_phys_to_virt(physical) + offset;
+        for (nux_u64 i = 0; i < amount; ++i) output[i] = input[i];
         input += amount;
         cursor += amount;
     }
     nux_arch_unlock(&vm_lock);
     return NUX_OK;
 }
-
 
 nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
                        void *destination, nux_size size)
@@ -239,6 +248,7 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
         return NUX_E_NOT_FOUND;
     }
     nux_u64 end = address + size;
+
     for (nux_u64 cursor = address; cursor < end;) {
         nux_vm_region *region = NUX_NULL;
         for (nux_u32 i = 0; i < space->count; ++i) {
@@ -249,7 +259,11 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
                 break;
             }
         }
-        if (!region || !(region->protection & NUX_VM_PROT_READ)) {
+        if (!region) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (!(region->protection & NUX_VM_PROT_READ)) {
             nux_arch_unlock(&vm_lock);
             return NUX_E_ACCESS;
         }
@@ -287,8 +301,7 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
         if (amount > region_remaining) amount = region_remaining;
         const nux_u8 *input =
             (const nux_u8 *)nux_phys_to_virt(physical) + offset;
-        for (nux_u64 i = 0; i < amount; ++i)
-            output[i] = input[i];
+        for (nux_u64 i = 0; i < amount; ++i) output[i] = input[i];
         output += amount;
         cursor += amount;
     }
