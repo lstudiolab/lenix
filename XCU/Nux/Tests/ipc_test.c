@@ -91,9 +91,11 @@ int main(void)
 
     if (nux_port_create(task, 2, &transfer_send, &transfer_receive) != NUX_OK) return 32;
     if (nux_port_send(task, transfer_send, &message, 0) != NUX_OK) return 33;
-    if (nux_capability_create(task, NUX_OBJECT_PORT, 2,
+    if (nux_capability_check(task, transfer_receive, NUX_OBJECT_PORT,
+                             NUX_RIGHT_CONTROL, &object_id) != NUX_OK) return 43;
+    if (nux_capability_create(task, NUX_OBJECT_PORT, object_id,
                               NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL,
-                              &duplicate_receive) != NUX_OK) return 43;
+                              &duplicate_receive) != NUX_OK) return 46;
     if (nux_port_move_right(task, transfer_receive, other_task,
                             NUX_PORT_RIGHT_RECEIVE, &moved_receive) != NUX_OK) return 34;
     if (nux_port_receive(task, transfer_receive, &received, 0) != NUX_E_ACCESS) return 35;
