@@ -12,5 +12,6 @@ nux_status nux_exception_set_handler(nux_u32 task_id, nux_capability handler, nu
 nux_status nux_exception_clear_handler(nux_u32 task_id);
 nux_status nux_exception_deliver(nux_u32 thread_id, const nux_exception *exception);
 nux_status nux_exception_return(nux_u32 thread_id, const nux_machine_state *state);
-void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 error, nux_u64 address);
+void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 error,
+                                 nux_u64 address, void *frame);
 #endif
