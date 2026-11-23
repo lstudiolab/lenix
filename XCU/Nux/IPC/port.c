@@ -192,7 +192,7 @@ nux_status nux_port_send(nux_capability send, const nux_message *message,
 {
     nux_object_id object_id;
     nux_status status;
-    (void)timeout_ns;
+    if (timeout_ns) return NUX_E_NOT_SUPPORTED;
     if (!message || message->inline_size > NUX_MESSAGE_INLINE_MAX ||
         (message->inline_size && !message->inline_data) ||
         message->descriptor_count != 0 ||
@@ -244,7 +244,7 @@ nux_status nux_port_receive(nux_capability receive, nux_message *message,
     nux_status status;
     void *buffer;
     nux_u32 capacity;
-    (void)timeout_ns;
+    if (timeout_ns) return NUX_E_NOT_SUPPORTED;
     if (!message) return NUX_E_INVALID;
     buffer = message->inline_data;
     capacity = message->inline_capacity;
