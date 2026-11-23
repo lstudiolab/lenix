@@ -342,6 +342,17 @@ nux_status nux_thread_set_time_constraint(nux_thread_id id, nux_u64 period_ns,
     return NUX_OK;
 }
 
+
+static nux_u32 nux_thread_task_runnable(nux_task_id task_id)
+{
+    nux_task_info task;
+    if (nux_task_get(task_id, &task) != NUX_OK) return 0;
+    return task.state != NUX_TASK_SUSPENDED &&
+        task.state != NUX_TASK_BLOCKED &&
+        task.state != NUX_TASK_DYING &&
+        task.state != NUX_TASK_UNUSED;
+}
+
 nux_status nux_thread_yield(void)
 {
     nux_thread_entry *old_thread;
@@ -372,6 +383,7 @@ nux_status nux_thread_yield(void)
         nux_thread_entry *candidate = &threads[i];
         if (!candidate->kernel_thread ||
             candidate->info.state != NUX_THREAD_READY ||
+            !nux_thread_task_runnable(candidate->info.task) ||
             !nux_processor_set_cpu_allowed(candidate->info.processor_set,
                                            nux_processor_current_id()))
             continue;
@@ -405,6 +417,7 @@ nux_status nux_thread_yield(void)
     }
 
     if (old_thread && old_thread->info.state == NUX_THREAD_READY &&
+        nux_thread_task_runnable(old_thread->info.task) &&
         nux_processor_set_cpu_allowed(old_thread->info.processor_set,
                                       nux_processor_current_id())) {
         old_thread->info.state = NUX_THREAD_RUNNING;
