@@ -513,6 +513,10 @@ nux_status nux_thread_yield(void)
     if (old_thread && old_thread->info.state == NUX_THREAD_RUNNING)
         old_thread->info.state = NUX_THREAD_READY;
 
+    nux_u32 next_index = 0;
+    nux_u32 best_policy_rank = 0;
+    nux_u8 best_priority = 0;
+    nux_u64 best_deadline = NUX_U64_MAX;
     for (nux_u32 n = 0; n < NUX_THREAD_LIMIT; ++n) {
         nux_u32 i = (scheduler_cursor + n) % NUX_THREAD_LIMIT;
         nux_thread_entry *candidate = &threads[i];
@@ -522,10 +526,28 @@ nux_status nux_thread_yield(void)
             !nux_processor_set_cpu_allowed(candidate->info.processor_set,
                                            nux_processor_current_id()))
             continue;
+
+        nux_u32 policy_rank =
+            candidate->info.policy == NUX_SCHED_REALTIME ? 2u :
+            candidate->info.policy == NUX_SCHED_FIXED_PRIORITY ? 1u : 0u;
+        nux_u64 deadline = candidate->info.deadline_ns ?
+            candidate->info.deadline_ns : NUX_U64_MAX;
+        nux_u32 better = next_thread == NUX_NULL ||
+            policy_rank > best_policy_rank ||
+            (policy_rank == best_policy_rank &&
+             policy_rank == 2u && deadline < best_deadline) ||
+            (policy_rank == best_policy_rank &&
+             (policy_rank != 2u || deadline == best_deadline) &&
+             candidate->info.priority > best_priority);
+        if (!better) continue;
+
         next_thread = candidate;
-        scheduler_cursor = (i + 1) % NUX_THREAD_LIMIT;
-        break;
+        next_index = i;
+        best_policy_rank = policy_rank;
+        best_priority = candidate->info.priority;
+        best_deadline = deadline;
     }
+    if (next_thread) scheduler_cursor = (next_index + 1) % NUX_THREAD_LIMIT;
 
     if (next_thread) {
         nux_u64 address_space = 0;
