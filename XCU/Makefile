@@ -19,6 +19,10 @@ endif
 
 COMMON_CFLAGS := -DNUX_KERNEL -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 X86_CFLAGS := $(COMMON_CFLAGS) -march=x86-64 -mtune=generic -mno-bmi -mno-bmi2 -mno-sse -mno-mmx -msoft-float
+ARM_CFLAGS := $(COMMON_CFLAGS) -mgeneral-regs-only
+ifeq ($(NUX_QEMU_SEMIHOST),1)
+ARM_CFLAGS += -DNUX_QEMU_SEMIHOST
+endif
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/user.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Loader/elf.c Nux/Runtime/user_smoke.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
@@ -42,7 +46,7 @@ x86_64:
 
 aarch64:
 	mkdir -p Build/aarch64
-	@for source in $(C_SOURCES); do object=Build/aarch64/$$(echo $$source | tr '/.' '__').o; $(CC_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c $$source -o $$object || exit 1; done
+	@for source in $(C_SOURCES); do object=Build/aarch64/$$(echo $$source | tr '/.' '__').o; $(CC_ARM) $(ARM_CFLAGS) -c $source -o $$object || exit 1; done
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/Boot/entry.S -o Build/aarch64/entry.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/early.S -o Build/aarch64/early.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64/lock.o
