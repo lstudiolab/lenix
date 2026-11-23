@@ -27,6 +27,8 @@ typedef struct nux_boot_info {
     nux_u64 direct_map_size;
 } nux_boot_info;
 
+_Static_assert(sizeof(nux_boot_info) == 104, "Nux boot-info ABI size changed");
+
 void nux_kernel_main(const nux_boot_info *boot_info) __attribute__((noreturn));
 void nux_arch_early_init(void);
 
