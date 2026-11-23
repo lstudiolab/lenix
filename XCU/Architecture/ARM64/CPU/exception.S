@@ -39,41 +39,49 @@ nux_exception_vectors:
     mov x0, #0
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_1:
     mov x0, #1
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_2:
     mov x0, #2
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_3:
     mov x0, #3
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_4:
     mov x0, #4
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_5:
     mov x0, #5
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_6:
     mov x0, #6
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_7:
     mov x0, #7
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_8:
     sub sp, sp, #288
@@ -134,36 +142,43 @@ nux_exception_vectors:
     mov x0, #9
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_10:
     mov x0, #10
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_11:
     mov x0, #11
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_12:
     mov x0, #12
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_13:
     mov x0, #13
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_14:
     mov x0, #14
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_15:
     mov x0, #15
     mrs x1, esr_el1
     mrs x2, far_el1
+    mov x3, xzr
     b nux_arch_exception_dispatch
 .global nux_arch_syscall_entry
 .type nux_arch_syscall_entry,%function
