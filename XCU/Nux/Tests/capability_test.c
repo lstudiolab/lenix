@@ -35,7 +35,7 @@ int main(void)
     for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT;i++)
         if(nux_capability_create(1,NUX_OBJECT_MEMORY,i+1,NUX_RIGHT_READ,&cap)!=NUX_OK)return 11;
     if(nux_capability_create(1,NUX_OBJECT_MEMORY,999,NUX_RIGHT_READ,&cap)!=NUX_E_LIMIT)return 12;
-    for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT-2;i++)
+    for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT-1;i++)
         if(nux_capability_create(2,NUX_OBJECT_MEMORY,i+1000,NUX_RIGHT_READ,&cap)!=NUX_OK)return 13;
     if(nux_capability_create(2,NUX_OBJECT_MEMORY,9999,NUX_RIGHT_READ,&cap)!=NUX_E_LIMIT)return 14;
     if(nux_capability_revoke_task(1)!=NUX_CAPABILITY_LIMIT)return 15;

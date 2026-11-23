@@ -176,7 +176,7 @@ nux_status nux_capability_check(nux_task_id owner, nux_capability cap,
                                 nux_object_type type, nux_rights required,
                                 nux_object_id *object_id)
 {
-    if (!owner || !object_id || type == NUX_OBJECT_NONE) return NUX_E_INVALID;
+    if (!owner || !object_id || type == NUX_OBJECT_NONE || !required) return NUX_E_INVALID;
     nux_arch_lock(&cap_lock);
     nux_capability_space *space = space_find(owner);
     nux_u32 generation;
