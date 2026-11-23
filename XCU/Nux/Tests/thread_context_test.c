@@ -1,5 +1,6 @@
 #include <nux/task.h>
 #include <nux/thread.h>
+#include <nux/boot.h>
 #include <nux/time.h>
 #include <nux/processor.h>
 
@@ -11,6 +12,7 @@ static nux_u64 last_task_space;
 
 static nux_u64 test_next_space = 1;
 static nux_u64 mock_clock;
+void nux_boot_mark(nux_boot_phase phase){(void)phase;}
 static nux_u64 mock_user_entry, mock_user_stack;
 nux_status nux_vm_fault(nux_u64 space,nux_u64 address,nux_u32 access)
 { (void)space; if(address==mock_user_entry&&access==NUX_VM_PROT_EXEC)return NUX_OK; if(address+sizeof(nux_u64)==mock_user_stack&&access==NUX_VM_PROT_WRITE)return NUX_OK; return NUX_E_ACCESS; }
