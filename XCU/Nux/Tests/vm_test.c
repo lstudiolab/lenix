@@ -55,7 +55,7 @@ nux_status nux_capability_check(nux_task_id owner,nux_capability cap,nux_object_
 int main(void){
     nux_task_id task_a=0,task_b=0;
     nux_u64 task_space_a=0,task_space_b=0;
-    nux_u64 space=0; nux_vm_address address=0; nux_memory_object_id object=0;
+    nux_u64 space=0; nux_vm_address address=0; nux_memory_object_id object=0;\n    nux_vm_address write_base=0x20000000ULL, read_base=0x20001000ULL;\n    nux_u8 input[4]={0x11,0x22,0x33,0x44}, output[4]={0};
     if(nux_vm_system_init()!=NUX_OK)return 1;
     if(nux_task_system_init()!=NUX_OK)return 19;
     if(nux_task_create("vm-task-a",10,&task_a)!=NUX_OK)return 20;
@@ -67,7 +67,7 @@ int main(void){
     if(nux_task_destroy(task_b)!=NUX_OK)return 26;
     if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_E_NOT_FOUND)return 28;
     if(nux_vm_space_create(&space)!=NUX_OK)return 2;
-    if(nux_vm_map(space,&address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 3;
+    if(nux_vm_map(space,&write_base,NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 29;\n    if(nux_vm_map(space,&read_base,NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ,0,0)!=NUX_OK)return 30;\n    if(nux_vm_write(space,write_base+NUX_VM_PAGE_SIZE-2,input,sizeof(input))!=NUX_E_ACCESS)return 31;\n    if(nux_vm_read(space,write_base+NUX_VM_PAGE_SIZE-2,output,sizeof(output))!=NUX_OK)return 32;\n    if(output[0]!=0x11||output[1]!=0x22||output[2]!=0||output[3]!=0)return 33;\n    if(nux_vm_write(space,read_base,input,1)!=NUX_E_ACCESS)return 34;\n    if(nux_vm_unmap(space,write_base,NUX_VM_PAGE_SIZE)!=NUX_OK)return 35;\n    if(nux_vm_unmap(space,read_base,NUX_VM_PAGE_SIZE)!=NUX_OK)return 36;\n    address=0;\n    if(nux_vm_map(space,&address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 3;
     if(address<0x10000000ULL||nux_vm_fault(space,address,NUX_VM_PROT_READ)!=NUX_OK)return 4;
     {
         const nux_u8 payload[8]={1,2,3,4,5,6,7,8};
