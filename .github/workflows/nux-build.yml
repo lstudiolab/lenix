@@ -16,27 +16,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install cross toolchains
+      - name: Install cross toolchains and ISO tools
         run: |
           sudo apt-get update
           sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso
-      - name: Validate public headers and build both kernels
+      - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all
-      - name: Package UEFI boot images\n        run: make -C XCU iso\n      - name: Publish kernel and boot image artifacts
+      - name: Package UEFI boot images
+        run: make -C XCU iso
+      - name: Publish kernels and boot images
         uses: actions/upload-artifact@v4
         with:
-          name: nux-kernel-elf
+          name: nux-kernels-and-uefi-images
           path: |
             XCU/Build/x86_64/nux.elf
-            XCU/Build/aarch64/nux.elf\n            XCU/Build/lenix-x86_64.iso\n            XCU/Build/lenix-aarch64.iso
+            XCU/Build/aarch64/nux.elf
+            XCU/Build/lenix-x86_64.iso
+            XCU/Build/lenix-aarch64.iso
 
   macos-cross-build:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install LLVM
+      - name: Install LLVM and ISO tools
         run: |
           brew install llvm xorriso
           echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
-      - name: Build and test both ELF targets with Clang/LLD
-        run: make -C XCU clean all
+      - name: Build, test, and package both UEFI targets with Clang/LLD
+        run: make -C XCU clean all iso
