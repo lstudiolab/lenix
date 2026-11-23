@@ -29,7 +29,9 @@ typedef struct {
     nux_acpi_ioapic ioapics[NUX_ACPI_IOAPIC_LIMIT];
 } nux_acpi_info;
 
-/* rsdp_physical is the physical RSDP address returned by UEFI/Limine. */
-nux_status nux_acpi_discover(nux_u64 rsdp_physical, nux_acpi_info *out);
+/* Limine base revision 4+ supplies the RSDP as an HHDM virtual pointer. */
+nux_status nux_acpi_discover(const void *rsdp_address, nux_acpi_info *out);
+nux_status nux_acpi_system_init(const void *rsdp_address);
+nux_status nux_acpi_get_info(nux_acpi_info *out);
 
 #endif
