@@ -10,6 +10,10 @@ extern void nux_arch_unlock(volatile nux_u32 *lock);
 
 static nux_service_entry services[NUX_BOOTSTRAP_SERVICE_LIMIT];
 static volatile nux_u32 bootstrap_lock;
+#define NUX_SPECIAL_PORT_LIMIT 128u
+#define NUX_SPECIAL_PORT_COUNT 4u
+typedef struct { nux_u32 task; nux_capability ports[NUX_SPECIAL_PORT_COUNT]; } special_port_entry;
+static special_port_entry special_ports[NUX_SPECIAL_PORT_LIMIT];
 
 static nux_size service_name_length(const char *name)
 {
@@ -44,6 +48,11 @@ nux_status nux_bootstrap_system_init(void)
         services[i].service_port = 0;
         services[i].owner_task = 0;
         services[i].flags = 0;
+    }
+    for (nux_u32 i = 0; i < NUX_SPECIAL_PORT_LIMIT; ++i) {
+        special_ports[i].task = 0;
+        for (nux_u32 j = 0; j < NUX_SPECIAL_PORT_COUNT; ++j)
+            special_ports[i].ports[j] = 0;
     }
     nux_arch_unlock(&bootstrap_lock);
     return NUX_OK;
@@ -142,7 +151,79 @@ void nux_bootstrap_task_destroy(nux_task_id owner)
         services[i].owner_task = 0;
         services[i].flags = 0;
     }
+    
+    for (nux_u32 i = 0; i < NUX_SPECIAL_PORT_LIMIT; ++i) {
+        if (special_ports[i].task != owner) continue;
+        special_ports[i].task = 0;
+        for (nux_u32 j = 0; j < NUX_SPECIAL_PORT_COUNT; ++j)
+            special_ports[i].ports[j] = 0;
+    }
     nux_arch_unlock(&bootstrap_lock);
+}
+
+
+static special_port_entry *special_port_find(nux_task_id task, nux_u32 create)
+{
+    special_port_entry *empty = NUX_NULL;
+    for (nux_u32 i = 0; i < NUX_SPECIAL_PORT_LIMIT; ++i) {
+        if (special_ports[i].task == task) return &special_ports[i];
+        if (!special_ports[i].task && !empty) empty = &special_ports[i];
+    }
+    if (create && empty) {
+        empty->task = task;
+        for (nux_u32 i = 0; i < NUX_SPECIAL_PORT_COUNT; ++i)
+            empty->ports[i] = 0;
+        return empty;
+    }
+    return NUX_NULL;
+}
+
+nux_status nux_task_set_special_port(nux_u32 task_id, nux_u32 which,
+                                     nux_capability port)
+{
+    nux_task_info task;
+    if (!task_id || which >= NUX_SPECIAL_PORT_COUNT) return NUX_E_INVALID;
+    if (nux_task_get(task_id, &task) != NUX_OK ||
+        task.state == NUX_TASK_DYING || task.state == NUX_TASK_UNUSED)
+        return NUX_E_NOT_FOUND;
+    if (port) {
+        nux_object_id object_id = 0;
+        nux_status status = nux_capability_check(task_id, port, NUX_OBJECT_PORT,
+                                                  NUX_RIGHT_SEND, &object_id);
+        if (status != NUX_OK) return status;
+    }
+    nux_arch_lock(&bootstrap_lock);
+    special_port_entry *entry = special_port_find(task_id, port != 0);
+    if (!entry) {
+        nux_arch_unlock(&bootstrap_lock);
+        return port ? NUX_E_LIMIT : NUX_E_NOT_FOUND;
+    }
+    entry->ports[which] = port;
+    nux_arch_unlock(&bootstrap_lock);
+    return NUX_OK;
+}
+
+nux_status nux_task_get_special_port(nux_u32 task_id, nux_u32 which,
+                                     nux_capability *out)
+{
+    nux_task_info task;
+    if (!task_id || which >= NUX_SPECIAL_PORT_COUNT || !out)
+        return NUX_E_INVALID;
+    *out = 0;
+    if (nux_task_get(task_id, &task) != NUX_OK ||
+        task.state == NUX_TASK_DYING || task.state == NUX_TASK_UNUSED)
+        return NUX_E_NOT_FOUND;
+    nux_arch_lock(&bootstrap_lock);
+    special_port_entry *entry = special_port_find(task_id, 0);
+    nux_capability port = entry ? entry->ports[which] : 0;
+    nux_arch_unlock(&bootstrap_lock);
+    if (!port) return NUX_E_NOT_FOUND;
+    nux_object_id object_id = 0;
+    nux_status status = nux_capability_check(task_id, port, NUX_OBJECT_PORT,
+                                              NUX_RIGHT_SEND, &object_id);
+    if (status != NUX_OK) return status;
+    *out = port;
+    return NUX_OK;
 }
 
 nux_status nux_bootstrap_start_initial_task(nux_u64 image_address,
