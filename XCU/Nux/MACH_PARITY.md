@@ -54,7 +54,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 - [x] Separate thread registry, lifecycle metadata, kernel stacks, and saved architecture contexts (Foundation; user-mode state remains)
 - [x] Multiple cooperative kernel threads per task (Foundation; user-mode threads remain)
-- [x] Kernel-thread creation, termination, suspend/resume metadata, and cooperative yield
+- [x] Kernel-thread creation, termination, suspend/resume metadata, cooperative yield, and scheduler-backed wait/wake transitions
 - [x] Callee-saved register contexts and architecture-specific cooperative switch assembly on both targets (Foundation; FPU/SIMD and user register frames remain)
 - [ ] Thread state get/set for controlled debugging
 - [x] Fixed kernel stacks for cooperative kernel threads (Foundation; user stacks and stack reclamation remain)
@@ -66,7 +66,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 3. Scheduling and execution
 
-- [x] Cooperative round-robin dispatch and real context switching between kernel threads (Foundation; no preemption)
+- [x] Cooperative round-robin dispatch, real context switching, and blocked-thread exclusion/wakeup between kernel threads (Foundation; no preemption)
 - [x] Activate the selected thread's owning task address space on scheduler handoff (Foundation; cooperative only)
 - [ ] Preemptive scheduling and timer-driven quanta
 - [ ] Dynamic time-sharing priorities
@@ -86,9 +86,9 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Capability-checked send/receive/send-once rights with atomic one-use consumption
 - [x] Move send, receive, and send-once rights between task owners; make-send, copy-send, and send-once derivation
 - [ ] Port death, no-senders, and lifecycle notifications
-- [x] Port sets with nonblocking wait-on-any scan (Foundation; scheduler-backed blocking waits remain)
-- [x] FIFO bounded inline-message queues with backpressure
-- [ ] Message send/receive timeouts and interruption
+- [x] Port sets with nonblocking wait-on-any scan (Foundation; scheduler-backed blocking port-set waits remain)
+- [x] FIFO bounded inline-message queues with backpressure and scheduler-backed blocking receive/wakeup (single waiter per port; multi-waiter and port-set blocking remain)
+- [ ] Message send/receive deadlines, timeouts, and interruption
 - [ ] Inline and out-of-line message payloads
 - [x] Atomic capability movement between task owners (Foundation; message-attached memory/port descriptors remain)
 - [x] Inline message validation, size limits, and fixed-pool resource accounting
