@@ -56,8 +56,8 @@ jobs:
           cat XCU/Build/qemu-arm.log || true
           cat XCU/Build/qemu-arm-serial.log || true
           tail -n 120 XCU/Build/qemu-arm-cpu.log || true
-          grep -q 'NUX:USER_EXIT' XCU/Build/qemu-arm-serial.log
-          grep -q 'NUX:READY' XCU/Build/qemu-arm-serial.log
+          grep -q 'NUX:USER_EXIT' XCU/Build/qemu-arm.log
+          grep -q 'NUX:READY' XCU/Build/qemu-arm.log
       - name: Publish kernels and boot images
         if: always()
         uses: actions/upload-artifact@v4
