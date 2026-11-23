@@ -175,6 +175,7 @@ nux_status nux_capability_consume(nux_task_id owner, nux_capability cap, nux_obj
     }
     *object_id = entry->object_id;
     entry->active = 0;
+    entry->owner = 0;
     entry->object_id = 0;
     entry->rights = 0;
     entry->type = NUX_OBJECT_NONE;
