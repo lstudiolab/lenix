@@ -102,7 +102,14 @@ nux_status nux_vm_space_destroy(nux_u64 id) {
     nux_arch_vm_root_destroy(root);return NUX_OK;
 }
 nux_status nux_vm_space_activate(nux_u64 id) {
-    nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);
+    nux_arch_lock(&vm_lock);
+    if (!id) {
+        nux_status restore = nux_arch_vm_activate(0);
+        if (restore == NUX_OK) active_space_id = 0;
+        nux_arch_unlock(&vm_lock);
+        return restore;
+    }
+    nux_vm_space *s=space_find(id);
     if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     nux_status st=nux_arch_vm_activate(s->root);
     if(st==NUX_OK)active_space_id=id;
