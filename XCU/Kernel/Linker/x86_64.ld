@@ -1,4 +1,4 @@
-ENTRY(_start)
+ENTRY(_start_uefi)
 OUTPUT_FORMAT(elf64-x86-64)
 PHDRS
 {
@@ -11,7 +11,6 @@ SECTIONS
     . = 0xffffffff80000000;
     .text : ALIGN(4K) { KEEP(*(.text.boot)) *(.text .text.*) } :text
     .rodata : ALIGN(4K) { *(.rodata .rodata.*) } :rodata
-    .limine_requests : ALIGN(4K) { KEEP(*(.limine_requests_start)) KEEP(*(.limine_requests)) KEEP(*(.limine_requests_end)) } :data
     .data : ALIGN(4K) { *(.data .data.*) } :data
     .bss : ALIGN(4K) { *(COMMON) *(.bss .bss.*) } :data
     /DISCARD/ : { *(.eh_frame*) *(.note*) *(.comment*) }
