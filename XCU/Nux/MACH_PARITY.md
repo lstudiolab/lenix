@@ -152,13 +152,13 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 9. Processors and multiprocessor operation
 
-- [ ] CPU feature discovery and topology
+- [x] ACPI MADT CPU topology discovery and hardware-to-logical CPU mapping (Foundation; CPU feature enumeration and Device Tree remain)
 - [ ] Bootstrap and application processor startup
 - [ ] Per-CPU data and scheduler state
 - [ ] Inter-processor interrupts
 - [ ] Processor online/offline and controlled stop
-- [ ] Processor sets and processor-set ports
-- [ ] Assign tasks/threads to processor sets
+- [x] Processor-set creation/destruction and CPU membership metadata (Foundation; processor-set ports remain)
+- [x] Associate threads with processor sets and store scheduling policy/priority metadata (Foundation; per-CPU enforcement remains)
 - [ ] Per-set scheduling policy and priority
 - [ ] Load balancing, migration, and SMP-safe synchronization
 - [ ] NUMA topology and memory locality where hardware supports it
@@ -226,8 +226,8 @@ These headers are interface declarations only unless the implementation status a
 
 1. Stabilize boot handoff, add memory reservations and page zeroing, and harden allocator tests.
 2. Implement architecture page tables, address spaces, faults, and memory objects.
-3. Add task ownership, per-task capability namespaces, and user-mode task loading.
-4. Complete IPC rights transfer, out-of-line memory, blocking waits, deadlines, and RPC.
+3. Add user-mode task loading, user stacks, privilege transitions, and syscall entry/return.
+4. Complete IPC with out-of-line memory, blocking waits, deadlines, and RPC/reply.
 5. Add interrupt controllers, architecture timers, preemptive scheduling, and time accounting.
 6. Implement recoverable exception ports and architecture syscall entry/return.
 7. Add bootstrap service management and user-space pager/driver servers.
