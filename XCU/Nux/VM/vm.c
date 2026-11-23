@@ -268,7 +268,8 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
     nux_arch_unlock(&vm_lock);
     return NUX_OK;
 }
-\nnux_status nux_vm_protect(nux_u64 id,nux_vm_address va,nux_vm_size size,nux_u32 prot) {
+
+nux_status nux_vm_protect(nux_u64 id,nux_vm_address va,nux_vm_size size,nux_u32 prot) {
     if(!size||protection_valid(prot)!=NUX_OK||(va&(NUX_VM_PAGE_SIZE-1))||(size&(NUX_VM_PAGE_SIZE-1)))return NUX_E_INVALID;
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     for(nux_u32 i=0;i<s->count;i++)if(s->regions[i].start==va&&s->regions[i].size==size){
