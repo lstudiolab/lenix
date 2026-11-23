@@ -5,6 +5,8 @@
 #define ELF_HEADER_SIZE 64u
 #define ELF_PROGRAM_SIZE 56u
 #define ELF_PROGRAM_LIMIT 32u
+#define ELF_USER_STACK_SIZE (64u * 1024u)
+#define ELF_USER_END 0x00007fff00000000ULL
 #define ELF_PT_LOAD 1u
 #define ELF_PT_DYNAMIC 2u
 #define ELF_PT_INTERP 3u
@@ -68,6 +70,8 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     nux_u32 loaded_count = 0;
     nux_u64 address_space = 0;
     nux_u32 executable_entry = 0;
+    nux_u32 stack_mapped = 0;
+    nux_u64 stack_base = ELF_USER_END - ELF_USER_STACK_SIZE;
     nux_status failure_status = NUX_E_BAD_STATE;
 
     if (!task || !image || !result || image_size < ELF_HEADER_SIZE)
@@ -75,6 +79,9 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     result->entry = 0;
     result->segment_count = 0;
     result->reserved = 0;
+    result->stack_base = 0;
+    result->stack_pointer = 0;
+    result->stack_size = 0;
     header = (const elf64_header *)bytes;
     if (bytes[0] != 0x7f || bytes[1] != 'E' || bytes[2] != 'L' ||
         bytes[3] != 'F' || header->ident[4] != ELF_CLASS_64 ||
@@ -144,6 +151,14 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
             executable_entry = 1;
     }
     if (!loaded_count || !executable_entry) goto invalid_image;
+    nux_vm_address stack_address = stack_base;
+    nux_status stack_status = nux_vm_map(address_space, &stack_address,
+        ELF_USER_STACK_SIZE, NUX_VM_PROT_READ | NUX_VM_PROT_WRITE, 0, 0);
+    if (stack_status != NUX_OK) {
+        failure_status = stack_status;
+        goto load_failed;
+    }
+    stack_mapped = 1;
     for (nux_u32 i = 0; i < loaded_count; ++i) {
         nux_status status = nux_vm_protect(address_space, loaded[i].address,
                                            loaded[i].size,
@@ -153,9 +168,14 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     result->entry = header->entry;
     result->segment_count = loaded_count;
     result->reserved = 0;
+    result->stack_base = stack_base;
+    result->stack_pointer = (stack_base + ELF_USER_STACK_SIZE) & ~0xfULL;
+    result->stack_size = ELF_USER_STACK_SIZE;
     return NUX_OK;
 
 invalid_image:
+    if (stack_mapped)
+        (void)nux_vm_unmap(address_space, stack_base, ELF_USER_STACK_SIZE);
     while (loaded_count) {
         --loaded_count;
         (void)nux_vm_unmap(address_space, loaded[loaded_count].address,
@@ -164,6 +184,8 @@ invalid_image:
     return NUX_E_BAD_STATE;
 
 load_failed:
+    if (stack_mapped)
+        (void)nux_vm_unmap(address_space, stack_base, ELF_USER_STACK_SIZE);
     while (loaded_count) {
         --loaded_count;
         (void)nux_vm_unmap(address_space, loaded[loaded_count].address,
