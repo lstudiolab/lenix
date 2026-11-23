@@ -1,7 +1,7 @@
 .section .text
-.global nux_arch_user_enter
-.type nux_arch_user_enter,%function
-nux_arch_user_enter:
+.global nux_arch_enter_user
+.type nux_arch_enter_user,%function
+nux_arch_enter_user:
     msr sp_el0, x1
     mov x3, x2
     msr elr_el1, x0
@@ -10,7 +10,7 @@ nux_arch_user_enter:
     mov x0, x3
     isb
     eret
-.size nux_arch_user_enter, .-nux_arch_user_enter
+.size nux_arch_enter_user, .-nux_arch_enter_user
 
 .global nux_arch_syscall_entry
 .type nux_arch_syscall_entry,%function
