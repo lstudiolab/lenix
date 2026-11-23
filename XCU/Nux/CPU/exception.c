@@ -28,7 +28,7 @@ static void nux_idt_set(nux_u32 vector, void (*handler)(void), nux_u16 selector)
     idt[vector].offset_low = (nux_u16)address;
     idt[vector].selector = selector;
     idt[vector].ist = 0;
-    idt[vector].attributes = 0x8e;
+    idt[vector].attributes = (vector == 128) ? 0xee : 0x8e;
     idt[vector].offset_middle = (nux_u16)(address >> 16);
     idt[vector].offset_high = (nux_u32)(address >> 32);
     idt[vector].reserved = 0;
@@ -56,15 +56,69 @@ volatile nux_u64 nux_last_exception_vector;
 volatile nux_u64 nux_last_exception_code;
 volatile nux_u64 nux_last_exception_address;
 
-__attribute__((noreturn))
-void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code, nux_u64 address)
+
+typedef struct {
+    nux_u64 r15, r14, r13, r12, r11, r10, r9, r8;
+    nux_u64 rdi, rsi, rbp, rbx, rdx, rcx, rax;
+    nux_u64 vector, error, rip, cs, rflags, rsp, ss;
+} nux_x86_exception_frame;
+
+typedef struct {
+    nux_u64 x[31];
+    nux_u64 elr, spsr, esr, far, vector;
+} nux_arm64_exception_frame;
+
+static void nux_arch_dispatch_user_syscall(nux_u64 number,
+                                           const nux_u64 arguments[6],
+                                           nux_u64 *return_value)
 {
+    nux_u64 result = 0;
+    nux_status status = nux_syscall_dispatch((nux_u32)number,
+        (const nux_syscall_word *)arguments, &result);
+    *return_value = status == NUX_OK ? result : (nux_u64)(nux_i64)status;
+}
+
+void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
+                                 nux_u64 address, void *frame)
+{
+    if (vector == 128 && frame) {
+#if defined(__x86_64__)
+        nux_x86_exception_frame *state = (nux_x86_exception_frame *)frame;
+        nux_u64 arguments[6] = {
+            state->rdi, state->rsi, state->rdx, state->r10, state->r8, state->r9
+        };
+        nux_arch_dispatch_user_syscall(state->rax, arguments, &state->rax);
+        return;
+#endif
+    }
+#if defined(__aarch64__)
+    if (vector == 8 && frame && ((code >> 26) & 0x3f) == 0x15) {
+        nux_arm64_exception_frame *state = (nux_arm64_exception_frame *)frame;
+        nux_u64 arguments[6] = {
+            state->x[0], state->x[1], state->x[2],
+            state->x[3], state->x[4], state->x[5]
+        };
+        nux_arch_dispatch_user_syscall(state->x[8], arguments, &state->x[0]);
+        return;
+    }
+#endif
+
     nux_last_exception_vector = vector;
     nux_last_exception_code = code;
     nux_last_exception_address = address;
-#if defined(__aarch64__)
-    for (;;) __asm__ volatile("msr daifset, #0xf; wfe" ::: "memory");
-#elif defined(__x86_64__)
+
+#if defined(__x86_64__)
+    if (frame && (((nux_x86_exception_frame *)frame)->cs & 3u) == 3u) {
+        (void)nux_thread_exit_current();
+        for (;;) __asm__ volatile("cli; hlt" ::: "memory");
+    }
+    if (vector >= 32) return;
     for (;;) __asm__ volatile("cli; hlt" ::: "memory");
+#elif defined(__aarch64__)
+    if (frame && ((((nux_arm64_exception_frame *)frame)->spsr & 0xfu) == 0u)) {
+        (void)nux_thread_exit_current();
+        for (;;) __asm__ volatile("msr daifset, #0xf; wfe" ::: "memory");
+    }
+    for (;;) __asm__ volatile("msr daifset, #0xf; wfe" ::: "memory");
 #endif
 }
