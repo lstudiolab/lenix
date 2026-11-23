@@ -4,6 +4,8 @@
 #include <nux/status.h>
 #define NUX_CPU_LIMIT 256u
 #define NUX_PROCESSOR_SET_LIMIT 64u
+#define NUX_PROCESSOR_ARCH_X86_64 1u
+#define NUX_PROCESSOR_ARCH_ARM64 2u
 typedef nux_u32 nux_cpu_id;
 typedef nux_u32 nux_processor_set_id;
 typedef struct { nux_cpu_id id; nux_u32 architecture; nux_u32 logical_id; nux_u32 numa_node; nux_u64 features; nux_u64 frequency_hz; nux_u8 online; nux_u8 reserved[7]; } nux_processor_info;
