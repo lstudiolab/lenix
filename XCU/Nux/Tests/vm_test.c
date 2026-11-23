@@ -12,6 +12,7 @@ static map_entry maps[MAP_LIMIT];
 
 nux_u32 nux_thread_task_busy(nux_task_id task){(void)task;return 0;}
 nux_status nux_port_task_destroy(nux_task_id owner){(void)owner;return NUX_OK;}
+nux_u32 nux_capability_revoke_task(nux_task_id owner){(void)owner;return 0;}
 
 void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
@@ -44,7 +45,8 @@ nux_u64 nux_arch_vm_translate(nux_u64 root,nux_u64 va){
     for(nux_u32 i=0;i<MAP_LIMIT;i++)if(maps[i].active&&maps[i].root==root&&maps[i].va==(va&~NUX_PAGE_MASK))return maps[i].pa+(va&NUX_PAGE_MASK);
     return 0;
 }
-nux_status nux_capability_check(nux_capability cap,nux_object_type type,nux_rights rights,nux_object_id *out){
+nux_status nux_capability_check(nux_task_id owner,nux_capability cap,nux_object_type type,nux_rights rights,nux_object_id *out){
+    (void)owner;
     if(!cap||type!=NUX_OBJECT_PORT||rights!=NUX_RIGHT_SEND||!out)
         return NUX_E_ACCESS;
     *out=1;
