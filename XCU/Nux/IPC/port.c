@@ -679,8 +679,13 @@ nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id id,
                              nux_capability receive)
 {
     nux_object_id object_id;
+    nux_thread_id waiter = 0;
     nux_status status;
     if (!owner) return NUX_E_INVALID;
+
+    status = nux_capability_check(owner, receive, NUX_OBJECT_PORT,
+                                  NUX_RIGHT_RECEIVE, &object_id);
+    if (status != NUX_OK) return status;
 
     nux_arch_lock(&port_lock);
     nux_port_set_entry *set = nux_port_set_find(id);
@@ -692,30 +697,11 @@ nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id id,
         nux_arch_unlock(&port_lock);
         return NUX_E_ACCESS;
     }
-    nux_arch_unlock(&port_lock);
-
-    status = nux_capability_check(owner, receive, NUX_OBJECT_PORT,
-                                  NUX_RIGHT_RECEIVE, &object_id);
-    if (status != NUX_OK) return status;
-    (void)object_id;
-
-    nux_arch_lock(&port_lock);
-    set = nux_port_set_find(id);
-    if (!set || set->owner != owner) {
-        nux_arch_unlock(&port_lock);
-        return NUX_E_ACCESS;
-    }
     for (nux_u32 i = 0; i < set->count; ++i) {
         if (set->ports[i] == receive) {
             nux_arch_unlock(&port_lock);
             return NUX_OK;
         }
-    }
-    status = nux_capability_check(owner, receive, NUX_OBJECT_PORT,
-                                  NUX_RIGHT_RECEIVE, &object_id);
-    if (status != NUX_OK) {
-        nux_arch_unlock(&port_lock);
-        return status;
     }
     nux_port_entry *port = nux_port_find(object_id);
     if (!port || port->owner != owner) {
@@ -726,14 +712,20 @@ nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id id,
         nux_arch_unlock(&port_lock);
         return NUX_E_LIMIT;
     }
-    set->ports[set->count++] = receive;
+    set->ports[set->count] = receive;
+    set->object_ids[set->count] = object_id;
+    ++set->count;
+    waiter = set->receiver_waiter;
+    set->receiver_waiter = 0;
     nux_arch_unlock(&port_lock);
+    if (waiter) (void)nux_thread_wake(waiter);
     return NUX_OK;
 }
 
 nux_status nux_port_set_remove(nux_task_id owner, nux_port_set_id id,
                                 nux_capability receive)
 {
+    nux_thread_id waiter = 0;
     nux_arch_lock(&port_lock);
     nux_port_set_entry *set = nux_port_set_find(id);
     if (!set) {
@@ -746,10 +738,15 @@ nux_status nux_port_set_remove(nux_task_id owner, nux_port_set_id id,
     }
     for (nux_u32 i = 0; i < set->count; ++i) {
         if (set->ports[i] != receive) continue;
-        for (nux_u32 j = i + 1; j < set->count; ++j)
+        for (nux_u32 j = i + 1; j < set->count; ++j) {
             set->ports[j - 1] = set->ports[j];
+            set->object_ids[j - 1] = set->object_ids[j];
+        }
         --set->count;
+        waiter = set->receiver_waiter;
+        set->receiver_waiter = 0;
         nux_arch_unlock(&port_lock);
+        if (waiter) (void)nux_thread_wake(waiter);
         return NUX_OK;
     }
     nux_arch_unlock(&port_lock);
