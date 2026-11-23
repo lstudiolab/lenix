@@ -392,7 +392,7 @@ static int capture_memory_map(efi_system_table *system, void *map_buffer,
         memory_regions[stored].length = length;
         memory_regions[stored].type =
             descriptor->type == EFI_CONVENTIONAL_MEMORY ? 0ULL : 1ULL;
-        memory_region_pointers[stored] = (nux_memmap_entry *)(efi_uintn)(\
+        memory_region_pointers[stored] = (nux_memmap_entry *)(efi_uintn)(
             NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)&memory_regions[stored]);
         ++stored;
     }
@@ -449,7 +449,7 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
 
 static __attribute__((noreturn)) void enter_kernel(efi_u64 entry, efi_u64 stack_top)
 {
-    register const nux_boot_info *argument __asm__("rdi") =\
+    register const nux_boot_info *argument __asm__("rdi") =
         (const nux_boot_info *)(efi_uintn)(NUX_DIRECT_MAP_BASE + (efi_u64)(efi_uintn)&boot_info);
     register efi_u64 target __asm__("rax") = entry;
     register efi_u64 stack __asm__("rsi") = stack_top;
