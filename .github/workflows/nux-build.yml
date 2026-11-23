@@ -29,3 +29,14 @@ jobs:
           path: |
             XCU/Build/x86_64/nux.elf
             XCU/Build/aarch64/nux.elf
+
+  macos-cross-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install LLVM
+        run: |
+          brew install llvm
+          echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
+      - name: Build and test both ELF targets with Clang/LLD
+        run: make -C XCU clean all
