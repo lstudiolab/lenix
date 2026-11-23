@@ -295,9 +295,12 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
 
     nux_arch_lock(&port_lock);
     nux_port_entry *port = nux_port_find(object_id);
-    if (!port) {
+    nux_object_id verified_object = 0;
+    status = nux_capability_check(owner, control, NUX_OBJECT_PORT,
+                                  NUX_RIGHT_CONTROL, &verified_object);
+    if (!port || status != NUX_OK || verified_object != object_id) {
         nux_arch_unlock(&port_lock);
-        return NUX_E_NOT_FOUND;
+        return status == NUX_OK ? NUX_E_NOT_FOUND : status;
     }
     if (port->owner != owner) {
         nux_arch_unlock(&port_lock);
@@ -417,9 +420,12 @@ nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_me
 
     nux_arch_lock(&port_lock);
     nux_port_entry *port = nux_port_find(object_id);
-    if (!port) {
+    nux_object_id verified_object = 0;
+    status = nux_capability_check(receiver, receive, NUX_OBJECT_PORT,
+                                  NUX_RIGHT_RECEIVE, &verified_object);
+    if (!port || status != NUX_OK || verified_object != object_id) {
         nux_arch_unlock(&port_lock);
-        return NUX_E_NOT_FOUND;
+        return status == NUX_OK ? NUX_E_NOT_FOUND : status;
     }
     if (!port->count) {
         nux_arch_unlock(&port_lock);
@@ -613,6 +619,12 @@ nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id id,
             nux_arch_unlock(&port_lock);
             return NUX_OK;
         }
+    }
+    status = nux_capability_check(owner, receive, NUX_OBJECT_PORT,
+                                  NUX_RIGHT_RECEIVE, &object_id);
+    if (status != NUX_OK) {
+        nux_arch_unlock(&port_lock);
+        return status;
     }
     if (set->count == NUX_PORT_SET_WIDTH) {
         nux_arch_unlock(&port_lock);
