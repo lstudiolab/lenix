@@ -19,16 +19,16 @@ jobs:
       - name: Install cross toolchains and ISO tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 ovmf
+          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 ovmf mtools
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all
       - name: Package UEFI boot images
-        run: make -C XCU iso
+        run: make -C XCU iso uefi-disk
       - name: Boot x86-64 image under QEMU
         run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/OVMF_VARS.fd
           set +e
-          timeout 12s qemu-system-x86_64 -machine q35 -m 1G -boot order=d -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd -drive if=pflash,format=raw,file=XCU/Build/OVMF_VARS.fd -cdrom XCU/Build/lenix-x86_64.iso -display none -serial file:XCU/Build/qemu-serial.log -monitor none -debugcon file:XCU/Build/qemu-x86.log -global isa-debugcon.iobase=0xe9 -d int,cpu_reset -D XCU/Build/qemu-cpu.log -no-reboot -no-shutdown
+          timeout 12s qemu-system-x86_64 -machine q35 -m 1G -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.fd -drive if=pflash,format=raw,file=XCU/Build/OVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/lenix-x86_64-uefi.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -display none -serial file:XCU/Build/qemu-serial.log -monitor none -debugcon file:XCU/Build/qemu-x86.log -global isa-debugcon.iobase=0xe9 -d int,cpu_reset -D XCU/Build/qemu-cpu.log -no-reboot -no-shutdown
           qemu_status=$?
           set -e
           echo "QEMU exit status: $qemu_status"
@@ -45,6 +45,8 @@ jobs:
             XCU/Build/aarch64/nux.elf
             XCU/Build/lenix-x86_64.iso
             XCU/Build/lenix-aarch64.iso
+            XCU/Build/lenix-x86_64-uefi.img
+            XCU/Build/lenix-aarch64-uefi.img
 
   macos-cross-build:
     runs-on: macos-latest
@@ -55,4 +57,4 @@ jobs:
           brew install llvm lld xorriso
           echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
       - name: Build, test, and package both UEFI targets with Clang/LLD
-        run: make -C XCU clean all iso
+        run: make -C XCU clean all iso uefi-disk
