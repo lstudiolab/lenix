@@ -185,6 +185,7 @@ nux_status nux_port_task_destroy(nux_task_id owner)
 
     for (;;) {
         nux_object_id object_id = 0;
+        nux_thread_id waiter = 0;
         nux_u32 found = 0;
 
         nux_arch_lock(&port_lock);
@@ -192,6 +193,8 @@ nux_status nux_port_task_destroy(nux_task_id owner)
             nux_port_entry *port = &ports[i];
             if (!port->active || port->owner != owner) continue;
             object_id = port->object_id;
+            waiter = port->receiver_waiter;
+            port->receiver_waiter = 0;
             while (port->count) {
                 nux_u16 encoded = port->queue[port->head];
                 if (encoded && encoded <= NUX_PORT_MESSAGE_POOL_LIMIT)
@@ -211,6 +214,7 @@ nux_status nux_port_task_destroy(nux_task_id owner)
         nux_arch_unlock(&port_lock);
 
         if (!found) break;
+        if (waiter) (void)nux_thread_wake(waiter);
         if (object_id) (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
     }
     (void)nux_capability_revoke_task(owner);
