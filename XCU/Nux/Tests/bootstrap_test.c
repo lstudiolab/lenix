@@ -40,6 +40,15 @@ static nux_status task_create_status;
 static nux_status elf_load_status;
 static nux_status user_thread_status;
 static nux_u32 destroyed_tasks;
+static nux_task_info mock_task_info;
+nux_status nux_task_get(nux_task_id task, nux_task_info *out)
+{
+    if (!task || !out) return NUX_E_INVALID;
+    mock_task_info.id = task;
+    mock_task_info.state = NUX_TASK_READY;
+    *out = mock_task_info;
+    return NUX_OK;
+}
 nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *out)
 {
     if (!name || priority != 31 || !out) return NUX_E_INVALID;
@@ -92,6 +101,11 @@ int main(void)
     if (nux_bootstrap_lookup("display", &received) != NUX_E_NOT_FOUND) return 9;
     current_task = 1;
     if (nux_bootstrap_register("console", 8) != NUX_OK) return 10;
+    if (nux_task_set_special_port(1, NUX_SPECIAL_PORT_TASK, 8) != NUX_OK) return 17;
+    if (nux_task_get_special_port(1, NUX_SPECIAL_PORT_TASK, &received) != NUX_OK || received != 8) return 18;
+    if (nux_task_set_special_port(1, 4, 8) != NUX_E_INVALID) return 19;
+    if (nux_task_set_special_port(1, NUX_SPECIAL_PORT_TASK, 0) != NUX_OK) return 20;
+    if (nux_task_get_special_port(1, NUX_SPECIAL_PORT_TASK, &received) != NUX_E_NOT_FOUND) return 21;
     nux_bootstrap_task_destroy(1);
     current_task = 2;
     if (nux_bootstrap_lookup("console", &received) != NUX_E_NOT_FOUND) return 11;
