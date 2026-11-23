@@ -19,11 +19,11 @@ jobs:
       - name: Install cross toolchains and ISO tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 ovmf mtools
+          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86 qemu-system-arm ovmf qemu-efi-aarch64 mtools
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all
       - name: Package UEFI boot images
-        run: make -C XCU iso uefi-disk
+        run: make -C XCU iso uefi-disk uefi-disk-aarch64-qemu
       - name: Boot x86-64 image under QEMU
         run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/OVMF_VARS.fd
@@ -36,6 +36,17 @@ jobs:
           cat XCU/Build/qemu-serial.log || true
           tail -n 80 XCU/Build/qemu-cpu.log || true
           grep -q 'NUX:READY' XCU/Build/qemu-x86.log
+      - name: Boot AArch64 image under QEMU
+        run: |
+          cp /usr/share/AAVMF/AAVMF_VARS.fd XCU/Build/AAVMF_VARS.fd
+          set +e
+          timeout 15s qemu-system-aarch64 -machine virt -cpu cortex-a72 -m 1G -boot menu=off -drive if=pflash,format=raw,readonly=on,file=/usr/share/AAVMF/AAVMF_CODE.fd -drive if=pflash,format=raw,file=XCU/Build/AAVMF_VARS.fd -drive if=none,id=usbdisk,format=raw,file=XCU/Build/lenix-aarch64-qemu-uefi.img -device qemu-xhci -device usb-storage,drive=usbdisk,bootindex=1 -semihosting-config enable=on,target=native -display none -serial file:XCU/Build/qemu-arm-serial.log -monitor none -no-reboot -no-shutdown > XCU/Build/qemu-arm.log 2>&1
+          qemu_status=$?
+          set -e
+          echo "QEMU ARM exit status: $qemu_status"
+          cat XCU/Build/qemu-arm.log || true
+          cat XCU/Build/qemu-arm-serial.log || true
+          grep -q 'NUX:READY' XCU/Build/qemu-arm.log
       - name: Publish kernels and boot images
         uses: actions/upload-artifact@v4
         with:
@@ -47,6 +58,7 @@ jobs:
             XCU/Build/lenix-aarch64.iso
             XCU/Build/lenix-x86_64-uefi.img
             XCU/Build/lenix-aarch64-uefi.img
+            XCU/Build/lenix-aarch64-qemu-uefi.img
 
   macos-cross-build:
     runs-on: macos-latest
