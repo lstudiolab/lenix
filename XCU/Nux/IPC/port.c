@@ -342,6 +342,8 @@ static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send
     nux_object_id object_id;
     nux_status status;
     nux_thread_id waiter = 0;
+    nux_thread_id set_waiters[NUX_PORT_SET_LIMIT];
+    nux_u32 set_waiter_count = 0;
     nux_rights required = send_once ? NUX_RIGHT_SEND_ONCE : NUX_RIGHT_SEND;
     if (timeout_ns) return NUX_E_NOT_SUPPORTED;
     if (!message || message->inline_size > NUX_MESSAGE_INLINE_MAX ||
@@ -404,8 +406,20 @@ static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send
     ++port->count;
     waiter = port->receiver_waiter;
     port->receiver_waiter = 0;
+    for (nux_u32 i = 0; i < NUX_PORT_SET_LIMIT; ++i) {
+        nux_port_set_entry *set = &port_sets[i];
+        if (!set->active || !set->receiver_waiter) continue;
+        for (nux_u32 j = 0; j < set->count; ++j) {
+            if (set->object_ids[j] != object_id) continue;
+            set_waiters[set_waiter_count++] = set->receiver_waiter;
+            set->receiver_waiter = 0;
+            break;
+        }
+    }
     nux_arch_unlock(&port_lock);
     if (waiter) (void)nux_thread_wake(waiter);
+    for (nux_u32 i = 0; i < set_waiter_count; ++i)
+        (void)nux_thread_wake(set_waiters[i]);
     return NUX_OK;
 }
 
