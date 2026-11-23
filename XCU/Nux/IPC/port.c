@@ -490,7 +490,12 @@ nux_status nux_port_send_wait(nux_task_id sender, nux_capability send,
             return NUX_E_NOT_FOUND;
         }
         if (port->count < port->queue_limit) {
+            nux_u32 pool_available = 0;
+            for (nux_u32 i = 0; i < NUX_PORT_MESSAGE_POOL_LIMIT; ++i) {
+                if (!messages[i].active) { pool_available = 1; break; }
+            }
             nux_arch_unlock(&port_lock);
+            if (!pool_available) return NUX_E_WOULD_BLOCK;
             continue;
         }
         if (port->sender_waiter) {
