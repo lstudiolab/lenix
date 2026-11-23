@@ -18,7 +18,7 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 
 ### 0. Firmware boot and kernel startup
 
-- [x] UEFI-to-Limine boot protocol handoff on x86-64 and AArch64 (Foundation; boot image packaging remains)
+- [x] UEFI-to-Limine boot protocol handoff on x86-64 and AArch64
 - [x] Explicit Limine request delimiters retained by architecture linker scripts
 - [x] x86-64 entry stack alignment, interrupt masking, and IDT installation
 - [x] AArch64 EL2/VHE normalization to EL1h before entering the common kernel
@@ -26,7 +26,7 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 - [x] Common staged initialization with debugger-visible phase and failure code
 - [x] Bootable UEFI ISO and removable-media image generation for both architectures (Secure Boot signing remains pending)
 - [ ] Firmware console and early serial/framebuffer diagnostics
-- [ ] ACPI/Device Tree discovery and CPU feature enumeration
+- [x] ACPI RSDP, XSDT/RSDT, and MADT parsing for x86 APIC/x2APIC/IO-APIC and ARM GICC/GICD/GICR topology (Foundation; Device Tree and CPU feature enumeration remain)
 - [ ] Timer and interrupt-controller initialization before enabling interrupts
 - [ ] Launch the first isolated user-space bootstrap task
 - [x] QEMU UEFI firmware boot smoke tests reach Nux READY on x86-64 and AArch64
@@ -43,11 +43,11 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Task suspension, resume, termination, and restart
 - [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
 - [x] Address-space teardown after all task threads terminate (Foundation; inheritance and per-task accounting remain)
-- [ ] Per-task capability/port namespace
+- [x] Independent per-task capability spaces with fixed 255-handle quotas (port objects remain in a global kernel registry)
 - [ ] Task inheritance and creation attributes
 - [ ] Task information, accounting, and limits
 - [ ] Task special ports and host/service access
-- [ ] Task resource quotas and isolation boundaries
+- [ ] Task resource quotas and isolation boundaries beyond fixed capability-space quotas
 
 ### 2. Threads and machine state
 
@@ -59,7 +59,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Fixed kernel stacks for cooperative kernel threads (Foundation; user stacks and stack reclamation remain)
 - [ ] Thread-local storage and per-CPU state
 - [ ] Thread naming, information, and accounting
-- [ ] Thread migration and processor affinity
+- [x] Thread-to-processor-set affinity metadata and CPU-set membership (Foundation; scheduler enforcement and migration remain)
 - [ ] Thread exception state and special ports
 
 ### 3. Scheduling and execution
@@ -73,16 +73,16 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Priority inheritance and starvation controls
 - [x] Scheduler handoff and voluntary yield between kernel threads
 - [ ] Per-CPU run queues and load balancing
-- [ ] CPU affinity and processor-set policies
+- [x] Processor-set creation/destruction, CPU membership, policy metadata, and thread affinity association (Foundation; per-CPU scheduling remains)
 - [ ] Scheduler statistics and profiling
 
 ### 4. Ports, capabilities, and IPC
 
-- [x] Generation-checked task-owned capability handles and caller authorization (Foundation; globally backed table)
-- [ ] Separate per-task capability tables and quotas
+- [x] Independent per-task capability spaces, generation-checked handles, caller authorization, and per-task quotas
+- [x] Separate per-task capability tables and fixed quotas
 - [x] Port creation/destruction and bounded queue metadata with receive-owner authorization
 - [x] Capability-checked send/receive/send-once rights with atomic one-use consumption
-- [x] Move send, receive, and send-once rights between task owners (Foundation; copy/make-send derivation remains)
+- [x] Move send, receive, and send-once rights between task owners; make-send, copy-send, and send-once derivation
 - [ ] Port death, no-senders, and lifecycle notifications
 - [x] Port sets with nonblocking wait-on-any scan (Foundation; scheduler-backed blocking waits remain)
 - [x] FIFO bounded inline-message queues with backpressure
