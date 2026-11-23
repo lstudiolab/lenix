@@ -11,6 +11,12 @@ _start:
     msr daifset, #0xf
     bl nux_arch_early_init
 
+#ifdef NUX_QEMU_SEMIHOST
+    mov x0, #0x04
+    adr x1, .Lnux_entry_trace
+    hlt #0xf000
+#endif
+
     /* Preserve the bootloader stack and create the C boot-info record. */
     sub sp, sp, #48
     adrp x9, limine_memmap_request
@@ -48,8 +54,21 @@ _start:
 6:
     str xzr, [sp, #32]
     mov x0, sp
+#ifdef NUX_QEMU_SEMIHOST
+    mov x0, #0x04
+    adr x1, .Lnux_main_trace
+    hlt #0xf000
+    mov x0, sp
+#endif
     bl nux_kernel_main
 5:
     wfe
     b 5b
+#ifdef NUX_QEMU_SEMIHOST
+.Lnux_entry_trace:
+    .asciz "NUX:EARLY_INIT_RETURNED\\n"
+.Lnux_main_trace:
+    .asciz "NUX:CALL_MAIN\\n"
+#endif
+
 .size _start, .-_start
