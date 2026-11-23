@@ -29,6 +29,7 @@ typedef struct {
     nux_u32 tail;
     nux_u32 count;
     nux_thread_id receiver_waiter;
+    nux_thread_id sender_waiter;
     nux_u8 active;
 } nux_port_entry;
 
@@ -84,6 +85,7 @@ nux_status nux_port_system_init(void)
         ports[i].active = 0;
         ports[i].count = 0;
         ports[i].receiver_waiter = 0;
+        ports[i].sender_waiter = 0;
         ports[i].head = 0;
         ports[i].tail = 0;
     }
@@ -132,6 +134,7 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
     ports[slot].queue_limit = queue_limit;
     ports[slot].head = ports[slot].tail = ports[slot].count = 0;
     ports[slot].receiver_waiter = 0;
+    ports[slot].sender_waiter = 0;
     ports[slot].send_capability = 0;
     ports[slot].receive_capability = 0;
     nux_arch_unlock(&port_lock);
