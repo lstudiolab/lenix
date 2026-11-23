@@ -26,6 +26,10 @@ nux_arch_early_init:
     msr cntvoff_el2, xzr
     mov x10, #0x80000000
     msr hcr_el2, x10
+    adrp x10, nux_exception_vectors
+    add x10, x10, :lo12:nux_exception_vectors
+    msr vbar_el1, x10
+    dsb sy
     isb
     eret
 
