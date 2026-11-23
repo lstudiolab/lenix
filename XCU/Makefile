@@ -1,15 +1,19 @@
 HOST_OS := $(shell uname -s)
 ifeq ($(HOST_OS),Darwin)
-CC_X86 ?= clang --target=x86_64-elf -fuse-ld=lld
+CC_X86 ?= clang --target=x86_64-elf
 AS_X86 ?= clang --target=x86_64-elf
-CC_ARM ?= clang --target=aarch64-elf -fuse-ld=lld
+LD_X86 ?= clang --target=x86_64-elf -fuse-ld=lld
+CC_ARM ?= clang --target=aarch64-elf
 AS_ARM ?= clang --target=aarch64-elf
+LD_ARM ?= clang --target=aarch64-elf -fuse-ld=lld
 HOST_CC ?= clang
 else
 CC_X86 ?= x86_64-linux-gnu-gcc
 AS_X86 ?= x86_64-linux-gnu-gcc
+LD_X86 ?= x86_64-linux-gnu-gcc
 CC_ARM ?= aarch64-linux-gnu-gcc
 AS_ARM ?= aarch64-linux-gnu-gcc
+LD_ARM ?= aarch64-linux-gnu-gcc
 HOST_CC ?= cc
 endif
 
@@ -33,7 +37,7 @@ x86_64:
 	$(AS_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/lock.S -o Build/x86_64/lock.o
 	$(AS_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/exception.S -o Build/x86_64/exception.o
 	$(AS_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/context.S -o Build/x86_64/context.o
-	$(CC_X86) $(LDFLAGS) -Wl,-T,Kernel/Linker/x86_64.ld -o Build/x86_64/nux.elf Build/x86_64/*.o
+	$(LD_X86) $(LDFLAGS) -Wl,-T,Kernel/Linker/x86_64.ld -o Build/x86_64/nux.elf Build/x86_64/*.o
 
 aarch64:
 	mkdir -p Build/aarch64
@@ -43,7 +47,7 @@ aarch64:
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64/lock.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/exception.S -o Build/aarch64/exception.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/context.S -o Build/aarch64/context.o
-	$(CC_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64/nux.elf Build/aarch64/*.o
+	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64/nux.elf Build/aarch64/*.o
 
 test-boot:
 	mkdir -p Build
