@@ -45,25 +45,25 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Runtime | Freestanding `memcpy`, `memmove`, `memset`, and `memcmp`, with host tests | Broader compiler runtime and memory object management |
 | Synchronization | Assembly spinlocks, bounded counting semaphores, nonblocking lock sets, condition object lifecycle | Blocking waits, waiter queues, condition/mutex atomic wait, ownership, priority inheritance |
 | Syscalls | Versioned kernel-side dispatch registry with six arguments and result validation | Architecture user entry/return, caller isolation, syscall authorization and ABI tests |
-| Tasks/threads | Separate registries, fixed kernel stacks, saved callee-saved contexts, ARM64/x86-64 context switch, cooperative kernel-thread scheduling | User-mode contexts, task address spaces, preemption, per-CPU queues, stack reclamation |
+| Tasks/threads | Separate registries, fixed kernel stacks, saved callee-saved contexts, ARM64/x86-64 context switch, cooperative kernel-thread scheduling, one distinct VM address space allocated per task | User-mode contexts, task teardown/reclamation, preemption, per-CPU queues, stack reclamation |
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
 | IPC | Capability-checked ports, FIFO bounded inline queues, port sets, backpressure, destruction/revocation | Blocking waits, deadlines, per-task namespaces, right transfer, out-of-line memory, RPC/notifications |
-| VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
+| VM | Four-level ARM64/x86-64 page tables, address-space activation, anonymous/shared mappings, protection, translation, memory objects, task-owned address-space allocation | Demand paging, page-fault resolution, COW, pager protocol, partial-range operations, task teardown, hardware runtime validation |
 | Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; fatal exception capture | Recoverable exception ports, interrupt controllers, timer IRQs, syscall ABI |
 
 The physical allocator currently tracks up to 64 GiB of usable physical pages with a static ownership bitmap; larger usable maps fail initialization instead of being silently truncated. Bootloader-reserved ranges are excluded by the bootloader memory map; explicit kernel-owned reservations, reclaim policies, and allocator page zeroing remain pending. Page-table and anonymous mapping allocations are zeroed before use.
 
-The scheduler now performs cooperative context switches between kernel threads on ARM64 and x86-64. It is not preemptive, does not yet launch user tasks, and does not save floating-point state; x86 kernel C is therefore compiled without SIMD/FPU use. Kernel stacks are statically reserved per thread until a safe stack reaper exists. Address-space and page-table code is now present for both targets, but switching a process address space has not been validated on hardware or under an emulator. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Synchronization waits are nonblocking; condition waits, wakeups, and priority inheritance require a functioning scheduler. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
+The scheduler now performs cooperative context switches between kernel threads on ARM64 and x86-64. Each task creation allocates a distinct address space and exposes its identifier through the task API; task-owned address spaces are covered by VM integration tests. Task destruction and resource reclamation are not yet implemented. The scheduler is not preemptive, does not yet launch user tasks, and does not save floating-point state; x86 kernel C is therefore compiled without SIMD/FPU use. Kernel stacks are statically reserved per thread until a safe stack reaper exists. Address-space and page-table code is present for both targets, but hardware page-table activation has not been validated on hardware or under an emulator. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Synchronization waits are nonblocking; condition waits, wakeups, and priority inheritance require a functioning scheduler. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
 
 ## Next implementation order
 
-1. Add boot-time memory reservations, zeroing policy, and allocator stress tests.
-2. Implement ARM64 and x86-64 page tables, address spaces, memory objects, and page-fault handling.
-3. Add task resource ownership, per-task capability spaces, and user-mode task loading.
-4. Complete IPC rights transfer, out-of-line memory, blocking waits, deadlines, and RPC.
-5. Add interrupt controllers, architecture timers, preemptive scheduling, and time accounting.
-6. Implement recoverable exception ports and architecture syscall entry/return.
-7. Add bootstrap service management, host/device interfaces, and user-space pager/driver servers.
-8. Add SMP, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
+1. Add task teardown/reclamation and per-task capability/port namespaces.
+2. Implement executable loading, user stacks, privilege transitions, and syscall entry/return.
+3. Complete IPC right transfer, out-of-line memory, blocking waits, deadlines, and RPC.
+4. Add interrupt controllers, hardware timer delivery, and preemptive scheduling.
+5. Implement demand paging, page-fault resolution, COW, and external pager services.
+6. Implement recoverable exception ports and machine-state reply/recovery.
+7. Add boot-time memory reservations, allocator reclaim, and stress testing.
+8. Add bootstrap service management, host/device interfaces, SMP, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
 
 Kernel implementation code is restricted to C and assembly. Only AArch64 and x86-64 are supported targets.
