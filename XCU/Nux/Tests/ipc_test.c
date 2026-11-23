@@ -27,7 +27,7 @@ void nux_arch_unlock(volatile nux_u32 *lock) { *lock = 0; }
 int main(void)
 {
     nux_task_id task;
-    nux_capability send, receive;
+    nux_capability send, receive, orphan_send, orphan_receive;
     nux_port_set_id set;
     char input[] = "nux ipc";
     char output[16] = {0};
@@ -67,5 +67,8 @@ int main(void)
 
     if (nux_port_destroy(receive) != NUX_OK) return 15;
     if (nux_port_send(send, &message, 0) != NUX_E_ACCESS) return 16;
+    if (nux_port_create(task, 2, &orphan_send, &orphan_receive) != NUX_OK) return 20;
+    if (nux_task_destroy(task) != NUX_OK) return 21;
+    if (nux_port_send(orphan_send, &message, 0) != NUX_E_ACCESS) return 22;
     return 0;
 }
