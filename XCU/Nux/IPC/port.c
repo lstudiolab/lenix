@@ -427,6 +427,10 @@ nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_me
         nux_arch_unlock(&port_lock);
         return status == NUX_OK ? NUX_E_NOT_FOUND : status;
     }
+    if (port->owner != receiver) {
+        nux_arch_unlock(&port_lock);
+        return NUX_E_ACCESS;
+    }
     if (!port->count) {
         nux_arch_unlock(&port_lock);
         return NUX_E_WOULD_BLOCK;
@@ -625,6 +629,11 @@ nux_status nux_port_set_add(nux_task_id owner, nux_port_set_id id,
     if (status != NUX_OK) {
         nux_arch_unlock(&port_lock);
         return status;
+    }
+    nux_port_entry *port = nux_port_find(object_id);
+    if (!port || port->owner != owner) {
+        nux_arch_unlock(&port_lock);
+        return NUX_E_ACCESS;
     }
     if (set->count == NUX_PORT_SET_WIDTH) {
         nux_arch_unlock(&port_lock);
