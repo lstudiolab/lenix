@@ -28,6 +28,10 @@ jobs:
           x86_64-linux-gnu-objdump -d --start-address=0xffffffff80000400 --stop-address=0xffffffff80000460 XCU/Build/x86_64/nux.elf
       - name: Package UEFI boot images
         run: make -C XCU iso uefi-disk uefi-disk-aarch64-qemu
+      - name: Inspect x86-64 kernel entry disassembly
+        run: |
+          nm -n XCU/Build/x86_64/nux.elf | head -n 80
+          objdump -d --start-address=0xffffffff800003e0 --stop-address=0xffffffff80000480 XCU/Build/x86_64/nux.elf
       - name: Boot x86-64 image under QEMU
         run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/OVMF_VARS.fd
@@ -52,6 +56,7 @@ jobs:
           cat XCU/Build/qemu-arm-serial.log || true
           grep -q 'NUX:READY' XCU/Build/qemu-arm.log
       - name: Publish kernels and boot images
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nux-kernels-and-uefi-images
