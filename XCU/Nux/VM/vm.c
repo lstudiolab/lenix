@@ -36,7 +36,7 @@ typedef struct {
 static nux_vm_space spaces[NUX_VM_SPACE_LIMIT];
 static nux_vm_object objects[NUX_VM_OBJECT_LIMIT];
 static volatile nux_u32 vm_lock;
-static nux_u64 next_space_id, next_object_id;
+static nux_u64 next_space_id, next_object_id, active_space_id;
 
 static nux_vm_space *space_find(nux_u64 id) {
     for (nux_u32 i=0;i<NUX_VM_SPACE_LIMIT;i++) if(spaces[i].active&&spaces[i].id==id)return &spaces[i];
@@ -79,7 +79,7 @@ nux_status nux_vm_system_init(void) {
     nux_arch_lock(&vm_lock);
     for(nux_u32 i=0;i<NUX_VM_SPACE_LIMIT;i++)spaces[i].active=0;
     for(nux_u32 i=0;i<NUX_VM_OBJECT_LIMIT;i++)objects[i].active=0;
-    next_space_id=1;next_object_id=1;
+    next_space_id=1;next_object_id=1;active_space_id=0;
     nux_arch_unlock(&vm_lock);return NUX_OK;
 }
 nux_status nux_vm_space_create(nux_u64 *out) {
@@ -96,13 +96,15 @@ nux_status nux_vm_space_create(nux_u64 *out) {
 nux_status nux_vm_space_destroy(nux_u64 id) {
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);
     if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
-    nux_u64 root=s->root;s->active=0;s->count=0;nux_arch_unlock(&vm_lock);
+    nux_u64 root=s->root;
+    for(nux_u32 i=0;i<s->count;i++){nux_vm_region *r=&s->regions[i];if(!r->object)for(nux_u64 off=0;off<r->size;off+=NUX_VM_PAGE_SIZE){nux_u64 pa=nux_arch_vm_translate(root,r->start+off);if(pa)(void)nux_phys_free_page(pa&~(NUX_VM_PAGE_SIZE-1));}}
+    s->active=0;s->count=0;if(active_space_id==id){active_space_id=0;(void)nux_arch_vm_activate(0);}nux_arch_unlock(&vm_lock);
     nux_arch_vm_root_destroy(root);return NUX_OK;
 }
 nux_status nux_vm_space_activate(nux_u64 id) {
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);
     if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
-    nux_u64 root=s->root;nux_arch_unlock(&vm_lock);return nux_arch_vm_activate(root);
+    nux_u64 root=s->root;nux_arch_unlock(&vm_lock);nux_status st=nux_arch_vm_activate(root);if(st==NUX_OK){nux_arch_lock(&vm_lock);active_space_id=id;nux_arch_unlock(&vm_lock);}return st;
 }
 nux_status nux_vm_map(nux_u64 id,nux_vm_address *address,nux_vm_size size,nux_u32 prot,nux_memory_object_id object,nux_u64 offset) {
     if(!address||!size||protection_valid(prot)!=NUX_OK||(size&(NUX_VM_PAGE_SIZE-1))||(offset&(NUX_VM_PAGE_SIZE-1)))return NUX_E_INVALID;
@@ -171,19 +173,19 @@ nux_status nux_memory_object_create(nux_vm_size size,nux_memory_object_id *out) 
     nux_vm_object *o=NUX_NULL;nux_arch_lock(&vm_lock);
     for(nux_u32 i=0;i<NUX_VM_OBJECT_LIMIT;i++)if(!objects[i].active){o=&objects[i];break;}
     if(!o){nux_arch_unlock(&vm_lock);return NUX_E_LIMIT;}
-    o->id=next_object_id++;if(!o->id)o->id=next_object_id++;o->size=size;o->page_count=(nux_u32)(size/NUX_VM_PAGE_SIZE);o->locks=0;o->pager=0;o->active=1;
-    nux_arch_unlock(&vm_lock);
+    o->id=next_object_id++;if(!o->id)o->id=next_object_id++;o->size=size;o->page_count=(nux_u32)(size/NUX_VM_PAGE_SIZE);o->locks=0;o->pager=0;
     nux_u32 made=0;
     for(;made<o->page_count;made++){o->pages[made]=nux_phys_alloc_page();if(!o->pages[made])break;nux_memset(nux_phys_to_virt(o->pages[made]),0,NUX_VM_PAGE_SIZE);}
-    if(made!=o->page_count){while(made)(void)nux_phys_free_page(o->pages[--made]);nux_arch_lock(&vm_lock);o->active=0;nux_arch_unlock(&vm_lock);return NUX_E_NO_MEMORY;}
-    *out=o->id;return NUX_OK;
+    if(made!=o->page_count){while(made)(void)nux_phys_free_page(o->pages[--made]);o->page_count=0;nux_arch_unlock(&vm_lock);return NUX_E_NO_MEMORY;}
+    o->active=1;*out=o->id;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
 nux_status nux_memory_object_destroy(nux_memory_object_id id) {
     nux_arch_lock(&vm_lock);nux_vm_object *o=object_find(id);if(!o){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     if(o->locks){nux_arch_unlock(&vm_lock);return NUX_E_BUSY;}
     for(nux_u32 s=0;s<NUX_VM_SPACE_LIMIT;s++)if(spaces[s].active)for(nux_u32 r=0;r<spaces[s].count;r++)if(spaces[s].regions[r].object==id){nux_arch_unlock(&vm_lock);return NUX_E_BUSY;}
     o->active=0;nux_u32 count=o->page_count;nux_arch_unlock(&vm_lock);
-    for(nux_u32 i=0;i<count;i++)(void)nux_phys_free_page(o->pages[i]);return NUX_OK;
+    for(nux_u32 i=0;i<count;i++)(void)nux_phys_free_page(o->pages[i]);
+    return NUX_OK;
 }
 nux_status nux_memory_object_map(nux_memory_object_id object,nux_u64 space,nux_vm_address *address,nux_vm_size size,nux_u32 prot) {
     return nux_vm_map(space,address,size,prot,object,0);
