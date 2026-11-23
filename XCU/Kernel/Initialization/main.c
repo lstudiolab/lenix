@@ -2,6 +2,7 @@
 #include <nux/status.h>
 #include <nux/memory.h>
 #include <nux/task.h>
+#include <nux/thread.h>
 #include <nux/capability.h>
 #include "entry.h"
 
@@ -35,7 +36,10 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     if (nux_capability_system_init() != NUX_OK)
         nux_boot_failure(4);
 
-    nux_boot_state = 0x4e55580000000005ULL;
+    if (nux_thread_system_init() != NUX_OK)
+        nux_boot_failure(5);
+
+    nux_boot_state = 0x4e55580000000006ULL;
 
     /*
      * Interrupts stay masked until architecture vector tables and timer
