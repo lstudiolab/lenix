@@ -1,6 +1,6 @@
 .section .text
 .global nux_arch_enter_user
-.type nux_arch_enter_user,@function
+.type nux_arch_user_enter,@function
 nux_arch_enter_user:
     movq %rdi, %r12
     movq %rsi, %r13
@@ -20,7 +20,7 @@ nux_arch_enter_user:
     pushq $0x23
     pushq %r12
     iretq
-.size nux_arch_enter_user, .-nux_arch_enter_user
+.size nux_arch_user_enter, .-nux_arch_user_enter
 
 .global nux_arch_load_gdt
 .type nux_arch_load_gdt,@function
