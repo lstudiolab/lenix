@@ -796,6 +796,75 @@ nux_status nux_port_set_receive(nux_task_id owner, nux_port_set_id id, nux_messa
     return timeout_ns ? NUX_E_NOT_SUPPORTED : NUX_E_WOULD_BLOCK;
 }
 
+nux_status nux_port_set_receive_wait(nux_task_id owner, nux_port_set_id id,
+                                    nux_message *message, nux_u64 timeout_ns)
+{
+    if (!owner || !message) return NUX_E_INVALID;
+    if (timeout_ns) return NUX_E_NOT_SUPPORTED;
+
+    for (;;) {
+        nux_status status = nux_port_set_receive(owner, id, message, 0);
+        if (status != NUX_E_WOULD_BLOCK) return status;
+
+        nux_arch_lock(&port_lock);
+        nux_port_set_entry *set = nux_port_set_find(id);
+        if (!set) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (set->owner != owner) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_ACCESS;
+        }
+        if (!set->count) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_WOULD_BLOCK;
+        }
+        nux_u32 has_live_port = 0;
+        for (nux_u32 i = 0; i < set->count; ++i) {
+            nux_port_entry *port = nux_port_find(set->object_ids[i]);
+            if (!port || port->owner != owner) continue;
+            has_live_port = 1;
+            if (port->count) {
+                nux_arch_unlock(&port_lock);
+                goto retry;
+            }
+        }
+        if (!has_live_port) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (set->receiver_waiter) {
+            nux_arch_unlock(&port_lock);
+            return NUX_E_BUSY;
+        }
+
+        nux_thread_id waiter = 0;
+        status = nux_thread_prepare_wait_current(&waiter);
+        if (status != NUX_OK) {
+            nux_arch_unlock(&port_lock);
+            return status;
+        }
+        set->receiver_waiter = waiter;
+        nux_arch_unlock(&port_lock);
+
+        status = nux_thread_yield();
+        nux_arch_lock(&port_lock);
+        set = nux_port_set_find(id);
+        if (set && set->receiver_waiter == waiter)
+            set->receiver_waiter = 0;
+        nux_arch_unlock(&port_lock);
+        if (status != NUX_OK) {
+            (void)nux_thread_wake(waiter);
+            return status;
+        }
+        continue;
+
+retry:
+        continue;
+    }
+}
+
 nux_status nux_port_request_notification(nux_task_id owner, nux_capability receive, nux_u32 event,
                                           nux_capability notify_port)
 {
