@@ -24,13 +24,13 @@ int main(void)
     put32(madt+4,64);madt[8]=5;put32(madt+36,0xfee00000);put32(madt+40,1);
     madt[44]=0;madt[45]=8;madt[46]=0;madt[47]=2;put32(madt+48,1);
     madt[52]=1;madt[53]=12;madt[54]=3;put32(madt+56,0xfec00000);put32(madt+60,0);
-    sum8(madt,56,9);
+    sum8(madt,64,9);
     if(nux_acpi_discover(image+0x100,&info)!=NUX_OK)return 1;
     if(info.local_apic_address!=0xfee00000||info.cpu_count!=1||
        info.cpus[0].apic_id!=2||info.ioapic_count!=1||
        info.ioapics[0].address!=0xfec00000)return 2;
     rsdp[8]++;
-    if(nux_acpi_discover(0x100,&info)!=NUX_E_BAD_STATE)return 3;
+    if(nux_acpi_discover(image+0x100,&info)!=NUX_E_BAD_STATE)return 3;
     if(nux_acpi_discover(NUX_NULL,&info)!=NUX_E_INVALID)return 4;
     return 0;
 }

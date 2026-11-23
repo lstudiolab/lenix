@@ -22,8 +22,8 @@ X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/CPU/acpi.c Nux/CPU/processor.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers test-acpi x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
-all: headers test-acpi x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
+.PHONY: all headers test-acpi test-processor x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
+all: headers test-acpi test-processor x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -48,6 +48,11 @@ aarch64:
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/exception.S -o Build/aarch64/exception.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/context.S -o Build/aarch64/context.o
 	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64/nux.elf Build/aarch64/*.o
+
+test-processor:
+	mkdir -p Build
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -I Nux/Include Nux/Tests/processor_test.c Nux/CPU/processor.c -o Build/processor_test
+	./Build/processor_test
 
 test-acpi:
 	mkdir -p Build
