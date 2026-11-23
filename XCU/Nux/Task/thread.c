@@ -419,6 +419,8 @@ nux_status nux_thread_yield(void)
             nux_arch_unlock(&thread_lock);
             return vm_status;
         }
+        nux_arch_set_kernel_stack((nux_u64)(nux_uptr)
+            (next_thread->stack + sizeof(next_thread->stack)));
         next_thread->info.state = NUX_THREAD_RUNNING;
         current_thread_id = next_thread->info.id;
         thread_slice_start_ns = now_ns;
@@ -525,7 +527,7 @@ nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
         !address_space)
         return NUX_E_BAD_STATE;
     if (nux_vm_fault(address_space, entry, NUX_VM_PROT_EXEC) != NUX_OK ||
-        nux_vm_fault(address_space, stack, NUX_VM_PROT_WRITE) != NUX_OK)
+        nux_vm_fault(address_space, stack - 1, NUX_VM_PROT_WRITE) != NUX_OK)
         return NUX_E_ACCESS;
 
     nux_thread_id id;
@@ -548,4 +550,13 @@ nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
     *out = id;
     nux_arch_unlock(&thread_lock);
     return NUX_OK;
+}
+
+nux_status nux_thread_exit_current(void)
+{
+    nux_thread_id id = current_thread_id;
+    if (!id) return NUX_E_BAD_STATE;
+    nux_status status = nux_thread_terminate(id);
+    if (status != NUX_OK) return status;
+    return nux_thread_yield();
 }
