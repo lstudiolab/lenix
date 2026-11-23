@@ -395,7 +395,8 @@ nux_status nux_port_move_right(nux_task_id source_owner,
         granted = NUX_RIGHT_RECEIVE | NUX_RIGHT_READ |
             NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER;
     } else {
-        return NUX_E_NOT_SUPPORTED;
+        required = NUX_RIGHT_SEND_ONCE | NUX_RIGHT_TRANSFER;
+        granted = NUX_RIGHT_SEND_ONCE | NUX_RIGHT_TRANSFER;
     }
 
     nux_status status = nux_capability_check(
