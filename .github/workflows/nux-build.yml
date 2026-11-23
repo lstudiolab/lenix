@@ -1,0 +1,33 @@
+name: Nux cross-build
+
+on:
+  push:
+    paths:
+      - "XCU/**"
+      - ".github/workflows/nux-build.yml"
+  pull_request:
+    paths:
+      - "XCU/**"
+      - ".github/workflows/nux-build.yml"
+  workflow_dispatch:
+
+jobs:
+  cross-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cross toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+      - name: Build x86-64 kernel
+        run: make -C XCU x86_64
+      - name: Build AArch64 kernel
+        run: make -C XCU aarch64
+      - name: Publish ELF artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nux-kernel-elf
+          path: |
+            XCU/Build/x86_64/nux.elf
+            XCU/Build/aarch64/nux.elf

@@ -1,7 +1,7 @@
-CC_X86 ?= x86_64-elf-gcc
-AS_X86 ?= x86_64-elf-gcc
-CC_ARM ?= aarch64-elf-gcc
-AS_ARM ?= aarch64-elf-gcc
+CC_X86 ?= x86_64-linux-gnu-gcc
+AS_X86 ?= x86_64-linux-gnu-gcc
+CC_ARM ?= aarch64-linux-gnu-gcc
+AS_ARM ?= aarch64-linux-gnu-gcc
 
 COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
