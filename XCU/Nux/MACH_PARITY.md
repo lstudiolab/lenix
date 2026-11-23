@@ -33,9 +33,9 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 2. Threads and machine state
 
-- [x] Separate thread registry, creation, termination, suspend/resume, and state metadata (Foundation; no saved execution contexts or context switching yet)
+- [x] Separate thread registry, lifecycle metadata, kernel stacks, and saved architecture contexts (Foundation; user-mode state remains)
 - [x] Multiple cooperative kernel threads per task (Foundation; user-mode threads remain)
-- [x] Thread creation, termination, suspend, and resume metadata (Foundation; yield intentionally returns NOT_SUPPORTED until context switching exists)
+- [x] Kernel-thread creation, termination, suspend/resume metadata, and cooperative yield
 - [x] Callee-saved register contexts and architecture-specific cooperative switch assembly on both targets (Foundation; FPU/SIMD and user register frames remain)
 - [ ] Thread state get/set for controlled debugging
 - [x] Fixed kernel stacks for cooperative kernel threads (Foundation; user stacks and stack reclamation remain)
@@ -46,7 +46,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 3. Scheduling and execution
 
-- [x] Initial round-robin selection scaffold (Foundation only; no dispatch/context switch)
+- [x] Cooperative round-robin dispatch and real context switching between kernel threads (Foundation; no preemption)
 - [ ] Preemptive scheduling and timer-driven quanta
 - [ ] Dynamic time-sharing priorities
 - [ ] Fixed-priority scheduling
@@ -95,12 +95,15 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Memory pressure, reclaim, and per-task accounting
 - [ ] Guard pages, W^X enforcement, and mapping validation
 
-#- [x] Host IPC regression test covers create/send/receive/backpressure/buffer sizing/port sets/revocation\n\n## 6. Synchronization and wait primitives
+- [x] Host IPC regression test covers create/send/receive/backpressure/buffer sizing/port sets/revocation
 
-- [ ] Counting semaphores with wait, post, and post-all
+## 6. Synchronization and wait primitives
+
+- [x] Bounded counting semaphores with nonblocking wait/post (Foundation; wait queues and post-all remain)
 - [ ] Notification objects with state
-- [ ] Lock sets and transaction-style locking
-- [ ] Mutexes and condition variables
+- [x] Lock sets with nonblocking acquire/release (Foundation; owner tracking remains)
+- [x] Condition object lifecycle and signal sequence (Foundation; condition wait remains unsupported)
+- [ ] Mutexes and fully blocking condition variables
 - [ ] Wait queues and wake-one/wake-all
 - [ ] Timed waits and interruptible waits
 - [ ] Priority inheritance and deadlock diagnostics
@@ -109,7 +112,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 7. Exceptions, traps, and system calls
 
 - [x] AArch64 EL1 exception vector table and x86-64 IDT with 256 vector stubs (Foundation; fatal capture only, no recovery or TSS/IST setup)
-- [x] Fatal exception capture records vector, architecture syndrome/error code, and fault address (Foundation; stops the CPU safely)\n- [ ] Fault classification, recoverable kernel exception handling, and panic diagnostics
+- [x] Fatal exception capture records vector, architecture syndrome/error code, and fault address (Foundation; stops the CPU safely)
+- [ ] Fault classification, recoverable kernel exception handling, and panic diagnostics
 - [ ] Per-task and per-thread exception ports
 - [ ] Exception delivery with identity and machine state
 - [ ] Exception reply/recovery and thread termination
@@ -178,7 +182,13 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
+## Runtime support
+
+- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives
+- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch
+- [ ] Full compiler runtime support and sanitizer/fuzz coverage
+
+## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
@@ -197,16 +207,14 @@ These headers are interface declarations only unless the implementation status a
 
 ## Implementation sequence
 
-1. Stabilize boot handoff, physical memory reservations, locks, and build validation.
-2. Implement CPU discovery, exception vectors, interrupt controllers, timers, and AP startup.
-3. Implement thread objects, kernel/user stacks, saved contexts, and assembly context switching.
-4. Implement per-task address spaces, page tables, faults, and memory objects.
-5. Implement per-task capability spaces and complete port/IPC semantics.
-6. Integrate scheduler policies, processor sets, synchronization, and time accounting.
-7. Implement exception ports, system calls, and controlled machine-state interfaces.
-8. Boot the first user task and bootstrap server.
-9. Move pagers, device drivers, filesystems, and networking into isolated user-space servers.
-10. Add profiling, debugger, NIDL tooling, optional distributed IPC, fuzzing, and hardware qualification.
+1. Stabilize boot handoff, add memory reservations and page zeroing, and harden allocator tests.
+2. Implement architecture page tables, address spaces, faults, and memory objects.
+3. Add task ownership, per-task capability namespaces, and user-mode task loading.
+4. Complete IPC rights transfer, out-of-line memory, blocking waits, deadlines, and RPC.
+5. Add interrupt controllers, architecture timers, preemptive scheduling, and time accounting.
+6. Implement recoverable exception ports and architecture syscall entry/return.
+7. Add bootstrap service management and user-space pager/driver servers.
+8. Add SMP, host/device controls, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
 
 ## Completion criteria
 
