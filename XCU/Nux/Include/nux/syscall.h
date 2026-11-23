@@ -11,7 +11,7 @@ typedef nux_status (*nux_syscall_handler)(nux_syscall_word,nux_syscall_word,nux_
 typedef struct { nux_u32 number; nux_u32 flags; nux_syscall_handler handler; } nux_syscall_entry;
 nux_status nux_syscall_system_init(void);
 nux_status nux_syscall_register(nux_u32 number, nux_syscall_handler handler, nux_u32 flags);
-nux_status nux_syscall_dispatch(nux_u32 number, const nux_syscall_word arguments[6], nux_syscall_word *result);
+nux_status nux_syscall_dispatch(nux_u64 number, const nux_syscall_word arguments[6], nux_syscall_word *result);
 nux_syscall_word nux_syscall_invoke(nux_u64 number, const nux_syscall_word arguments[6]);
 extern volatile nux_u64 nux_last_user_exit_code;
 #endif
