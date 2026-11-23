@@ -21,6 +21,9 @@ nux_arch_user_enter:
     pushq $0x2
     pushq $0x23
     pushq %r12
+    movq %cr0, %rax
+    orq $0x8, %rax
+    movq %rax, %cr0
     xorq %rax, %rax
     xorq %rcx, %rcx
     xorq %rdx, %rdx
