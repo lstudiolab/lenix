@@ -3,7 +3,6 @@
 #include <nux/types.h>
 #include <nux/status.h>
 #include <nux/object.h>
-#include <nux/task.h>
 #define NUX_CAPABILITY_LIMIT 255u
 typedef nux_u32 nux_capability;
 #define NUX_OBJECT_ENDPOINT NUX_OBJECT_PORT
