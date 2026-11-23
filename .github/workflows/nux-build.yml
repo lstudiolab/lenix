@@ -70,6 +70,8 @@ jobs:
           name: nux-kernels-and-uefi-images
           path: |
             XCU/Build/x86_64/nux.elf
+            XCU/Build/boot/BOOTX64.EFI
+            XCU/Build/boot/BOOTAA64.EFI
             XCU/Build/aarch64/nux.elf
             XCU/Build/lenix-x86_64.iso
             XCU/Build/lenix-aarch64.iso

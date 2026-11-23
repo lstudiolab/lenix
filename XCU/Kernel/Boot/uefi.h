@@ -49,7 +49,7 @@ typedef efi_status (LENIX_EFIAPI *efi_file_read)(
 typedef efi_status (LENIX_EFIAPI *efi_file_get_position)(
     efi_file_protocol *, efi_u64 *);
 typedef efi_status (LENIX_EFIAPI *efi_file_set_position)(
-    efi_file_protocol *, efi_u64 *);
+    efi_file_protocol *, efi_u64);
 
 struct efi_file_protocol {
     efi_u64 revision;
