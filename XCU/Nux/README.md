@@ -42,6 +42,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 |---|---|---|
 | Boot | Limine handoff on ARM64 and x86-64 | Full CPU feature discovery and SMP bring-up |
 | Physical memory | Usable-region discovery, page allocation/free, HHDM translation | Reservation tracking, zones, NUMA, reclaim |
+| Runtime | Freestanding `memcpy`, `memmove`, `memset`, and `memcmp`, with host tests | Allocator hardening and memory object management |
 | Synchronization | Assembly spinlock primitives on both targets | Interrupt-safe lock classes, wait queues, priority inheritance |
 | Tasks | Fixed-capacity task registry and round-robin selection policy | Separate task/thread objects, stacks, saved contexts, lifecycle cleanup |
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
