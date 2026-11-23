@@ -11,6 +11,7 @@ typedef struct {
     nux_u32 uid;
     nux_u32 apic_id;
     nux_u32 flags;
+    nux_u64 hardware_id;
     nux_u8 x2apic;
 } nux_acpi_cpu;
 
