@@ -38,6 +38,9 @@ void nux_boot_mark(nux_boot_phase phase)
     case NUX_BOOT_PHASE_SYNCHRONIZATION: nux_boot_debug_write("NUX:SYNC\n"); break;
     case NUX_BOOT_PHASE_SYSCALLS: nux_boot_debug_write("NUX:SYSCALLS\n"); break;
     case NUX_BOOT_PHASE_TIME: nux_boot_debug_write("NUX:TIME\n"); break;
+    case NUX_BOOT_PHASE_USER_ENTER: nux_boot_debug_write("NUX:USER_ENTER\n"); break;
+    case NUX_BOOT_PHASE_USER_TRAP: nux_boot_debug_write("NUX:USER_TRAP\n"); break;
+    case NUX_BOOT_PHASE_USER_SYSCALL: nux_boot_debug_write("NUX:USER_SYSCALL\n"); break;
     case NUX_BOOT_PHASE_USER_EXIT: nux_boot_debug_write("NUX:USER_EXIT\n"); break;
     case NUX_BOOT_PHASE_USER_ENTER: nux_boot_debug_write("NUX:USER_ENTER\n"); break;
     case NUX_BOOT_PHASE_USER_TRAP: nux_boot_debug_write("NUX:USER_TRAP\n"); break;
