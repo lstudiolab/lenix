@@ -42,7 +42,7 @@ export PATH="$(brew --prefix llvm)/bin:$(brew --prefix make)/libexec/gnubin:$PAT
 make -C XCU clean all iso uefi-disk
 ```
 
-This builds both ELF kernels, runs the host-side tests, and creates UEFI ISO and removable-media images for x86-64 and AArch64. CI additionally boots both architectures under QEMU. The boot chain currently uses UEFI and Limine; it is not Apple's proprietary `boot.efi` chain and does not establish native Apple Silicon boot support.
+This builds both ELF kernels, runs the host-side tests, and creates UEFI ISO and removable-media images for x86-64 and AArch64. CI additionally boots both architectures under QEMU. The boot chain is being migrated from the temporary Limine development handoff to the first-party Lenix Boot Manager. The target design is documented in [XCU/Kernel/Boot/BOOT_ARCHITECTURE.md](XCU/Kernel/Boot/BOOT_ARCHITECTURE.md); until the migration is validated, existing images must still be treated as development images, not the final first-party boot path. This does not establish native Apple Silicon boot support.
 
 ## License
 

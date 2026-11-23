@@ -1,4 +1,5 @@
 #include <nux/types.h>
+#include "boot_protocol.h"
 #include <nux/boot.h>
 #include <nux/status.h>
 #include <nux/object.h>
