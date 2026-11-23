@@ -66,7 +66,7 @@ nux_status nux_processor_system_init(void)
             nux_processor_info *target = &processors[processor_total];
             target->id = processor_total;
             target->logical_id = source->uid;
-            target->features = hardware_id;
+            target->hardware_id = hardware_id;
             target->online = hardware_id == current_id;
             if (target->online) boot_cpu = processor_total;
             ++processor_total;
@@ -74,7 +74,7 @@ nux_status nux_processor_system_init(void)
     }
 
     if (!processor_total) {
-        processors[0].features = current_id;
+        processors[0].hardware_id = current_id;
         processors[0].online = 1;
         processor_total = 1;
         boot_cpu = 0;
