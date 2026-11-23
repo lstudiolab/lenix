@@ -50,7 +50,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
 | Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; fatal exception capture | Recoverable exception ports, interrupt controllers, timer IRQs, syscall ABI |
 
-The current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
+The physical allocator currently tracks up to 64 GiB of usable physical pages with a static ownership bitmap; larger usable maps fail initialization instead of being silently truncated. Boot-time reservation exclusions and page zeroing are still pending.\n\nThe current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. IPC currently uses a global capability table, supports bounded inline messages only, and performs nonblocking receive; it is not yet a secure user-task boundary. Exception entry is installed, but all exceptions are fatal until recovery and exception-port delivery exist. A successful cross-build is not equivalent to a bootable or production-ready kernel.
 
 ## Next implementation order
 
