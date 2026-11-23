@@ -1,4 +1,5 @@
 #include <nux/types.h>
+#include <nux/boot.h>
 #include <nux/status.h>
 #include <nux/object.h>
 #include <nux/memory.h>
