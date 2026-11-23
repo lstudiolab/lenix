@@ -12,12 +12,11 @@ nux_status nux_capability_system_init(void);
 nux_status nux_capability_create(nux_u32 owner, nux_object_type type,
                                  nux_object_id object_id, nux_rights rights,
                                  nux_capability *out);
-nux_status nux_capability_check(nux_task_id owner, nux_capability cap,
+nux_status nux_capability_check(nux_u32 owner, nux_capability cap,
                                 nux_object_type type, nux_rights required_rights,
                                 nux_object_id *object_id);
-nux_status nux_capability_revoke(nux_task_id owner, nux_capability cap);
+nux_status nux_capability_revoke(nux_u32 owner, nux_capability cap);
 nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_id);
-nux_u32 nux_capability_revoke_task(nux_task_id owner);
-nux_status nux_capability_consume(nux_task_id owner, nux_capability cap, nux_object_type type, nux_rights required_rights, nux_object_id *object_id);
-nux_status nux_capability_consume(nux_task_id owner, nux_capability cap, nux_object_type type, nux_rights required, nux_object_id *object_id);
+nux_u32 nux_capability_revoke_task(nux_u32 owner);
+nux_status nux_capability_consume(nux_u32 owner, nux_capability cap, nux_object_type type, nux_rights required, nux_object_id *object_id);
 #endif
