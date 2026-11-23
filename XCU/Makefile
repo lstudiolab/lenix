@@ -5,7 +5,7 @@ AS_ARM ?= aarch64-linux-gnu-gcc
 
 COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
-C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Capability/capability.c
+C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c
 
 .PHONY: all headers x86_64 aarch64 clean
 all: headers x86_64 aarch64
