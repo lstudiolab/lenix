@@ -131,7 +131,7 @@ static nux_status parse_madt(nux_u64 physical, nux_acpi_info *out)
     return out->local_apic_address ? NUX_OK : NUX_E_BAD_STATE;
 }
 
-nux_status nux_acpi_discover(nux_u64 rsdp_physical, nux_acpi_info *out)
+nux_status nux_acpi_discover(const void *rsdp_address, nux_acpi_info *out)
 {
     const nux_acpi_rsdp *rsdp;
     nux_u64 root_physical;
@@ -139,8 +139,8 @@ nux_status nux_acpi_discover(nux_u64 rsdp_physical, nux_acpi_info *out)
     nux_u32 entry_size;
     nux_u32 count;
 
-    if (!rsdp_physical || !out) return NUX_E_INVALID;
-    rsdp = (const nux_acpi_rsdp *)nux_phys_to_virt(rsdp_physical);
+    if (!rsdp_address || !out) return NUX_E_INVALID;
+    rsdp = (const nux_acpi_rsdp *)rsdp_address;
     if (!rsdp || !signature_equal(rsdp->signature, "RSD PTR ", 8) ||
         !checksum_valid((const nux_u8 *)rsdp, 20))
         return NUX_E_BAD_STATE;
@@ -182,4 +182,32 @@ nux_status nux_acpi_discover(nux_u64 rsdp_physical, nux_acpi_info *out)
             return parse_madt(table_physical, out);
     }
     return NUX_E_NOT_FOUND;
+}
+
+static nux_acpi_info platform_info;
+static nux_u32 platform_info_valid;
+
+nux_status nux_acpi_system_init(const void *rsdp_address)
+{
+    nux_acpi_info discovered;
+    if (!rsdp_address) {
+        platform_info_valid = 0;
+        return NUX_E_NOT_FOUND;
+    }
+    nux_status status = nux_acpi_discover(rsdp_address, &discovered);
+    if (status != NUX_OK) {
+        platform_info_valid = 0;
+        return status;
+    }
+    platform_info = discovered;
+    platform_info_valid = 1;
+    return NUX_OK;
+}
+
+nux_status nux_acpi_get_info(nux_acpi_info *out)
+{
+    if (!out) return NUX_E_INVALID;
+    if (!platform_info_valid) return NUX_E_NOT_FOUND;
+    *out = platform_info;
+    return NUX_OK;
 }
