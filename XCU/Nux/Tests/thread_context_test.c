@@ -5,6 +5,7 @@ static volatile nux_u32 first_count;
 static volatile nux_u32 second_count;
 static volatile nux_u32 failed;
 static nux_u64 active_space;
+static nux_u64 last_task_space;
 
 static nux_u64 test_next_space = 1;
 nux_status nux_vm_space_create(nux_u64 *out)
@@ -16,6 +17,7 @@ nux_status nux_vm_space_create(nux_u64 *out)
 nux_status nux_vm_space_activate(nux_u64 id)
 {
     active_space = id;
+    if (id) last_task_space = id;
     return NUX_OK;
 }
 nux_status nux_vm_space_destroy(nux_u64 id)
@@ -65,7 +67,7 @@ int main(void)
     if (nux_thread_create_kernel(task, second_thread, NUX_NULL, 10, &second) != NUX_OK) return 5;
     if (nux_thread_yield() != NUX_OK) return 6;
     if (failed || first_count != 2 || second_count != 2) return 7;
-    if (active_space != shared_space) return 15;
+    if (last_task_space != shared_space || active_space != 0) return 15;
     if (nux_thread_get_info(first, &info) != NUX_OK ||
         info.state != NUX_THREAD_TERMINATED) return 8;
     if (nux_thread_get_info(second, &info) != NUX_OK ||
