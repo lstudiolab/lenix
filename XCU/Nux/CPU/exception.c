@@ -87,6 +87,7 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
 {
 #if defined(__x86_64__)
     if (vector == 128 && frame) {
+        nux_boot_mark(NUX_BOOT_PHASE_USER_TRAP);
         nux_x86_exception_frame *state = (nux_x86_exception_frame *)frame;
         nux_u64 arguments[6] = {
             state->rdi, state->rsi, state->rdx,
@@ -97,6 +98,7 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
     }
 #elif defined(__aarch64__)
     if (vector == 8 && frame && ((code >> 26) & 0x3fu) == 0x15u) {
+        nux_boot_mark(NUX_BOOT_PHASE_USER_TRAP);
         nux_arm64_exception_frame *state =
             (nux_arm64_exception_frame *)frame;
         nux_u64 arguments[6] = {
@@ -115,6 +117,7 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
 
 #if defined(__x86_64__)
     if (frame && (((nux_x86_exception_frame *)frame)->cs & 3u) == 3u) {
+        nux_boot_mark(NUX_BOOT_PHASE_USER_FAULT);
         (void)nux_thread_exit_current();
         for (;;) __asm__ volatile("cli; hlt" ::: "memory");
     }
@@ -122,6 +125,7 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
     for (;;) __asm__ volatile("cli; hlt" ::: "memory");
 #elif defined(__aarch64__)
     if (frame && ((((nux_arm64_exception_frame *)frame)->spsr & 0xfu) == 0u)) {
+        nux_boot_mark(NUX_BOOT_PHASE_USER_FAULT);
         (void)nux_thread_exit_current();
         for (;;) __asm__ volatile("msr daifset, #0xf; wfe" ::: "memory");
     }
