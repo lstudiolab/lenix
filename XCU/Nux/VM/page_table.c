@@ -23,8 +23,13 @@ static nux_u64 kernel_root;
 static nux_u64 current_root(void){nux_u64 r;__asm__ volatile("mov %%cr3,%0":"=r"(r));return r&X86_ADDR;}
 static void invalidate(nux_u64 va){nux_u64 r=current_root();(void)r;__asm__ volatile("invlpg (%0)"::"r"(va):"memory");}
 nux_status nux_arch_vm_root_create(nux_u64 *out) {
-    if(!out)return NUX_E_INVALID;nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;
-    if(!kernel_root)kernel_root=current_root();
+    if(!out)return NUX_E_INVALID;
+    nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;
+    if(!kernel_root){
+        kernel_root=current_root();
+        nux_u32 lo,hi;__asm__ volatile("rdmsr":"=a"(lo),"=d"(hi):"c"(0xc0000080));
+        lo|=1u<<11;__asm__ volatile("wrmsr"::"a"(lo),"d"(hi),"c"(0xc0000080));
+    }
     nux_u64 *dst=table_ptr(root),*src=table_ptr(kernel_root);
     if(!dst||!src){(void)nux_phys_free_page(root);return NUX_E_NO_MEMORY;}
     for(nux_u32 i=256;i<512;i++)dst[i]=src[i];
@@ -92,7 +97,14 @@ static void invalidate(nux_u64 va) {
 }
 nux_status nux_arch_vm_root_create(nux_u64 *out) {
     if(!out)return NUX_E_INVALID;
-    if(!kernel_root)__asm__ volatile("mrs %0, ttbr0_el1":"=r"(kernel_root));
+    if(!kernel_root){
+        nux_u64 tcr,mair;__asm__ volatile("mrs %0, ttbr0_el1":"=r"(kernel_root));
+        __asm__ volatile("mrs %0, tcr_el1":"=r"(tcr));
+        tcr=(tcr&~0x7f3fULL)|16ULL|(1ULL<<8)|(1ULL<<10)|(3ULL<<12);
+        __asm__ volatile("msr tcr_el1, %0":"=r"(tcr));
+        __asm__ volatile("mrs %0, mair_el1":"=r"(mair));mair=(mair&~0xffULL)|0xffULL;
+        __asm__ volatile("msr mair_el1, %0; isb"::"r"(mair):"memory");
+    }
     nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;*out=root;return NUX_OK;
 }
 nux_status nux_arch_vm_map(nux_u64 root,nux_u64 va,nux_u64 pa,nux_u32 prot) {
