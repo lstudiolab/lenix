@@ -4,6 +4,9 @@
 #include <nux/status.h>
 typedef struct {
     nux_u64 entry;
+    nux_u64 stack_base;
+    nux_u64 stack_pointer;
+    nux_u64 stack_size;
     nux_u32 segment_count;
     nux_u32 reserved;
 } nux_elf_load_result;
