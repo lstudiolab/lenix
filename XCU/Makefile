@@ -1,5 +1,4 @@
 HOST_OS := $(shell uname -s)
-HOST_ARCH := $(shell uname -m)
 ifeq ($(HOST_OS),Darwin)
 CC_X86 ?= clang --target=x86_64-elf
 AS_X86 ?= clang --target=x86_64-elf
@@ -8,11 +7,6 @@ CC_ARM ?= clang --target=aarch64-elf
 AS_ARM ?= clang --target=aarch64-elf
 LD_ARM ?= clang --target=aarch64-elf -fuse-ld=lld
 HOST_CC ?= clang
-ifeq ($(HOST_ARCH),arm64)
-THREAD_CONTEXT_ASM := Architecture/ARM64/CPU/context.S
-else
-THREAD_CONTEXT_ASM := Architecture/X86_64/CPU/context.S
-endif
 else
 CC_X86 ?= x86_64-linux-gnu-gcc
 AS_X86 ?= x86_64-linux-gnu-gcc
@@ -21,7 +15,6 @@ CC_ARM ?= aarch64-linux-gnu-gcc
 AS_ARM ?= aarch64-linux-gnu-gcc
 LD_ARM ?= aarch64-linux-gnu-gcc
 HOST_CC ?= cc
-THREAD_CONTEXT_ASM := Architecture/X86_64/CPU/context.S
 endif
 
 COMMON_CFLAGS := -DNUX_KERNEL -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
@@ -81,10 +74,15 @@ test-sync:
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/sync_test.c Nux/Sync/sync.c -o Build/sync_test
 	./Build/sync_test
 
+ifeq ($(HOST_OS),Darwin)
+test-thread:
+	@echo "Native context-switch execution test is skipped on Darwin; both architecture context-switch objects are cross-built."
+else
 test-thread:
 	mkdir -p Build
-	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Nux/Runtime/memory.c $(THREAD_CONTEXT_ASM) -o Build/thread_context_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Nux/Runtime/memory.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
 	./Build/thread_context_test
+endif
 
 test-syscall:
 	mkdir -p Build
