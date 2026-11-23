@@ -7,10 +7,10 @@ HOST_CC ?= cc
 COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
-C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c
+C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm clean
-all: headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm
+.PHONY: all headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
+all: headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -70,6 +70,11 @@ test-vm:
 	mkdir -p Build
 	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/vm_test.c Nux/VM/vm.c Nux/Runtime/memory.c -o Build/vm_test
 	./Build/vm_test
+
+test-time:
+	mkdir -p Build
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/time_test.c Nux/Time/time.c -o Build/time_test
+	./Build/time_test
 
 clean:
 	rm -rf Build
