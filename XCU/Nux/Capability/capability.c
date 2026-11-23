@@ -296,6 +296,9 @@ nux_status nux_capability_derive(nux_task_id owner, nux_capability source,
 {
     if (!owner || !required || !granted || !out)
         return NUX_E_INVALID;
+    /* Receive and control rights are unique; they move, they do not derive. */
+    if (granted & (NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL))
+        return NUX_E_ACCESS;
     if (task_is_live(owner) != NUX_OK) return NUX_E_ACCESS;
 
     nux_u32 source_generation, destination_slot = NUX_CAPABILITY_LIMIT;
