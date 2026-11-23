@@ -34,6 +34,11 @@ nux_status nux_vm_space_activate(nux_u64 id)
     if (id) last_task_space = id;
     return NUX_OK;
 }
+nux_status nux_port_task_destroy(nux_task_id owner)
+{
+    (void)owner;
+    return NUX_OK;
+}
 nux_status nux_vm_space_destroy(nux_u64 id)
 {
     return id ? NUX_OK : NUX_E_INVALID;
