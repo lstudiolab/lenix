@@ -57,9 +57,9 @@ The scheduler now performs cooperative context switches between kernel threads o
 
 ## Next implementation order
 
-1. Implement per-task capability namespaces, caller authorization, rights derivation, and transfer.
+1. Replace the globally backed owner-tagged capability table with per-task tables and quotas; add copy/make-send derivation and delegation audit.
 2. Implement executable loading, user stacks, privilege transitions, and syscall entry/return.
-3. Complete IPC right transfer, out-of-line memory, blocking waits, deadlines, and RPC.
+3. Add message-attached port/memory descriptors, out-of-line memory, blocking waits, deadlines, and RPC.
 4. Add interrupt controllers, hardware timer delivery, and preemptive scheduling.
 5. Implement demand paging, page-fault resolution, COW, and external pager services.
 6. Implement recoverable exception ports and machine-state reply/recovery.
