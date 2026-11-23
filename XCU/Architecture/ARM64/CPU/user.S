@@ -5,7 +5,8 @@ nux_arch_user_enter:
     msr sp_el0, x1
     mov x3, x2
     msr elr_el1, x0
-    msr spsr_el1, xzr
+    mov x4, #0x3c0
+    msr spsr_el1, x4
     mov x0, x3
     isb
     eret
