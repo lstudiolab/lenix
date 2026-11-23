@@ -1,35 +1,25 @@
 # Nux Microkernel
 
-Nux is the original microkernel at the center of XCU. It is inspired by Mach-style microkernel concepts—tasks, threads, ports, message-based IPC, and explicit rights—but all implementation code and interfaces are designed for Lenix.
+Nux is the original microkernel at the center of XCU. It is inspired by Mach-style microkernel concepts—tasks, threads, ports, message-based IPC, and explicit rights—but all implementation code and interfaces are designed for Lenix. No BSD, Mach, Linux, or XNU kernel source is incorporated.
 
 ## Kernel responsibilities
 
-Nux retains the mechanisms that require kernel privilege or must be globally coordinated:
+Nux is intended to retain mechanisms that require kernel privilege or global coordination:
 
-- task address-space ownership and lifecycle;
+- task/address-space ownership and lifecycle;
 - thread lifecycle and execution state;
 - preemptive scheduling and CPU dispatch;
-- IPC endpoints, message transport, and rights transfer;
-- capability validation;
+- IPC ports, bounded message transport, and rights transfer;
+- capability validation and revocation;
 - virtual-memory primitives and page-fault coordination;
 - interrupt and exception dispatch;
 - timers and synchronization primitives.
 
-Filesystems, network stacks, device drivers, and higher-level system services are intended to run as isolated user-space servers where practical. A small set of essential platform drivers may be brought up in stages, but this does not change the microkernel boundary.
+Filesystems, network stacks, device drivers, and higher-level system services are intended to run as isolated user-space servers where practical.
 
 ## Assembly-first hardware interface
 
-Assembly is the primary language for Nux's hardware-facing execution paths. The architecture ports own:
-
-- earliest boot and CPU entry;
-- exception-level / privilege-state transitions;
-- exception and interrupt vector entry and return;
-- register save/restore and thread context switching;
-- low-level MMU and control-register operations;
-- system-call entry and return;
-- atomic primitives only where the C compiler's supported atomics are insufficient or unsuitable.
-
-C owns portable algorithms and policy. Assembly entry stubs must have documented register, stack, alignment, clobber, and return contracts before they are used by C.
+Assembly is the primary language for hardware-facing execution paths. Each architecture port owns boot entry, privilege-state transitions, exception/interrupt entry and return, register save/restore, context switching, low-level MMU operations, and system-call entry/return. C owns portable algorithms and policy. Every assembly/C boundary must define register, stack, alignment, clobber, and return contracts.
 
 ## Core object model
 
@@ -37,15 +27,35 @@ C owns portable algorithms and policy. Assembly entry stubs must have documented
 - **Thread:** schedulable execution context belonging to one task.
 - **Port:** protected IPC endpoint.
 - **Message:** bounded, typed IPC payload with optional out-of-line memory and transferred rights.
-- **Capability:** unforgeable authority to perform a defined set of operations on a kernel object.
-- **Memory object:** kernel-managed backing object that can be mapped into one or more task address spaces.
+- **Capability:** opaque authority to perform defined operations on a kernel object.
+- **Memory object:** kernel-managed backing object mapped into task address spaces.
 
-A task is not a thread, and a port name is not itself authority: access is mediated by rights held in a task's capability space.
+A task is not a thread, and a port name is not itself authority. Access is mediated by rights held in a task's capability space.
 
-## Initial subsystem boundaries
+## Implemented foundation
 
-`Core`, `Tasks`, `Threads`, `Scheduler`, `IPC`, `Ports`, `Capabilities`, `Memory`, `VM`, `Interrupts`, `Exceptions`, `Timers`, and `Synchronization` each own their implementation and public internal headers. Cross-subsystem dependencies must be explicit.
+| Area | Current implementation | Not yet implemented |
+|---|---|---|
+| Boot | Limine handoff on ARM64 and x86-64 | Full CPU feature discovery and SMP bring-up |
+| Physical memory | Usable-region discovery, page allocation/free, HHDM translation | Reservation tracking, zones, NUMA, reclaim |
+| Synchronization | Assembly spinlock primitives on both targets | Interrupt-safe lock classes, wait queues, priority inheritance |
+| Tasks | Fixed-capacity task registry and round-robin selection policy | Separate task/thread objects, stacks, saved contexts, lifecycle cleanup |
+| Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
+| IPC | Stable port/message interface declarations | Port objects, queues, blocking, deadlines, rights transfer |
+| VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
+| Interrupts/syscalls | Interrupts remain masked during early initialization | Vector tables, IDT/exception levels, timer interrupts, syscall ABI |
 
-## Current status
+The current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. A successful cross-build is not equivalent to a bootable or production-ready kernel.
 
-This directory currently defines the design boundary and initial ABI types. No scheduler, IPC transport, VM subsystem, or boot path is claimed to be implemented yet.
+## Next implementation order
+
+1. Correct and test boot memory reservations and allocator invariants.
+2. Add architecture CPU descriptors, exception vectors, interrupt controllers, and timer sources.
+3. Implement per-CPU saved contexts and assembly context-switch paths.
+4. Separate tasks from threads and connect scheduler dispatch to real context switching.
+5. Implement address spaces and page-table operations for both MMUs.
+6. Implement port objects, queued IPC, blocking/wakeup, deadlines, and rights transfer.
+7. Add syscall entry/return and move the first system servers to user mode.
+8. Add SMP synchronization, fault isolation, stress tests, and hardware qualification.
+
+Kernel implementation code is restricted to C and assembly. Only AArch64 and x86-64 are supported targets.
