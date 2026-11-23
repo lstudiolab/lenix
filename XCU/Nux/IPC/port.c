@@ -339,8 +339,8 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
     for (nux_u32 i = 0; i < NUX_PORT_SET_LIMIT; ++i) {
         nux_port_set_entry *set = &port_sets[i];
         if (!set->active) continue;
-        for (nux_u32 j = 0; j < set->count; ++j) {
-            if (set->object_ids[j] != object_id) continue;
+        for (nux_u32 j = 0; j < set->count;) {
+            if (set->object_ids[j] != object_id) { ++j; continue; }
             for (nux_u32 k = j + 1; k < set->count; ++k) {
                 set->ports[k - 1] = set->ports[k];
                 set->object_ids[k - 1] = set->object_ids[k];
@@ -350,7 +350,6 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
                 set_waiters[set_waiter_count++] = set->receiver_waiter;
                 set->receiver_waiter = 0;
             }
-            break;
         }
     }
     nux_arch_unlock(&port_lock);
@@ -665,7 +664,7 @@ nux_status nux_port_move_right(nux_task_id source_owner,
             nux_port_set_entry *set = &port_sets[i];
             if (!set->active || set->owner != source_owner) continue;
             for (nux_u32 j = 0; j < set->count;) {
-                if (set->ports[j] != source) { ++j; continue; }
+                if (set->object_ids[j] != object_id) { ++j; continue; }
                 for (nux_u32 k = j + 1; k < set->count; ++k) {
                     set->ports[k - 1] = set->ports[k];
                     set->object_ids[k - 1] = set->object_ids[k];
