@@ -5,6 +5,7 @@
 #include <nux/syscall.h>
 #include <nux/thread.h>
 #include <nux/user.h>
+#include <nux/vm.h>
 
 #if defined(__x86_64__)
 typedef struct __attribute__((packed)) {
@@ -88,6 +89,14 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
                                  nux_u64 address, void *frame)
 {
 #if defined(__x86_64__)
+    if (vector == 14 && frame &&
+        ((((nux_x86_exception_frame *)frame)->cs & 3u) == 3u)) {
+        nux_u32 access = (code & (1ULL << 4)) ? NUX_VM_PROT_EXEC :
+                         (code & (1ULL << 1)) ? NUX_VM_PROT_WRITE :
+                                                NUX_VM_PROT_READ;
+        if (nux_vm_fault(nux_vm_active_space_id(), address, access) == NUX_OK)
+            return;
+    }
     if (vector == 128 && frame) {
         nux_boot_mark(NUX_BOOT_PHASE_USER_SYSCALL);
         nux_x86_exception_frame *state = (nux_x86_exception_frame *)frame;
@@ -99,6 +108,18 @@ void nux_arch_exception_dispatch(nux_u64 vector, nux_u64 code,
         return;
     }
 #elif defined(__aarch64__)
+    if (vector == 8 && frame &&
+        ((((nux_arm64_exception_frame *)frame)->spsr & 0xfu) == 0u)) {
+        nux_u32 ec = (nux_u32)((code >> 26) & 0x3fu);
+        nux_u32 access = 0;
+        if (ec == 0x20u || ec == 0x21u)
+            access = NUX_VM_PROT_EXEC;
+        else if (ec == 0x24u || ec == 0x25u)
+            access = (code & (1ULL << 6)) ? NUX_VM_PROT_WRITE :
+                                            NUX_VM_PROT_READ;
+        if (access && nux_vm_fault(nux_vm_active_space_id(), address, access) == NUX_OK)
+            return;
+    }
     if (vector == 8 && frame && ((code >> 26) & 0x3fu) == 0x15u) {
         nux_boot_mark(NUX_BOOT_PHASE_USER_SYSCALL);
         nux_arm64_exception_frame *state =
