@@ -51,6 +51,7 @@ typedef struct {
 #endif
 
 nux_status nux_thread_system_init(void);
+nux_u32 nux_thread_task_busy(nux_task_id task);
 nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *out);
 nux_status nux_thread_create_kernel(nux_task_id task, nux_thread_entry_fn entry,
                                     void *argument, nux_u8 priority,
