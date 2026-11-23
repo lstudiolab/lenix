@@ -213,6 +213,53 @@ nux_status nux_port_task_destroy(nux_task_id owner)
     return NUX_OK;
 }
 
+static nux_status nux_port_derive_send(nux_task_id owner,
+                                        nux_capability receive,
+                                        nux_rights rights,
+                                        nux_capability *out)
+{
+    nux_object_id object_id;
+    if (!owner || !out) return NUX_E_INVALID;
+    nux_status status = nux_capability_check(
+        owner, receive, NUX_OBJECT_PORT, NUX_RIGHT_RECEIVE, &object_id);
+    if (status != NUX_OK) return status;
+
+    nux_arch_lock(&port_lock);
+    nux_port_entry *port = nux_port_find(object_id);
+    if (!port || port->owner != owner) {
+        nux_arch_unlock(&port_lock);
+        return NUX_E_ACCESS;
+    }
+    nux_arch_unlock(&port_lock);
+
+    status = nux_capability_create(owner, NUX_OBJECT_PORT, object_id,
+                                   rights | NUX_RIGHT_TRANSFER, out);
+    if (status != NUX_OK) return status;
+
+    nux_arch_lock(&port_lock);
+    port = nux_port_find(object_id);
+    if (!port || port->owner != owner) {
+        nux_arch_unlock(&port_lock);
+        (void)nux_capability_revoke(owner, *out);
+        *out = 0;
+        return NUX_E_ACCESS;
+    }
+    nux_arch_unlock(&port_lock);
+    return NUX_OK;
+}
+
+nux_status nux_port_make_send(nux_task_id owner, nux_capability receive,
+                              nux_capability *out)
+{
+    return nux_port_derive_send(owner, receive, NUX_RIGHT_SEND, out);
+}
+
+nux_status nux_port_make_send_once(nux_task_id owner, nux_capability receive,
+                                   nux_capability *out)
+{
+    return nux_port_derive_send(owner, receive, NUX_RIGHT_SEND_ONCE, out);
+}
+
 nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
 {
     nux_object_id object_id;
