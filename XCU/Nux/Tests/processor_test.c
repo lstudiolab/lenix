@@ -24,6 +24,7 @@ int main(void)
     nux_processor_info info;
     if (nux_processor_system_init() != NUX_OK) return 1;
     if (nux_processor_count() != 1) return 2;
+    if (nux_processor_current_id() != 0) return 19;
     if (nux_processor_get_info(0, &info) != NUX_OK) return 3;
     if (info.id != 0) return 4;
     if (!info.online) return 15;
