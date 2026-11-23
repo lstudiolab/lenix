@@ -11,7 +11,9 @@
 #define LIMINE_HHDM_REQUEST_ID { LIMINE_COMMON_MAGIC0, LIMINE_COMMON_MAGIC1, 0x48dcf1cb8ad2b852ULL, 0x63984e959a98244bULL }
 
 typedef struct limine_base_revision {
-    nux_u64 magic[3];
+    nux_u64 magic0;
+    nux_u64 magic1;
+    nux_u64 revision;
 } limine_base_revision;
 
 typedef struct limine_request {
