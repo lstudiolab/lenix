@@ -27,6 +27,7 @@ typedef struct {
     nux_u64 period_ns;
     nux_u64 budget_ns;
     nux_u32 processor_set;
+    nux_u32 user_mode;
 } nux_thread_info;
 typedef struct {
     nux_u64 x[31];
@@ -54,6 +55,9 @@ typedef struct {
 nux_status nux_thread_system_init(void);
 nux_u32 nux_thread_task_busy(nux_task_id task);
 nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *out);
+nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
+                                  nux_u64 stack, nux_u64 argument,
+                                  nux_u8 priority, nux_thread_id *out);
 nux_status nux_thread_create_kernel(nux_task_id task, nux_thread_entry_fn entry,
                                     void *argument, nux_u8 priority,
                                     nux_thread_id *out);
