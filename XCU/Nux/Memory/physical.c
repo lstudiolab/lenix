@@ -20,28 +20,15 @@ typedef struct nux_free_page {
     struct nux_free_page *next;
 } nux_free_page;
 
+extern void nux_arch_lock(volatile nux_u32 *lock);
+extern void nux_arch_unlock(volatile nux_u32 *lock);
+
 static nux_memory_region regions[NUX_MEMORY_MAX_REGIONS];
 static nux_u32 region_count;
 static nux_u32 active_region;
 static nux_u64 direct_map_offset;
 static nux_free_page *free_pages;
-static nux_u32 memory_lock;
-
-static void nux_lock(void)
-{
-    while (__atomic_exchange_n(&memory_lock, 1u, __ATOMIC_ACQUIRE) != 0u) {
-#if defined(__aarch64__)
-        __asm__ volatile("yield");
-#else
-        __asm__ volatile("pause");
-#endif
-    }
-}
-
-static void nux_unlock(void)
-{
-    __atomic_store_n(&memory_lock, 0u, __ATOMIC_RELEASE);
-}
+static volatile nux_u32 memory_lock;
 
 static nux_u64 nux_align_up(nux_u64 value)
 {
@@ -102,7 +89,7 @@ nux_u64 nux_phys_alloc_page(void)
 {
     nux_u64 result = 0;
 
-    nux_lock();
+    nux_arch_lock(&memory_lock);
     if (free_pages != NUX_NULL) {
         nux_free_page *page = free_pages;
         free_pages = page->next;
@@ -119,7 +106,7 @@ nux_u64 nux_phys_alloc_page(void)
             ++active_region;
         }
     }
-    nux_unlock();
+    nux_arch_unlock(&memory_lock);
 
     return result;
 }
@@ -136,7 +123,7 @@ nux_status nux_phys_free_page(nux_u64 physical_address)
     if (page == NUX_NULL)
         return NUX_E_INVALID;
 
-    nux_lock();
+    nux_arch_lock(&memory_lock);
     for (nux_u32 i = 0; i < region_count; ++i) {
         if (physical_address >= regions[i].start &&
             physical_address < regions[i].next) {
@@ -146,20 +133,20 @@ nux_status nux_phys_free_page(nux_u64 physical_address)
     }
 
     if (!valid) {
-        nux_unlock();
+        nux_arch_unlock(&memory_lock);
         return NUX_E_ACCESS;
     }
 
     for (nux_free_page *item = free_pages; item != NUX_NULL; item = item->next) {
         if (item == page) {
-            nux_unlock();
+            nux_arch_unlock(&memory_lock);
             return NUX_E_INVALID;
         }
     }
 
     page->next = free_pages;
     free_pages = page;
-    nux_unlock();
+    nux_arch_unlock(&memory_lock);
     return NUX_OK;
 }
 
