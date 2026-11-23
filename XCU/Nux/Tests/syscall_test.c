@@ -22,6 +22,7 @@ nux_status nux_port_receive(nux_task_id receiver,nux_capability receive,nux_mess
 nux_status nux_port_destroy(nux_task_id owner,nux_capability control) {(void)owner;(void)control;return NUX_E_NOT_SUPPORTED;}
 nux_status nux_port_make_send(nux_task_id owner,nux_capability receive,nux_capability *out) {(void)owner;(void)receive;(void)out;return NUX_E_NOT_SUPPORTED;}
 nux_status nux_port_make_send_once(nux_task_id owner,nux_capability receive,nux_capability *out) {(void)owner;(void)receive;(void)out;return NUX_E_NOT_SUPPORTED;}
+nux_status nux_capability_revoke(nux_task_id owner,nux_capability capability) {(void)owner;(void)capability;return NUX_OK;}
 
 static nux_status add_handler(nux_syscall_word a, nux_syscall_word b,
                               nux_syscall_word c, nux_syscall_word d,
