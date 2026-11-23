@@ -136,7 +136,7 @@ nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit,
     if (status != NUX_OK) goto rollback;
     status = nux_capability_create(
         owner, NUX_OBJECT_PORT, object_id,
-        NUX_RIGHT_RECEIVE | NUX_RIGHT_READ | NUX_RIGHT_CONTROL,
+        NUX_RIGHT_RECEIVE | NUX_RIGHT_READ | NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER,
         &receive_handle);
     if (status != NUX_OK) {
         nux_capability_revoke(owner, send_handle);
@@ -232,7 +232,7 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
     return NUX_OK;
 }
 
-static nux_status nux_port_send_internal(nux_capability send,
+static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send,
                                            const nux_message *message,
                                            nux_u64 timeout_ns,
                                            nux_u32 send_once)
@@ -246,7 +246,7 @@ static nux_status nux_port_send_internal(nux_capability send,
         message->descriptor_count != 0 ||
         message->kind > (nux_u32)NUX_PORT_MSG_RPC)
         return NUX_E_INVALID;
-    status = nux_capability_check(send, NUX_OBJECT_PORT, required, &object_id);
+    status = nux_capability_check(sender, send, NUX_OBJECT_PORT, required, &object_id);
     if (status != NUX_OK) return status;
 
     nux_arch_lock(&port_lock);
@@ -266,7 +266,7 @@ static nux_status nux_port_send_internal(nux_capability send,
     }
     if (send_once) {
         nux_object_id consumed_object = 0;
-        status = nux_capability_consume(send, NUX_OBJECT_PORT,
+        status = nux_capability_consume(sender, send, NUX_OBJECT_PORT,
                                         NUX_RIGHT_SEND_ONCE, &consumed_object);
         if (status != NUX_OK || consumed_object != object_id) {
             messages[index].active = 0;
@@ -294,16 +294,16 @@ static nux_status nux_port_send_internal(nux_capability send,
     return NUX_OK;
 }
 
-nux_status nux_port_send(nux_capability send, const nux_message *message,
+nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_message *message,
                          nux_u64 timeout_ns)
 {
-    return nux_port_send_internal(send, message, timeout_ns, 0);
+    return nux_port_send_internal(sender, send, message, timeout_ns, 0);
 }
 
-nux_status nux_port_send_once(nux_capability send_once,
+nux_status nux_port_send_once(nux_task_id sender, nux_capability send_once,
                               const nux_message *message)
 {
-    return nux_port_send_internal(send_once, message, 0, 1);
+    return nux_port_send_internal(sender, send_once, message, 0, 1);
 }
 
 nux_status nux_port_receive(nux_task_id receiver, nux_capability receive, nux_message *message,
