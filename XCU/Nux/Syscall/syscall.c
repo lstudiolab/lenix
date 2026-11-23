@@ -202,6 +202,39 @@ static nux_status syscall_port_make_send_once(nux_syscall_word receive_handle,
     return status;
 }
 
+
+static nux_status syscall_port_send_once(nux_syscall_word handle,
+                                         nux_syscall_word message_address,
+                                         nux_syscall_word c, nux_syscall_word d,
+                                         nux_syscall_word e, nux_syscall_word f,
+                                         nux_syscall_word *result)
+{
+    nux_task_id task; nux_u64 space; nux_user_message user;
+    nux_message message; nux_u8 payload[NUX_MESSAGE_INLINE_MAX];
+    (void)c; (void)d; (void)e; (void)f; *result = 0;
+    if (handle > 0xffffffffULL) return NUX_E_INVALID;
+    nux_status status = syscall_user_context(&task, &space);
+    if (status != NUX_OK) return status;
+    status = syscall_copy_in(space, message_address, &user, sizeof(user));
+    if (status != NUX_OK) return status;
+    if (user.inline_size > NUX_MESSAGE_INLINE_MAX ||
+        user.descriptor_count || (user.inline_size && !user.inline_data))
+        return NUX_E_INVALID;
+    if (user.inline_size) {
+        status = syscall_copy_in(space, user.inline_data, payload, user.inline_size);
+        if (status != NUX_OK) return status;
+    }
+    message.id = user.id;
+    message.kind = user.kind;
+    message.sequence = 0;
+    message.deadline_ns = user.deadline_ns;
+    message.inline_size = user.inline_size;
+    message.descriptor_count = 0;
+    message.inline_data = payload;
+    message.inline_capacity = 0;
+    return nux_port_send_once(task, (nux_capability)handle, &message);
+}
+
 nux_status nux_syscall_system_init(void)
 {
     nux_arch_lock(&syscall_lock);
@@ -226,7 +259,9 @@ nux_status nux_syscall_system_init(void)
     if (status != NUX_OK) return status;
     status = nux_syscall_register(NUX_SYSCALL_PORT_MAKE_SEND, syscall_port_make_send, 0);
     if (status != NUX_OK) return status;
-    return nux_syscall_register(NUX_SYSCALL_PORT_MAKE_SEND_ONCE, syscall_port_make_send_once, 0);
+    status = nux_syscall_register(NUX_SYSCALL_PORT_MAKE_SEND_ONCE, syscall_port_make_send_once, 0);
+    if (status != NUX_OK) return status;
+    return nux_syscall_register(NUX_SYSCALL_PORT_SEND_ONCE, syscall_port_send_once, 0);
 }
 
 nux_status nux_syscall_register(nux_u32 number, nux_syscall_handler handler,
