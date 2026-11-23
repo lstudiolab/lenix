@@ -12,6 +12,7 @@
 #define NUX_SYSCALL_PORT_DESTROY 5u
 #define NUX_SYSCALL_PORT_MAKE_SEND 6u
 #define NUX_SYSCALL_PORT_MAKE_SEND_ONCE 7u
+#define NUX_SYSCALL_PORT_SEND_ONCE 8u
 typedef nux_u64 nux_syscall_word;
 typedef struct {
     nux_u32 id;
