@@ -31,6 +31,7 @@ static nux_u32 region_count;
 static nux_u32 active_region;
 static nux_u32 total_pages;
 static nux_u8 page_bitmap[NUX_MEMORY_MAX_PAGES / 8u];
+static nux_u8 page_references[NUX_MEMORY_MAX_PAGES];
 static nux_u64 direct_map_offset;
 static nux_free_page *free_pages;
 static volatile nux_u32 memory_lock;
@@ -96,6 +97,8 @@ nux_status nux_memory_init(const struct nux_boot_info *boot_info)
     memory_lock = 0;
     for (nux_u32 i = 0; i < sizeof(page_bitmap); ++i)
         page_bitmap[i] = 0;
+    for (nux_u32 i = 0; i < NUX_MEMORY_MAX_PAGES; ++i)
+        page_references[i] = 0;
 
     for (nux_u64 i = 0; i < count; ++i) {
         nux_memmap_entry *entry = entries[i];
@@ -146,6 +149,7 @@ nux_u64 nux_phys_alloc_page(void)
         if (nux_memory_page_index(result, &index) == NUX_OK &&
             !nux_bitmap_test(index)) {
             nux_bitmap_set(index);
+            page_references[index] = 1;
         } else {
             result = 0;
         }
@@ -163,6 +167,7 @@ nux_u64 nux_phys_alloc_page(void)
                     continue;
                 }
                 nux_bitmap_set(index);
+                page_references[index] = 1;
                 break;
             }
             ++active_region;
@@ -184,16 +189,56 @@ nux_status nux_phys_free_page(nux_u64 physical_address)
 
     nux_arch_lock(&memory_lock);
     if (nux_memory_page_index(physical_address, &index) != NUX_OK ||
-        !nux_bitmap_test(index)) {
+        !nux_bitmap_test(index) || page_references[index] == 0) {
         nux_arch_unlock(&memory_lock);
         return NUX_E_ACCESS;
     }
 
+    if (page_references[index] > 1) {
+        --page_references[index];
+        nux_arch_unlock(&memory_lock);
+        return NUX_OK;
+    }
+    page_references[index] = 0;
     nux_bitmap_clear(index);
     page->next = free_pages;
     free_pages = page;
     nux_arch_unlock(&memory_lock);
     return NUX_OK;
+}
+
+nux_status nux_phys_retain_page(nux_u64 physical_address)
+{
+    nux_u32 index;
+    if (physical_address == 0 || (physical_address & NUX_PAGE_MASK) != 0)
+        return NUX_E_INVALID;
+    nux_arch_lock(&memory_lock);
+    if (nux_memory_page_index(physical_address, &index) != NUX_OK ||
+        !nux_bitmap_test(index) || page_references[index] == 0) {
+        nux_arch_unlock(&memory_lock);
+        return NUX_E_ACCESS;
+    }
+    if (page_references[index] == 0xffu) {
+        nux_arch_unlock(&memory_lock);
+        return NUX_E_LIMIT;
+    }
+    ++page_references[index];
+    nux_arch_unlock(&memory_lock);
+    return NUX_OK;
+}
+
+nux_u32 nux_phys_page_refcount(nux_u64 physical_address)
+{
+    nux_u32 index;
+    nux_u32 count = 0;
+    if (physical_address == 0 || (physical_address & NUX_PAGE_MASK) != 0)
+        return 0;
+    nux_arch_lock(&memory_lock);
+    if (nux_memory_page_index(physical_address, &index) == NUX_OK &&
+        nux_bitmap_test(index))
+        count = page_references[index];
+    nux_arch_unlock(&memory_lock);
+    return count;
 }
 
 void *nux_phys_to_virt(nux_u64 physical_address)
