@@ -199,6 +199,7 @@ nux_status nux_port_task_destroy(nux_task_id owner)
     for (;;) {
         nux_object_id object_id = 0;
         nux_thread_id waiter = 0;
+        nux_thread_id sender_waiter = 0;
         nux_u32 found = 0;
 
         nux_arch_lock(&port_lock);
@@ -207,7 +208,9 @@ nux_status nux_port_task_destroy(nux_task_id owner)
             if (!port->active || port->owner != owner) continue;
             object_id = port->object_id;
             waiter = port->receiver_waiter;
+            sender_waiter = port->sender_waiter;
             port->receiver_waiter = 0;
+            port->sender_waiter = 0;
             while (port->count) {
                 nux_u16 encoded = port->queue[port->head];
                 if (encoded && encoded <= NUX_PORT_MESSAGE_POOL_LIMIT)
@@ -228,6 +231,7 @@ nux_status nux_port_task_destroy(nux_task_id owner)
 
         if (!found) break;
         if (waiter) (void)nux_thread_wake(waiter);
+        if (sender_waiter) (void)nux_thread_wake(sender_waiter);
         if (object_id) (void)nux_capability_revoke_object(NUX_OBJECT_PORT, object_id);
     }
     (void)nux_capability_revoke_task(owner);
@@ -375,6 +379,7 @@ static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send
     nux_object_id object_id;
     nux_status status;
     nux_thread_id waiter = 0;
+    nux_thread_id sender_waiter = 0;
     nux_thread_id set_waiters[NUX_PORT_SET_LIMIT];
     nux_u32 set_waiter_count = 0;
     nux_rights required = send_once ? NUX_RIGHT_SEND_ONCE : NUX_RIGHT_SEND;
@@ -451,6 +456,7 @@ static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send
     }
     nux_arch_unlock(&port_lock);
     if (waiter) (void)nux_thread_wake(waiter);
+    if (sender_waiter) (void)nux_thread_wake(sender_waiter);
     for (nux_u32 i = 0; i < set_waiter_count; ++i)
         (void)nux_thread_wake(set_waiters[i]);
     return NUX_OK;
@@ -739,7 +745,9 @@ nux_status nux_port_move_right(nux_task_id source_owner,
         }
         port->owner = destination;
         waiter = port->receiver_waiter;
+        sender_waiter = port->sender_waiter;
         port->receiver_waiter = 0;
+        port->sender_waiter = 0;
         (void)nux_capability_revoke_owner_object_rights(
             source_owner, NUX_OBJECT_PORT, object_id,
             NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL);
