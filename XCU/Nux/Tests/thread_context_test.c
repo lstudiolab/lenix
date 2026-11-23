@@ -64,6 +64,8 @@ int main(void)
     if (nux_task_create("context-test", 10, &task) != NUX_OK) return 13;
     if (nux_task_get_address_space(task, &shared_space) != NUX_OK) return 14;
     if (nux_thread_create_kernel(task, first_thread, NUX_NULL, 10, &first) != NUX_OK) return 4;
+    if (nux_task_destroy(task) != NUX_E_BUSY) return 16;
+    if (nux_task_get_address_space(task, &shared_space) != NUX_OK) return 17;
     if (nux_thread_create_kernel(task, second_thread, NUX_NULL, 10, &second) != NUX_OK) return 5;
     if (nux_thread_yield() != NUX_OK) return 6;
     if (failed || first_count != 2 || second_count != 2) return 7;
@@ -72,5 +74,7 @@ int main(void)
         info.state != NUX_THREAD_TERMINATED) return 8;
     if (nux_thread_get_info(second, &info) != NUX_OK ||
         info.state != NUX_THREAD_TERMINATED) return 9;
+    if (nux_task_destroy(task) != NUX_OK) return 18;
+    if (nux_task_get_address_space(task, &shared_space) != NUX_E_NOT_FOUND) return 19;
     return 0;
 }
