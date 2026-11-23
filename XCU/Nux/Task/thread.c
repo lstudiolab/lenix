@@ -1,6 +1,7 @@
 #include <nux/thread.h>
 #include <nux/time.h>
 #include <nux/vm.h>
+#include <nux/processor.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -74,6 +75,7 @@ nux_status nux_thread_system_init(void)
         threads[i].info.deadline_ns = 0;
         threads[i].info.period_ns = 0;
         threads[i].info.budget_ns = 0;
+        threads[i].info.processor_set = 0;
         threads[i].entry = NUX_NULL;
         threads[i].argument = NUX_NULL;
         threads[i].machine_state_valid = 0;
@@ -131,6 +133,7 @@ nux_status nux_thread_create(nux_task_id task, nux_u8 priority, nux_thread_id *o
         entry->info.deadline_ns = 0;
         entry->info.period_ns = 0;
         entry->info.budget_ns = 0;
+        entry->info.processor_set = 0;
         entry->entry = NUX_NULL;
         entry->argument = NUX_NULL;
         entry->machine_state_valid = 0;
@@ -368,7 +371,9 @@ nux_status nux_thread_yield(void)
         nux_u32 i = (scheduler_cursor + n) % NUX_THREAD_LIMIT;
         nux_thread_entry *candidate = &threads[i];
         if (!candidate->kernel_thread ||
-            candidate->info.state != NUX_THREAD_READY)
+            candidate->info.state != NUX_THREAD_READY ||
+            !nux_processor_set_cpu_allowed(candidate->info.processor_set,
+                                           nux_processor_current_id()))
             continue;
         next_thread = candidate;
         scheduler_cursor = (i + 1) % NUX_THREAD_LIMIT;
@@ -399,7 +404,9 @@ nux_status nux_thread_yield(void)
         return NUX_OK;
     }
 
-    if (old_thread && old_thread->info.state == NUX_THREAD_READY) {
+    if (old_thread && old_thread->info.state == NUX_THREAD_READY &&
+        nux_processor_set_cpu_allowed(old_thread->info.processor_set,
+                                      nux_processor_current_id())) {
         old_thread->info.state = NUX_THREAD_RUNNING;
         current_thread_id = old_thread->info.id;
         thread_slice_start_ns = now_ns;
@@ -418,4 +425,38 @@ nux_status nux_thread_yield(void)
 
     nux_arch_unlock(&thread_lock);
     return NUX_E_WOULD_BLOCK;
+}
+
+nux_status nux_thread_set_processor_set(nux_thread_id id, nux_u32 set)
+{
+    if (!id || (set && !nux_processor_set_exists(set))) return NUX_E_INVALID;
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *entry = nux_thread_find(id);
+    if (!entry || entry->info.state == NUX_THREAD_TERMINATED) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_NOT_FOUND;
+    }
+    if (entry->info.state == NUX_THREAD_RUNNING) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_BUSY;
+    }
+    entry->info.processor_set = set;
+    nux_arch_unlock(&thread_lock);
+    return NUX_OK;
+}
+
+nux_u32 nux_thread_processor_set_busy(nux_u32 set)
+{
+    if (!set) return 0;
+    nux_u32 busy = 0;
+    nux_arch_lock(&thread_lock);
+    for (nux_u32 i = 0; i < NUX_THREAD_LIMIT; ++i) {
+        if (threads[i].info.id && threads[i].info.state != NUX_THREAD_TERMINATED &&
+            threads[i].info.processor_set == set) {
+            busy = 1;
+            break;
+        }
+    }
+    nux_arch_unlock(&thread_lock);
+    return busy;
 }

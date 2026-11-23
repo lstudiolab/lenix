@@ -26,6 +26,7 @@ typedef struct {
     nux_u64 deadline_ns;
     nux_u64 period_ns;
     nux_u64 budget_ns;
+    nux_u32 processor_set;
 } nux_thread_info;
 typedef struct {
     nux_u64 x[31];
@@ -67,4 +68,6 @@ nux_status nux_thread_set_policy(nux_thread_id thread, nux_sched_policy policy,
 nux_status nux_thread_set_time_constraint(nux_thread_id thread, nux_u64 period_ns,
                                           nux_u64 budget_ns, nux_u64 deadline_ns);
 nux_status nux_thread_yield(void);
+nux_status nux_thread_set_processor_set(nux_thread_id thread, nux_u32 set);
+nux_u32 nux_thread_processor_set_busy(nux_u32 set);
 #endif
