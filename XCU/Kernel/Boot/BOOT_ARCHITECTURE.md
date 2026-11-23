@@ -1,82 +1,70 @@
 # Lenix First-Party Boot Architecture
 
-## Requirement
+## Goal
 
-Lenix owns its complete operating-system boot path. The boot chain uses only Lenix-owned EFI applications and kernel code after the platform's standard UEFI firmware handoff. It does not bundle or depend on Limine, GRUB, systemd-boot, rEFInd, or another third-party boot manager/loader.
+Lenix owns the complete boot manager, kernel loader, image format validation, handoff, and architecture entry code. The only external component in the firmware boot path is the platform's UEFI implementation. No third-party boot manager or kernel loader is used.
 
-The staged design takes inspiration from the integrated startup model of macOS. It does not copy Apple's proprietary boot.efi, iBoot, BootPolicy, APFS Preboot, kernel collection, or Secure Enclave implementation.
+The design takes inspiration from the staged startup model of macOS, but does not copy Apple's proprietary iBoot, boot.efi, BootPolicy, APFS Preboot, kernel collection, or Secure Enclave implementation.
 
-## Boot stages
+## Current first-party boot chain
 
 1. **Platform firmware** — UEFI initializes the machine and loads the architecture-matched Lenix EFI application from the EFI System Partition.
-2. **Lenix Boot Manager** — `BOOTX64.EFI` or `BOOTAA64.EFI` validates the PE32+ EFI child image and starts `\\EFI\\LENIX\\NUX.EFI`.
-3. **Nux Kernel Loader** — the second first-party EFI application opens `\\EFI\\LENIX\\NUX.ELF`, validates ELF64 class, endianness, machine, program-header bounds, segment ranges, and executable entry point, then reserves physical pages and copies PT_LOAD segments.
-4. **Memory and address-space preparation** — the loader reserves a dedicated 64 KiB boot stack, constructs x86-64 four-level page tables or AArch64 TTBR0/TTBR1 tables, maps the first 4 GiB identity range for the loader context, maps a 64 GiB high-half direct-map window, and maps the high-half kernel image.
-5. **Firmware handoff** — the loader captures the final UEFI memory map, converts conventional-memory descriptors into Nux memory-region records, discovers the ACPI 2.0 RSDP, retries `ExitBootServices` with a fresh map key when needed, and makes no firmware calls after a successful exit.
-6. **Architecture entry** — the loader switches to the high direct-map boot stack and jumps to `_start_uefi`. Assembly preserves the versioned boot-info pointer, establishes the expected stack alignment, initializes architecture entry state, and calls `nux_kernel_main`.
-7. **Nux initialization** — Nux validates the boot-info signature, version, structure size, architecture, memory map, and direct-map contract before initializing physical memory, ACPI/topology, virtual memory, processors, tasks, capabilities, threads, IPC, synchronization, syscalls, and time.
-8. **User-mode validation** — CI executes a user ELF on both architectures, exercises the syscall exit path, and checks that Nux reaches `NUX:READY`.
+2. **Lenix Boot Manager** — `BOOTX64.EFI` or `BOOTAA64.EFI`. It validates the architecture of `NUX.EFI` and starts the first-party kernel-loader application.
+3. **Nux Kernel Loader** — `NUX.EFI`. It opens `\\EFI\\LENIX\\NUX.ELF`, validates the ELF64 header and PT_LOAD program headers, reserves physical pages for the kernel and boot stack, and copies the loadable segments.
+4. **Firmware handoff** — the loader captures the final UEFI memory map, retries `ExitBootServices` when the map key changes, and makes no further boot-service calls after a successful exit.
+5. **Architecture page tables** — x86-64 installs identity, high-half kernel, and HHDM mappings. AArch64 installs the TTBR0 identity map and TTBR1 kernel/direct-map split, then enters EL1.
+6. **Nux entry** — the architecture entry assembly establishes the kernel execution state and passes the boot information to staged Nux initialization.
+7. **User execution** — Nux creates an isolated transient user task for the boot smoke test, enters ring 3/EL0, performs a syscall, exits, and returns to the kernel.
 
 ## Supported platform contract
 
 - x86-64 UEFI on x86-64 machines.
 - AArch64 UEFI on AArch64 machines.
 - No 32-bit x86 or 32-bit ARM boot target.
-- UEFI firmware is the platform firmware interface, not a third-party bootloader.
-- Native Apple Silicon startup is not implied by AArch64 UEFI support. Apple hardware has a distinct platform boot/security environment and requires a separately engineered platform port.
-- No claim of Apple Secure Boot compatibility or signed Lenix image verification.
+- Native Apple Silicon startup is not implied by AArch64 UEFI support. Apple hardware has a distinct platform boot/security environment and needs a separately engineered port.
+- No claim of Apple Secure Boot compatibility. Lenix image signing and key enrollment are its own design.
 
-## First-party source ownership
+## Implementation ownership
 
-The Boot Manager, PE32+ validator, ELF64 loader, page-table setup, boot-info handoff, and architecture entry code are original Lenix C and assembly. Build configuration uses standard host toolchains and image utilities. UEFI interfaces and PE/COFF and ELF formats are public platform/file-format specifications, not imported bootloader implementations.
+All Lenix boot manager, ELF loader, handoff, page-table setup, and architecture-entry code is original Lenix C and assembly. Standard UEFI protocols, PE/COFF EFI applications, and ELF64 are used as platform interfaces and executable formats; they are not imported bootloader implementations.
 
-## Current handoff ABI
+## Handoff contract
 
-The shared `nux_boot_info` structure is versioned and contains:
-- signature, version, and structure size;
-- target architecture and validation flags;
-- pointer and count for Nux memory-region records;
-- high-half direct-map base and size;
-- ACPI RSDP pointer, when firmware provides it;
-- kernel physical base, virtual base, and image size.
+The current handoff contains the firmware memory map, HHDM offset, firmware table pointer, and boot flags. It is sufficient for the current kernel initialization path, but it is not yet a fully versioned production ABI.
 
-The memory-region pointer array, its entries, the boot-info structure, and ACPI root pointer are supplied through the direct map. The kernel rejects missing or mismatched signature/version/size/architecture fields, absent memory-map data, a mismatched direct-map contract, and an invalid kernel base/image size.
+The production handoff still needs:
+- signature, version, and structure-size validation;
+- descriptor size/version and explicit memory reservation records;
+- kernel and boot-asset physical ranges;
+- ACPI and optional SMBIOS pointers;
+- framebuffer information when available;
+- selected boot-entry identity and firmware/boot protocol revisions;
+- verified-image state and signed-manifest digest.
 
-## Current implementation limits
+Nux must reject unknown handoff versions, invalid descriptor sizes, arithmetic overflow, overlapping untrusted ranges, missing memory-map data, and architecture/entry mismatches.
 
-- Physical direct map: first 64 GiB.
-- Identity map retained for EFI loader execution: first 4 GiB.
-- Kernel physical allocation and initial boot stack: below 4 GiB.
-- Kernel ELF image: at most 64 MiB.
-- Memory-map records: at most 256 regions.
-- Initial kernel image mappings are not yet enforced as W^X per ELF segment.
-- MMIO cache attributes and a dedicated device-memory mapping policy are not complete.
-- The boot manager validates image structure and architecture but does not yet verify a signed boot manifest.
-- Secure Boot key enrollment, recovery UI, boot-entry configuration UI, framebuffer diagnostics, SMBIOS handoff, and Device Tree support remain unfinished.
+## Current implementation status (2026-11-23)
 
-These are explicit initial implementation limits. The loader fails on invalid or unsupported inputs rather than silently claiming a broader hardware contract.
+The first-party EFI applications and real Nux ELF kernels now boot under OVMF/AAVMF QEMU firmware on both x86-64 and AArch64. CI verifies the complete chain from firmware to Boot Manager, kernel loader, Nux kernel, user-mode entry, syscall, user-thread exit, and `NUX:READY`. The same workflow also builds and packages UEFI ISO and removable-media images. The macOS Clang/LLD cross-build passes for both architectures.
 
-## Verified status (2026-11-23)
+Explicit initial limits:
+- 4 GiB identity-mapped physical window for loader execution;
+- 64 GiB high-half direct-map window for kernel physical memory;
+- 64 MiB maximum ELF kernel span;
+- 256 memory-map region entries.
 
-The production first-party boot path has been exercised in QEMU with OVMF and AAVMF firmware on both supported architectures. In each case:
-- firmware starts the Lenix Boot Manager;
-- the manager validates and starts the Nux Kernel Loader EFI application;
-- the loader reads and validates the architecture-matched Nux ELF;
-- the loader captures the memory map and exits UEFI boot services;
-- the kernel starts through its high-half first-party entry;
-- the user-mode smoke ELF enters user mode, performs its exit syscall, and returns to the kernel;
-- the boot log reaches `NUX:READY`.
+These are implementation limits, not claims of unlimited memory support. The kernel and loader still require physical-machine qualification.
 
-The CI also retains a smaller EFI-to-EFI smoke test for diagnosing firmware and Boot Manager regressions. The full-kernel test is the acceptance gate for the real boot chain.
+## Remaining boot work
 
-## Remaining work
+- [ ] Versioned, size-checked handoff ABI and explicit memory reservations.
+- [ ] Signed boot manifest and kernel-image signature verification.
+- [ ] Secure Boot key enrollment and owner-controlled trust policy.
+- [ ] Boot-entry configuration, graphical boot picker, recovery entry, and fallback policy.
+- [ ] Early firmware console, serial, and framebuffer diagnostics.
+- [ ] Device Tree support where ACPI is not available.
+- [ ] Physical-machine boot qualification on x86-64 and AArch64.
+- [ ] Larger identity map or removal of the loader's 4 GiB identity constraint.
+- [ ] Recovery after kernel validation, memory-map, or handoff failures.
 
-- [ ] Signed manifest, cryptographic verification, key enrollment, and Secure Boot integration.
-- [ ] Recovery image/boot entry and boot policy UI.
-- [ ] Per-segment W^X kernel mappings and stricter ELF relocation/overlap validation.
-- [ ] Full physical-memory coverage beyond the initial 64 GiB direct-map window.
-- [ ] MMIO/device-memory mappings with correct cache attributes.
-- [ ] Firmware framebuffer and SMBIOS handoff.
-- [ ] Device Tree support for platforms without ACPI.
-- [ ] Physical-machine boot qualification on both architectures.
-- [ ] First-party user-space bootstrap and system service manager.
+A successful QEMU boot validates the tested firmware and kernel path; it does not establish Secure Boot, hardware compatibility, arbitrary user workloads, or production readiness.

@@ -18,28 +18,23 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 
 ### 0. Firmware boot and kernel startup
 
-- [x] First-party UEFI Boot Manager for x86-64 and AArch64; no third-party bootloader in the boot chain
-- [x] First-party PE32+ EFI child-image validation, architecture checks, and EFI-to-EFI handoff
-- [x] First-party ELF64 kernel validation and bounded PT_LOAD segment loading
-- [x] Physical kernel-image and dedicated boot-stack reservation
-- [x] Versioned boot-info ABI with signature, version, structure size, architecture, kernel range, memory-map, ACPI, and direct-map fields
-- [x] Final UEFI memory-map capture and retry-safe ExitBootServices handoff
-- [x] x86-64 identity/direct/kernel mappings and AArch64 TTBR0/TTBR1 identity/direct/kernel mappings
-- [x] 4 GiB EFI identity window and 64 GiB high-half direct-map window
-- [x] High-half kernel entry with a direct-map boot stack that survives user address-space activation
-- [x] x86-64 exception entry and IDT installation
-- [x] AArch64 EL1 vector setup and TTBR0 user address-space support
-- [x] ACPI RSDP, XSDT/RSDT, and MADT parsing for x86 APIC/x2APIC/IO-APIC and ARM GICC/GICD/GICR topology (Foundation; Device Tree and CPU feature enumeration remain)
-- [x] First-party UEFI removable-media image and EFI-bootable ISO generation for both architectures
-- [x] QEMU UEFI firmware boot reaches Nux READY on x86-64 and AArch64
-- [x] QEMU user-mode smoke ELF enters ring 3/EL0, exercises a kernel-thread handoff, invokes the exit syscall, and returns to the kernel on both architectures
-- [ ] Signed boot manifest, cryptographic verification, Secure Boot key enrollment, and recovery policy
-- [ ] Firmware framebuffer/serial diagnostics and boot configuration UI
-- [ ] Device Tree support for platforms without ACPI
+- [x] First-party architecture-specific UEFI Boot Manager (`BOOTX64.EFI` / `BOOTAA64.EFI`)
+- [x] First-party Nux ELF loader (`NUX.EFI`) and architecture-matched `NUX.ELF` loading
+- [x] ELF64 header/program-header validation, bounded PT_LOAD loading, kernel/stack reservation, and memory-map capture
+- [x] UEFI `ExitBootServices` handoff with the final memory-map key
+- [x] x86-64 identity map, 64 GiB high-half direct map, and high-half kernel entry mapping
+- [x] AArch64 TTBR0 identity map and TTBR1 kernel/direct-map split, with EL1 entry normalization
+- [x] First-party UEFI removable-media and ISO image generation for both architectures
+- [x] QEMU firmware boot tests execute the real Nux ELF kernel on x86-64 and AArch64
+- [x] User-mode smoke executable enters ring 3/EL0, performs a syscall, exits, and returns to Nux on both architectures
+- [ ] Versioned, size-checked boot handoff ABI and explicit reservation records
+- [ ] Signed boot manifest, kernel-image signature verification, and Secure Boot key enrollment
+- [ ] Firmware console, serial/framebuffer diagnostics, and graphical boot selection
 - [ ] Timer and interrupt-controller initialization before enabling interrupts
+- [ ] Launch a persistent isolated user-space bootstrap/service-manager task
 - [ ] Physical-machine boot qualification on both architectures
-- [ ] Launch the first isolated user-space bootstrap task
 
+**Current limits:** the loader maps a 4 GiB identity window and a 64 GiB direct-map window; the kernel ELF span is capped at 64 MiB and the handoff memory map at 256 regions. These limits are explicit and must be revisited before production deployment.
 
 Legend: **Foundation** = some code exists; **Interface** = public contract declared; **Planned** = implementation remains.
 
@@ -237,14 +232,14 @@ These headers are interface declarations only unless the implementation status a
 
 ## Implementation sequence
 
-1. Stabilize boot handoff, add memory reservations and page zeroing, and harden allocator tests.
-2. Complete user-mode execution: privilege transitions, user-thread bootstrap, syscall entry/return, and task exit.
-3. Add demand paging, page-fault resolution, COW, and external pagers.
-4. Complete IPC with out-of-line memory, blocking waits, deadlines, and RPC/reply.
-5. Add interrupt controllers, architecture timers, preemptive scheduling, and time accounting.
-6. Implement recoverable exception ports and user fault delivery.
-7. Add bootstrap service management and user-space pager/driver servers.
-8. Add SMP, host/device controls, profiling/debugging, NIDL tooling, fuzzing, and hardware qualification.
+1. Version and harden the first-party boot handoff; add explicit reservations, firmware diagnostics, signed manifests, and Secure Boot key enrollment.
+2. Add demand paging, page-fault resolution, copy-on-write, and external pagers.
+3. Complete IPC with out-of-line memory, blocking port sets, deadlines, notifications, and RPC/reply.
+4. Initialize interrupt controllers and hardware timers; add preemptive scheduling and timed waits.
+5. Implement recoverable exception ports and user fault delivery.
+6. Add AP startup, per-CPU state, IPIs, SMP-safe synchronization, and load balancing.
+7. Implement the persistent bootstrap/service manager and user-space pager, device, filesystem, and network servers.
+8. Add host/device controls, profiling/debugging, NIDL tooling, fuzzing, and physical-hardware qualification.
 
 ## Completion criteria
 
