@@ -259,7 +259,7 @@ static int validate_elf(const void *buffer, efi_u64 size,
 #if defined(__x86_64__)
     if (header->machine != 62) return 0;
 #elif defined(__aarch64__)
-    if (header->machine != 183) return 0;
+    if (header->machine != 183 || (header->entry & 3ULL)) return 0;
 #endif
     if (header->program_offset > size ||
         (efi_u64)header->program_count * header->program_entry_size >
