@@ -212,6 +212,7 @@ nux_arch_syscall_entry:
     ldp x26, x27, [sp, #208]
     ldp x28, x29, [sp, #224]
     ldr x30, [sp, #240]
+    ldr x1, [sp, #8]
     ldr x0, [sp, #0]
     add sp, sp, #272
     eret
