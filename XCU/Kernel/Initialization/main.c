@@ -12,6 +12,8 @@
 #include <nux/time.h>
 #include <nux/acpi.h>
 #include <nux/processor.h>
+
+extern nux_status nux_ipc_smoke_test(void);
 #include <nux/user.h>
 #include "entry.h"
 
@@ -51,6 +53,7 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     nux_boot_mark(NUX_BOOT_PHASE_TIME);
     (void)nux_time_system_init();
     if (nux_user_smoke_test() != NUX_OK) nux_boot_fail(11);
+    if (nux_ipc_smoke_test() != NUX_OK) nux_boot_fail(12);
     nux_boot_mark(NUX_BOOT_PHASE_READY);
 
     /* Keep interrupts masked until timer and interrupt-controller support exists. */
