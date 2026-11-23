@@ -34,11 +34,11 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 2. Threads and machine state
 
 - [x] Separate thread registry, creation, termination, suspend/resume, and state metadata (Foundation; no saved execution contexts or context switching yet)
-- [ ] Multiple threads per task
+- [x] Multiple cooperative kernel threads per task (Foundation; user-mode threads remain)
 - [x] Thread creation, termination, suspend, and resume metadata (Foundation; yield intentionally returns NOT_SUPPORTED until context switching exists)
-- [ ] Saved register contexts and architecture-specific state
+- [x] Callee-saved register contexts and architecture-specific cooperative switch assembly on both targets (Foundation; FPU/SIMD and user register frames remain)
 - [ ] Thread state get/set for controlled debugging
-- [ ] Kernel and user stacks
+- [x] Fixed kernel stacks for cooperative kernel threads (Foundation; user stacks and stack reclamation remain)
 - [ ] Thread-local storage and per-CPU state
 - [ ] Thread naming, information, and accounting
 - [ ] Thread migration and processor affinity
@@ -52,7 +52,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Fixed-priority scheduling
 - [ ] Real-time time-constraint scheduling (period, computation budget, deadline)
 - [ ] Priority inheritance and starvation controls
-- [ ] Scheduler handoff and voluntary yield
+- [x] Scheduler handoff and voluntary yield between kernel threads
 - [ ] Per-CPU run queues and load balancing
 - [ ] CPU affinity and processor-set policies
 - [ ] Scheduler statistics and profiling
@@ -178,7 +178,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, and lock sets\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
+## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, and x86 context switching\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
