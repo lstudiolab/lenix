@@ -66,6 +66,7 @@ static void nux_thread_bootstrap(nux_thread_id id)
     nux_arch_unlock(&thread_lock);
 
     if (user_thread) {
+        nux_boot_mark(NUX_BOOT_PHASE_USER_ENTER);
         nux_arch_user_enter(user_entry, user_stack, user_argument,
                             kernel_stack_top & ~0xfULL);
     }
