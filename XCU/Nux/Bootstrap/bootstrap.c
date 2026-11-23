@@ -152,8 +152,7 @@ nux_status nux_bootstrap_start_initial_task(nux_u64 image_address,
     nux_task_id task = 0;
     nux_thread_id thread = 0;
     nux_elf_load_result loaded;
-    if (!image_address || !image_size || !task_id ||
-        image_size > (nux_u64)(nux_size)-1)
+    if (!image_address || !image_size || !task_id)
         return NUX_E_INVALID;
     *task_id = 0;
 
