@@ -8,7 +8,7 @@ static nux_u32 fail_stack_map;
 nux_status nux_task_get_address_space(nux_task_id task,nux_u64 *space)
 {if(task!=7||!space)return NUX_E_INVALID;*space=42;return NUX_OK;}
 nux_status nux_vm_map(nux_u64 space,nux_vm_address *address,nux_vm_size size,nux_u32 prot,nux_memory_object_id object,nux_u64 offset)
-{(void)size;(void)prot;(void)object;(void)offset;if(space!=42||!*address)return NUX_E_INVALID;if(fail_stack_map&&*address==0x00007fff00000000ULL-65536ULL)return NUX_E_NO_MEMORY;++maps;return NUX_OK;}
+{(void)size;(void)prot;(void)object;(void)offset;if(space!=42||!*address)return NUX_E_INVALID;if(fail_stack_map&&*address==NUX_ELF_STACK_TOP-NUX_ELF_STACK_SIZE)return NUX_E_NO_MEMORY;++maps;return NUX_OK;}
 nux_status nux_vm_write(nux_u64 space,nux_vm_address address,const void *data,nux_size size)
 {(void)address;(void)data;(void)size;if(space!=42)return NUX_E_INVALID;++writes;return NUX_OK;}
 nux_status nux_vm_protect(nux_u64 space,nux_vm_address address,nux_vm_size size,nux_u32 prot)
@@ -44,9 +44,9 @@ int main(void)
     nux_elf_load_result result;
     make_image();
     if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_OK)return 1;
-    if(result.entry!=0x10000080||result.segment_count!=2||maps!=3||writes!=2||protects!=2)return 2;
+    if(result.entry!=0x10000080||result.segment_count!=2||maps!=3||writes!=3||protects!=2)return 2;
     if(result.stack_base!=0x00007fff00000000ULL-65536ULL||
-       result.stack_pointer!=0x00007fff00000000ULL||
+       result.stack_pointer!=NUX_ELF_STACK_TOP-80ULL||
        result.stack_size!=65536ULL||(result.stack_pointer&15ULL))return 8;
     fail_stack_map=1;
     if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_NO_MEMORY)return 9;
