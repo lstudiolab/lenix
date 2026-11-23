@@ -40,7 +40,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install LLVM and ISO tools
         run: |
-          brew install llvm xorriso
+          brew install llvm lld xorriso
           echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
       - name: Build, test, and package both UEFI targets with Clang/LLD
         run: make -C XCU clean all iso
