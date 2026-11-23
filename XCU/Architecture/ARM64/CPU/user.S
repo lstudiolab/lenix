@@ -10,8 +10,3 @@ nux_arch_user_enter:
     isb
     eret
 .size nux_arch_user_enter, .-nux_arch_user_enter
-.global nux_arch_set_kernel_stack
-.type nux_arch_set_kernel_stack,%function
-nux_arch_set_kernel_stack:
-    ret
-.size nux_arch_set_kernel_stack, .-nux_arch_set_kernel_stack
