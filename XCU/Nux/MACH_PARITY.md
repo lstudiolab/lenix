@@ -24,6 +24,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Task creation from executable image
 - [ ] Task destruction and resource reclamation
 - [ ] Task suspension, resume, termination, and restart
+- [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
 - [ ] Per-task address space
 - [ ] Per-task capability/port namespace
 - [ ] Task inheritance and creation attributes
@@ -80,7 +81,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 5. Virtual memory and memory objects
 
 - [x] Physical page allocator with region tracking, allocation bitmap, and duplicate-free rejection (Foundation; boot reservations/reclaim work remains)
-- [x] Fixed-capacity sparse address-space objects (Foundation; not yet owned by task objects)
+- [x] Fixed-capacity sparse address-space objects (Foundation; task creation allocates and records one address space)
 - [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (Foundation; hardware runtime validation pending)
 - [x] Anonymous page-backed mappings and exact-region unmap/protect operations (Foundation; partial-range operations and region query remain)
 - [ ] Demand paging and page-fault resolution
