@@ -120,11 +120,37 @@ static efi_u64 align_up(efi_u64 value, efi_u64 alignment)
     return (value + alignment - 1ULL) & ~(alignment - 1ULL);
 }
 
+#if defined(LENIX_QEMU_BOOT_TRACE)
+static void debug_write(const char *message)
+{
+#if defined(__x86_64__)
+    while (*message) {
+        unsigned char value = (unsigned char)*message++;
+        __asm__ volatile("outb %0, $0xe9" : : "a"(value));
+    }
+#elif defined(__aarch64__)
+    register efi_u64 operation __asm__("x0") = 0x04;
+    register const char *text __asm__("x1") = message;
+    __asm__ volatile("hlt #0xf000" : "+r"(operation) : "r"(text) : "memory");
+#endif
+}
+#endif
+
 static void print(efi_system_table *system, const efi_char16 *message)
 {
     if (system && system->console_out && system->console_out->output_string)
         (void)system->console_out->output_string(
             system->console_out, (efi_char16 *)message);
+#if defined(LENIX_QEMU_BOOT_TRACE)
+    char ascii[128];
+    efi_uintn i = 0;
+    while (message[i] && i + 1 < sizeof(ascii)) {
+        ascii[i] = message[i] < 0x80 ? (char)message[i] : '?';
+        ++i;
+    }
+    ascii[i] = 0;
+    debug_write(ascii);
+#endif
 }
 
 static efi_status fail(efi_system_table *system, efi_status status)
