@@ -16,6 +16,7 @@ typedef enum { NUX_PORT_MSG_NORMAL=0, NUX_PORT_MSG_NOTIFY, NUX_PORT_MSG_RPC } nu
 typedef struct { nux_u32 id; nux_u32 kind; nux_u64 sequence; nux_u64 deadline_ns; nux_u32 inline_size; nux_u32 descriptor_count; void *inline_data; nux_u32 inline_capacity; } nux_message;
 typedef enum { NUX_PORT_RIGHT_SEND=1, NUX_PORT_RIGHT_RECEIVE=2, NUX_PORT_RIGHT_SEND_ONCE=3 } nux_port_right_kind;
 nux_status nux_port_system_init(void);
+nux_status nux_port_task_destroy(nux_task_id owner);
 nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit, nux_capability *send, nux_capability *receive);
 nux_status nux_port_destroy(nux_capability control);
 nux_status nux_port_send(nux_capability send, const nux_message *message, nux_u64 timeout_ns);
