@@ -47,7 +47,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
 | IPC | Stable port/message interface declarations | Port objects, queues, blocking, deadlines, rights transfer |
 | VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
-| Interrupts/syscalls | Interrupts remain masked during early initialization | Vector tables, IDT/exception levels, timer interrupts, syscall ABI |
+| Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; fatal exception capture | Recoverable exception ports, interrupt controllers, timer IRQs, syscall ABI |
 
 The current scheduler code is a policy scaffold only. It does not perform a context switch, and the kernel does not yet launch user tasks. A successful cross-build is not equivalent to a bootable or production-ready kernel.
 
