@@ -6,7 +6,24 @@
 #define NUX_SYSCALL_LIMIT 256u
 #define NUX_SYSCALL_EXIT 0u
 #define NUX_SYSCALL_YIELD 1u
+#define NUX_SYSCALL_PORT_CREATE 2u
+#define NUX_SYSCALL_PORT_SEND 3u
+#define NUX_SYSCALL_PORT_RECEIVE 4u
+#define NUX_SYSCALL_PORT_DESTROY 5u
+#define NUX_SYSCALL_PORT_MAKE_SEND 6u
+#define NUX_SYSCALL_PORT_MAKE_SEND_ONCE 7u
 typedef nux_u64 nux_syscall_word;
+typedef struct {
+    nux_u32 id;
+    nux_u32 kind;
+    nux_u64 sequence;
+    nux_u64 deadline_ns;
+    nux_u32 inline_size;
+    nux_u32 descriptor_count;
+    nux_u64 inline_data;
+    nux_u32 inline_capacity;
+    nux_u32 reserved;
+} nux_user_message;
 typedef nux_status (*nux_syscall_handler)(nux_syscall_word,nux_syscall_word,nux_syscall_word,nux_syscall_word,nux_syscall_word,nux_syscall_word,nux_syscall_word *);
 typedef struct { nux_u32 number; nux_u32 flags; nux_syscall_handler handler; } nux_syscall_entry;
 nux_status nux_syscall_system_init(void);
