@@ -3,8 +3,7 @@
 #include <nux/types.h>
 void nux_arch_user_init(void);
 void nux_arch_set_kernel_stack(nux_u64 stack_top);
-__attribute__((noreturn)) void nux_arch_user_enter(nux_u64 entry,
+__attribute__((noreturn)) void nux_arch_enter_user(nux_u64 entry,
                                                     nux_u64 stack_pointer,
-                                                    nux_u64 argument,
-                                                    nux_u64 kernel_stack_top);
+                                                    nux_u64 argument);
 #endif
