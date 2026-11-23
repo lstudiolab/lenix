@@ -24,12 +24,13 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 - [x] AArch64 EL2/VHE normalization to EL1h before entering the common kernel
 - [x] AArch64 kernel/user translation split: TTBR1 retains kernel mappings and TTBR0 starts from an empty root
 - [x] Common staged initialization with debugger-visible phase and failure code
-- [ ] Bootable UEFI image generation and Secure Boot signing
+- [x] Bootable UEFI ISO and removable-media image generation for both architectures (Secure Boot signing remains pending)
 - [ ] Firmware console and early serial/framebuffer diagnostics
 - [ ] ACPI/Device Tree discovery and CPU feature enumeration
 - [ ] Timer and interrupt-controller initialization before enabling interrupts
 - [ ] Launch the first isolated user-space bootstrap task
-- [ ] QEMU and physical-machine boot qualification on both architectures
+- [x] QEMU UEFI firmware boot smoke tests reach Nux READY on x86-64 and AArch64
+- [ ] Physical-machine boot qualification on both architectures
 
 
 Legend: **Foundation** = some code exists; **Interface** = public contract declared; **Planned** = implementation remains.
@@ -41,7 +42,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Task destruction gated on live-thread check, address-space release, and owner-port/port-set cleanup (Foundation; task-scoped non-port capabilities remain)
 - [ ] Task suspension, resume, termination, and restart
 - [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
-- [ ] Address-space teardown, inheritance, and per-task resource accounting
+- [x] Address-space teardown after all task threads terminate (Foundation; inheritance and per-task accounting remain)
 - [ ] Per-task capability/port namespace
 - [ ] Task inheritance and creation attributes
 - [ ] Task information, accounting, and limits
