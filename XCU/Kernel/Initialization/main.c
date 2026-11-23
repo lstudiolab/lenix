@@ -6,6 +6,7 @@
 #include <nux/thread.h>
 #include <nux/capability.h>
 #include <nux/port.h>
+#include <nux/bootstrap.h>
 #include <nux/sync.h>
 #include <nux/syscall.h>
 #include <nux/vm.h>
@@ -64,6 +65,7 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     if (nux_thread_system_init() != NUX_OK) nux_boot_fail(6);
     nux_boot_mark(NUX_BOOT_PHASE_IPC);
     if (nux_port_system_init() != NUX_OK) nux_boot_fail(7);
+    if (nux_bootstrap_system_init() != NUX_OK) nux_boot_fail(16);
     nux_boot_mark(NUX_BOOT_PHASE_SYNCHRONIZATION);
     if (nux_sync_system_init() != NUX_OK) nux_boot_fail(8);
     nux_boot_mark(NUX_BOOT_PHASE_SYSCALLS);
