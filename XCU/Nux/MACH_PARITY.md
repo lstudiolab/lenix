@@ -187,11 +187,12 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 11. Bootstrap and user-space servers
 
 - [ ] Kernel boot environment and validated boot modules
+- [x] ELF-backed initial task construction with failure rollback (Foundation; boot-module discovery and persistent launch remain)
 - [ ] First user task and initial address space
 - [ ] Bootstrap/service manager
 - [x] Capability-validated service registration, lookup, owner-only unregister, and owner-task cleanup (Foundation; service startup policy and restart supervision remain)
 - [ ] Service restart policy
-- [ ] Special ports for task, thread, host, and bootstrap services
+- [x] Task-scoped task/thread/host/bootstrap special-port slots with capability validation and teardown cleanup (Foundation; kernel policy and automatic population remain)
 - [ ] User-space default memory pager
 - [ ] User-space device manager and driver servers
 - [ ] User-space filesystem and network servers
