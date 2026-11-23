@@ -5,6 +5,7 @@
 #include <nux/capability.h>
 #define NUX_SERVICE_NAME_MAX 64u
 #define NUX_BOOTSTRAP_SERVICE_LIMIT 128u
+enum { NUX_SPECIAL_PORT_TASK=0, NUX_SPECIAL_PORT_THREAD=1, NUX_SPECIAL_PORT_HOST=2, NUX_SPECIAL_PORT_BOOTSTRAP=3 };
 typedef struct { char name[NUX_SERVICE_NAME_MAX]; nux_capability service_port; nux_u32 owner_task; nux_u32 flags; } nux_service_entry;
 nux_status nux_bootstrap_system_init(void);
 nux_status nux_bootstrap_register(const char *name, nux_capability service_port);
