@@ -354,7 +354,7 @@ static int capture_memory_map(efi_system_table *system, void *map_buffer,
     boot_info.memory_map = (efi_u64)(efi_uintn)memory_region_pointers;
     boot_info.memory_map_count = stored;
     boot_info.hhdm_offset = NUX_DIRECT_MAP_BASE;
-    boot_info.firmware_table = find_firmware_root(system);
+    boot_info.firmware_table = find_firmware_root(system);\n    if (boot_info.firmware_table >= NUX_PHYSICAL_LIMIT) boot_info.firmware_table = 0;
     boot_info.flags = 0;
     return 1;
 }
@@ -399,7 +399,7 @@ static __attribute__((noreturn)) void enter_kernel(efi_u64 entry)
     register const nux_boot_info *argument __asm__("rdi") = &boot_info;
     register efi_u64 target __asm__("rax") = entry;
     efi_u64 root = (efi_u64)(efi_uintn)x86_pml4;
-    __asm__ volatile("mov %0, %%cr3" : : "r"(root) : "memory");
+    efi_u64 cr4;\n    __asm__ volatile("mov %%cr4, %0" : "=r"(cr4));\n    cr4 |= (1ULL << 4) | (1ULL << 5);\n    __asm__ volatile("mov %0, %%cr4\\nmov %1, %%cr3" : : "r"(cr4), "r"(root) : "memory");
     __asm__ volatile("jmp *%%rax" : : "D"(argument), "a"(target) : "memory");
     __builtin_unreachable();
 }
@@ -423,10 +423,10 @@ static int build_page_tables(efi_u64 kernel_physical, efi_u64 kernel_span)
         return 0;
 
     arm_ttbr0[0] = (efi_u64)(efi_uintn)arm_l1_identity | 3ULL;
-    arm_l1_identity[0] = (efi_u64)(efi_uintn)arm_l2_identity[0] | 3ULL;
     arm_ttbr1[256] = (efi_u64)(efi_uintn)arm_l1_direct | 3ULL;
     arm_ttbr1[511] = (efi_u64)(efi_uintn)arm_l1_kernel | 3ULL;
     for (efi_u32 directory = 0; directory < 4; ++directory) {
+        arm_l1_identity[directory] = (efi_u64)(efi_uintn)arm_l2_identity[directory] | 3ULL;
         arm_l1_direct[directory] = (efi_u64)(efi_uintn)arm_l2_direct[directory] | 3ULL;
         for (efi_u32 page = 0; page < 512; ++page) {
             efi_u64 physical = ((efi_u64)directory * 512ULL + page) * NUX_LARGE_PAGE_SIZE;
