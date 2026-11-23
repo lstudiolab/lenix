@@ -11,3 +11,10 @@ nux_arch_user_enter:
     isb
     eret
 .size nux_arch_user_enter, .-nux_arch_user_enter
+
+.global nux_arch_syscall_entry
+.type nux_arch_syscall_entry,%function
+nux_arch_syscall_entry:
+    svc #0
+    ret
+.size nux_arch_syscall_entry, .-nux_arch_syscall_entry
