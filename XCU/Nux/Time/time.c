@@ -61,7 +61,9 @@ nux_status nux_timer_cancel(nux_timer_id id) {
     t->info.armed=0;nux_arch_unlock(&time_lock);return NUX_OK;
 }
 nux_status nux_timer_get_info(nux_timer_id id,nux_timer_info *out) {
-    if(!out)return NUX_E_INVALID;nux_arch_lock(&time_lock);timer_entry *t=timer_find(id);
+    if(!out)return NUX_E_INVALID;
+    nux_arch_lock(&time_lock);
+    timer_entry *t=timer_find(id);
     if(!t){nux_arch_unlock(&time_lock);return NUX_E_NOT_FOUND;}
     *out=t->info;nux_arch_unlock(&time_lock);return NUX_OK;
 }
@@ -72,7 +74,9 @@ nux_u32 nux_timer_poll(void) {
         timer_entry *t=&timers[i];if(!t->info.active||!t->info.armed)continue;
         nux_u64 now=nux_clock_now(t->clock);if(now<t->info.deadline_ns)continue;
         ++t->info.expirations;++expired;
-        if(t->info.interval_ns){nux_u64 late=now-t->info.deadline_ns; nux_u64 steps=late/t->info.interval_ns+1;t->info.deadline_ns+=steps*t->info.interval_ns;}
+        if(t->info.interval_ns){nux_u64 late=now-t->info.deadline_ns; nux_u64 steps=late/t->info.interval_ns+1;
+            if(steps>(NUX_U64_MAX-t->info.deadline_ns)/t->info.interval_ns)t->info.armed=0;
+            else t->info.deadline_ns+=steps*t->info.interval_ns;}
         else t->info.armed=0;
     }
     nux_arch_unlock(&time_lock);return expired;
@@ -82,12 +86,14 @@ nux_status nux_thread_sleep_until(nux_u64 deadline) {
     return nux_clock_now(NUX_CLOCK_MONOTONIC)>=deadline?NUX_OK:NUX_E_WOULD_BLOCK;
 }
 nux_status nux_thread_sleep_for(nux_u64 duration) {
-    if(!duration)return NUX_OK;nux_u64 now=nux_clock_now(NUX_CLOCK_MONOTONIC);
+    if(!duration)return NUX_OK;
+    nux_u64 now=nux_clock_now(NUX_CLOCK_MONOTONIC);
     if(!now||duration>NUX_U64_MAX-now)return NUX_E_NOT_SUPPORTED;
     return nux_thread_sleep_until(now+duration);
 }
 nux_status nux_time_account_thread(nux_u32 id,nux_u64 elapsed) {
-    if(!id)return NUX_E_INVALID;nux_arch_lock(&time_lock);
+    if(!id)return NUX_E_INVALID;
+    nux_arch_lock(&time_lock);
     for(nux_u32 i=0;i<NUX_TIME_THREAD_LIMIT;i++)if(usage[i].id==id||usage[i].id==0){
         if(!usage[i].id)usage[i].id=id;
         if(elapsed>NUX_U64_MAX-usage[i].runtime){nux_arch_unlock(&time_lock);return NUX_E_LIMIT;}
@@ -96,7 +102,8 @@ nux_status nux_time_account_thread(nux_u32 id,nux_u64 elapsed) {
     nux_arch_unlock(&time_lock);return NUX_E_LIMIT;
 }
 nux_u64 nux_time_thread_runtime(nux_u32 id) {
-    if(!id)return 0;nux_arch_lock(&time_lock);
+    if(!id)return 0;
+    nux_arch_lock(&time_lock);
     for(nux_u32 i=0;i<NUX_TIME_THREAD_LIMIT;i++)if(usage[i].id==id){nux_u64 r=usage[i].runtime;nux_arch_unlock(&time_lock);return r;}
     nux_arch_unlock(&time_lock);return 0;
 }
