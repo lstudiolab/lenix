@@ -1,6 +1,8 @@
 #include <nux/sync.h>
+#include <nux/thread.h>
 
 #define NUX_SYNC_LOCK_LIMIT 64u
+#define NUX_SYNC_WAITER_LIMIT 16u
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -9,7 +11,9 @@ typedef struct {
     nux_semaphore_id id;
     nux_u32 count;
     nux_u32 maximum;
-    nux_u32 waiters;
+    nux_thread_id waiters[NUX_SYNC_WAITER_LIMIT];
+    nux_u8 granted[NUX_SYNC_WAITER_LIMIT];
+    nux_u32 waiter_count;
     nux_u8 active;
 } nux_semaphore_entry;
 
@@ -62,6 +66,7 @@ nux_status nux_sync_system_init(void)
 {
     nux_arch_lock(&sync_lock);
     for (nux_u32 i = 0; i < NUX_SYNC_OBJECT_LIMIT; ++i) {
+        semaphores[i].waiter_count = 0;
         semaphores[i].active = 0;
         lock_sets[i].active = 0;
         conditions[i].active = 0;
@@ -86,7 +91,11 @@ nux_status nux_semaphore_create(nux_u32 initial_count, nux_u32 maximum_count,
         if (!entry->id) entry->id = next_semaphore_id++;
         entry->count = initial_count;
         entry->maximum = maximum_count;
-        entry->waiters = 0;
+        entry->waiter_count = 0;
+        for (nux_u32 j = 0; j < NUX_SYNC_WAITER_LIMIT; ++j) {
+            entry->waiters[j] = 0;
+            entry->granted[j] = 0;
+        }
         entry->active = 1;
         *out = entry->id;
         nux_arch_unlock(&sync_lock);
@@ -99,28 +108,80 @@ nux_status nux_semaphore_create(nux_u32 initial_count, nux_u32 maximum_count,
 nux_status nux_semaphore_wait(nux_semaphore_id id, nux_u64 timeout_ns)
 {
     if (timeout_ns) return NUX_E_NOT_SUPPORTED;
-    nux_arch_lock(&sync_lock);
-    nux_semaphore_entry *entry = nux_semaphore_find(id);
-    if (!entry) {
+    for (;;) {
+        nux_thread_id waiter = 0;
+        nux_u32 slot = NUX_SYNC_WAITER_LIMIT;
+        nux_arch_lock(&sync_lock);
+        nux_semaphore_entry *entry = nux_semaphore_find(id);
+        if (!entry) {
+            nux_arch_unlock(&sync_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        if (entry->count) {
+            --entry->count;
+            nux_arch_unlock(&sync_lock);
+            return NUX_OK;
+        }
+        if (entry->waiter_count == NUX_SYNC_WAITER_LIMIT) {
+            nux_arch_unlock(&sync_lock);
+            return NUX_E_LIMIT;
+        }
+        nux_status status = nux_thread_prepare_wait_current(&waiter);
+        if (status != NUX_OK || !waiter) {
+            nux_arch_unlock(&sync_lock);
+            return status == NUX_OK ? NUX_E_BAD_STATE : status;
+        }
+        slot = entry->waiter_count++;
+        entry->waiters[slot] = waiter;
+        entry->granted[slot] = 0;
         nux_arch_unlock(&sync_lock);
-        return NUX_E_NOT_FOUND;
-    }
-    if (!entry->count) {
+
+        status = nux_thread_yield();
+
+        nux_arch_lock(&sync_lock);
+        entry = nux_semaphore_find(id);
+        if (!entry) {
+            nux_arch_unlock(&sync_lock);
+            return NUX_E_NOT_FOUND;
+        }
+        for (nux_u32 i = 0; i < entry->waiter_count; ++i) {
+            if (entry->waiters[i] != waiter) continue;
+            if (entry->granted[i]) {
+                for (nux_u32 j = i + 1; j < entry->waiter_count; ++j) {
+                    entry->waiters[j - 1] = entry->waiters[j];
+                    entry->granted[j - 1] = entry->granted[j];
+                }
+                --entry->waiter_count;
+                nux_arch_unlock(&sync_lock);
+                return NUX_OK;
+            }
+            for (nux_u32 j = i + 1; j < entry->waiter_count; ++j) {
+                entry->waiters[j - 1] = entry->waiters[j];
+                entry->granted[j - 1] = entry->granted[j];
+            }
+            --entry->waiter_count;
+            break;
+        }
         nux_arch_unlock(&sync_lock);
-        return NUX_E_WOULD_BLOCK;
+        if (status != NUX_OK) return status;
     }
-    --entry->count;
-    nux_arch_unlock(&sync_lock);
-    return NUX_OK;
 }
 
 nux_status nux_semaphore_post(nux_semaphore_id id)
 {
+    nux_thread_id wake = 0;
     nux_arch_lock(&sync_lock);
     nux_semaphore_entry *entry = nux_semaphore_find(id);
     if (!entry) {
         nux_arch_unlock(&sync_lock);
         return NUX_E_NOT_FOUND;
+    }
+    for (nux_u32 i = 0; i < entry->waiter_count; ++i) {
+        if (entry->granted[i]) continue;
+        entry->granted[i] = 1;
+        wake = entry->waiters[i];
+        nux_arch_unlock(&sync_lock);
+        return nux_thread_wake(wake);
     }
     if (entry->count == entry->maximum) {
         nux_arch_unlock(&sync_lock);
@@ -133,14 +194,26 @@ nux_status nux_semaphore_post(nux_semaphore_id id)
 
 nux_status nux_semaphore_post_all(nux_semaphore_id id)
 {
+    nux_thread_id wake[NUX_SYNC_WAITER_LIMIT];
+    nux_u32 count = 0;
     nux_arch_lock(&sync_lock);
     nux_semaphore_entry *entry = nux_semaphore_find(id);
     if (!entry) {
         nux_arch_unlock(&sync_lock);
         return NUX_E_NOT_FOUND;
     }
+    for (nux_u32 i = 0; i < entry->waiter_count; ++i) {
+        if (entry->granted[i]) continue;
+        entry->granted[i] = 1;
+        wake[count++] = entry->waiters[i];
+    }
     nux_arch_unlock(&sync_lock);
-    return NUX_E_NOT_SUPPORTED;
+    nux_status result = NUX_OK;
+    for (nux_u32 i = 0; i < count; ++i) {
+        nux_status status = nux_thread_wake(wake[i]);
+        if (status != NUX_OK && result == NUX_OK) result = status;
+    }
+    return result;
 }
 
 nux_status nux_semaphore_destroy(nux_semaphore_id id)
@@ -151,7 +224,7 @@ nux_status nux_semaphore_destroy(nux_semaphore_id id)
         nux_arch_unlock(&sync_lock);
         return NUX_E_NOT_FOUND;
     }
-    if (entry->waiters) {
+    if (entry->waiter_count) {
         nux_arch_unlock(&sync_lock);
         return NUX_E_BUSY;
     }
