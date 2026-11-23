@@ -14,7 +14,7 @@ nux_status nux_task_get(nux_task_id id,nux_task_info *out)
 
 int main(void)
 {
-    nux_capability first, derived, moved, one_shot, cap;
+    nux_capability first, derived, moved, one_shot, cap, receive_right, forbidden;
     nux_object_id object;
     if(nux_capability_system_init()!=NUX_OK)return 1;
     if(nux_capability_create(1,NUX_OBJECT_MEMORY,7,
@@ -23,6 +23,12 @@ int main(void)
     if(nux_capability_derive(1,first,NUX_RIGHT_TRANSFER,NUX_RIGHT_READ,&derived)!=NUX_OK)return 18;
     if(nux_capability_check(1,derived,NUX_OBJECT_MEMORY,NUX_RIGHT_READ,&object)!=NUX_OK)return 19;
     if(nux_capability_check(1,derived,NUX_OBJECT_MEMORY,NUX_RIGHT_TRANSFER,&object)!=NUX_E_ACCESS)return 20;
+    if(nux_capability_create(1,NUX_OBJECT_PORT,77,
+       NUX_RIGHT_RECEIVE|NUX_RIGHT_CONTROL|NUX_RIGHT_TRANSFER,&receive_right)!=NUX_OK)return 21;
+    if(nux_capability_derive(1,receive_right,NUX_RIGHT_TRANSFER,
+       NUX_RIGHT_RECEIVE,&forbidden)!=NUX_E_ACCESS)return 22;
+    if(nux_capability_derive(1,receive_right,NUX_RIGHT_TRANSFER,
+       NUX_RIGHT_CONTROL,&forbidden)!=NUX_E_ACCESS)return 23;
     if(nux_capability_move(1,first,2,NUX_OBJECT_MEMORY,
        NUX_RIGHT_TRANSFER|NUX_RIGHT_READ,NUX_RIGHT_READ,&object,&moved)!=NUX_OK)return 4;
     if(object!=7||nux_capability_check(1,first,NUX_OBJECT_MEMORY,NUX_RIGHT_READ,&object)!=NUX_E_ACCESS)return 5;
