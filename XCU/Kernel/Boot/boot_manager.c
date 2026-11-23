@@ -86,7 +86,8 @@ static int valid_kernel_image(const efi_u8 *image, efi_u64 size)
 
     section_table = (efi_u64)pe_offset + 24u + optional_size;
     section_bytes = (efi_u64)section_count * 40u;
-    if (section_table > size || section_bytes > size - section_table)
+    if (section_table > size || section_bytes > size - section_table ||
+        section_table + section_bytes > headers_size)
         return 0;
 
     for (efi_u16 i = 0; i < section_count; ++i) {
@@ -99,7 +100,8 @@ static int valid_kernel_image(const efi_u8 *image, efi_u64 size)
                          (efi_u64)raw_size > size - raw_offset))
             return 0;
         if (virtual_address > image_size ||
-            virtual_size > image_size - virtual_address)
+            virtual_size > image_size - virtual_address ||
+            raw_size > image_size - virtual_address)
             return 0;
     }
     return 1;
@@ -188,7 +190,7 @@ efi_status nux_boot_manager_main(efi_handle image, efi_system_table *system)
     if (!valid_kernel_image((const efi_u8 *)image_buffer, image_size)) {
         (void)system->boot_services->free_pool(image_buffer);
         print(system, invalid_image);
-        return fail(system, EFI_LOAD_ERROR);
+        return fail(system, EFI_ERROR_BIT | 1ULL);
     }
 
     print(system, loading);
