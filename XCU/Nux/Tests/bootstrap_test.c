@@ -101,6 +101,7 @@ int main(void)
     if (nux_bootstrap_lookup("display", &received) != NUX_E_NOT_FOUND) return 9;
     current_task = 1;
     if (nux_bootstrap_register("console", 8) != NUX_OK) return 10;
+    if (nux_task_set_special_port(1, NUX_SPECIAL_PORT_TASK, 8) != NUX_OK) return 22;
     if (nux_task_set_special_port(1, NUX_SPECIAL_PORT_TASK, 8) != NUX_OK) return 17;
     if (nux_task_get_special_port(1, NUX_SPECIAL_PORT_TASK, &received) != NUX_OK || received != 8) return 18;
     if (nux_task_set_special_port(1, 4, 8) != NUX_E_INVALID) return 19;
@@ -109,6 +110,7 @@ int main(void)
     nux_bootstrap_task_destroy(1);
     current_task = 2;
     if (nux_bootstrap_lookup("console", &received) != NUX_E_NOT_FOUND) return 11;
+    if (nux_task_get_special_port(1, NUX_SPECIAL_PORT_TASK, &received) != NUX_E_NOT_FOUND) return 23;
     if (nux_bootstrap_register("this-name-is-far-too-long-for-the-fixed-service-name-slot", 8)
         != NUX_E_INVALID) return 12;
     nux_u32 initial_task = 77;
