@@ -9,6 +9,8 @@ static volatile nux_u32 second_count;
 static volatile nux_u32 failed;
 static nux_thread_id first_thread_id;
 static nux_thread_id waiting_thread_id;
+static volatile nux_u32 priority_order[3];
+static volatile nux_u32 priority_count;
 static nux_u64 active_space;
 static nux_u64 last_task_space;
 
@@ -86,6 +88,24 @@ static void second_thread(void *argument)
     ++second_count;
 }
 
+static void timeshare_thread(void *argument)
+{
+    (void)argument;
+    priority_order[priority_count++] = 1;
+}
+
+static void fixed_thread(void *argument)
+{
+    (void)argument;
+    priority_order[priority_count++] = 2;
+}
+
+static void realtime_thread(void *argument)
+{
+    (void)argument;
+    priority_order[priority_count++] = 3;
+}
+
 int main(void)
 {
     nux_task_id task;
@@ -93,6 +113,7 @@ int main(void)
     nux_thread_info info;
     nux_u64 first_space, second_space, shared_space;
     nux_thread_id user_thread;
+    nux_thread_id timeshare_id, fixed_id, realtime_id;
     mock_user_entry=0x400000;mock_user_stack=0x7ffefffffb00ULL;
 
     if (nux_task_system_init() != NUX_OK) return 1;
@@ -118,6 +139,20 @@ int main(void)
         info.state != NUX_THREAD_TERMINATED) return 8;
     if (nux_thread_get_info(second, &info) != NUX_OK ||
         info.state != NUX_THREAD_TERMINATED) return 9;
+    priority_count = 0;
+    if (nux_thread_create_kernel(task, timeshare_thread, NUX_NULL, 127,
+                                 &timeshare_id) != NUX_OK) return 23;
+    if (nux_thread_create_kernel(task, fixed_thread, NUX_NULL, 1,
+                                 &fixed_id) != NUX_OK) return 24;
+    if (nux_thread_set_policy(fixed_id, NUX_SCHED_FIXED_PRIORITY, 1,
+                              5000000ULL) != NUX_OK) return 25;
+    if (nux_thread_create_kernel(task, realtime_thread, NUX_NULL, 0,
+                                 &realtime_id) != NUX_OK) return 26;
+    if (nux_thread_set_time_constraint(realtime_id, 1000000ULL, 100000ULL,
+                                       500000ULL) != NUX_OK) return 27;
+    if (nux_thread_yield() != NUX_OK) return 28;
+    if (priority_count != 3 || priority_order[0] != 3 ||
+        priority_order[1] != 2 || priority_order[2] != 1) return 29;
     if (nux_task_destroy(task) != NUX_OK) return 18;
     if (nux_task_get_address_space(task, &shared_space) != NUX_E_NOT_FOUND) return 19;
     return 0;
