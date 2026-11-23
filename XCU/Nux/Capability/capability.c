@@ -48,7 +48,7 @@ nux_status nux_capability_create(nux_task_id owner, nux_object_type type,
 {
     const nux_rights allowed = NUX_RIGHT_READ | NUX_RIGHT_WRITE |
         NUX_RIGHT_SEND | NUX_RIGHT_RECEIVE | NUX_RIGHT_MAP |
-        NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER;
+        NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER | NUX_RIGHT_SEND_ONCE;
     nux_task_info task;
     if (!owner || !out || type <= NUX_OBJECT_NONE ||
         type > NUX_OBJECT_MEMORY || !object_id || !rights ||
@@ -157,18 +157,19 @@ nux_u32 nux_capability_revoke_task(nux_task_id owner)
     return revoked;
 }
 
-nux_status nux_capability_consume(nux_capability cap, nux_object_type type,
+nux_status nux_capability_consume(nux_task_id owner, nux_capability cap, nux_object_type type,
                                   nux_rights required, nux_object_id *object_id)
 {
     nux_u32 slot = cap & 0xffu;
     nux_u32 generation = cap >> 8;
-    if (!slot || slot > NUX_CAPABILITY_LIMIT || !generation ||
+    if (!owner || !slot || slot > NUX_CAPABILITY_LIMIT || !generation ||
         !object_id || type == NUX_OBJECT_NONE || !required)
         return NUX_E_INVALID;
     nux_arch_lock(&cap_lock);
     nux_capability_entry *entry = &entries[slot - 1];
     if (!entry->active || entry->generation != generation ||
-        entry->type != type || (entry->rights & required) != required) {
+        entry->owner != owner || entry->type != type ||
+        (entry->rights & required) != required) {
         nux_arch_unlock(&cap_lock);
         return NUX_E_ACCESS;
     }
