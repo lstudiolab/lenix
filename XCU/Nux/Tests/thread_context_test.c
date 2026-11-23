@@ -1,6 +1,7 @@
 #include <nux/task.h>
 #include <nux/thread.h>
 #include <nux/time.h>
+#include <nux/processor.h>
 
 static volatile nux_u32 first_count;
 static volatile nux_u32 second_count;
@@ -10,6 +11,10 @@ static nux_u64 last_task_space;
 
 static nux_u64 test_next_space = 1;
 static nux_u64 mock_clock;
+nux_cpu_id nux_processor_current_id(void) { return 0; }
+nux_u32 nux_processor_set_cpu_allowed(nux_processor_set_id set, nux_cpu_id cpu)
+{ (void)set; (void)cpu; return 1; }
+nux_u32 nux_processor_set_exists(nux_processor_set_id set) { return set == 0; }
 nux_u64 nux_clock_now(nux_clock_id clock)
 {
     (void)clock;
