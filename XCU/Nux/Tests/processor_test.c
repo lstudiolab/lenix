@@ -1,5 +1,6 @@
 #include <nux/processor.h>
 #include <nux/acpi.h>
+nux_u64 nux_processor_test_hardware_id(void) { return 3; }
 
 void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
