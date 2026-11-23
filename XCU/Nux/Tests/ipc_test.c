@@ -29,6 +29,8 @@ int main(void)
     if (nux_task_create("ipc-test", 10, &task) != NUX_OK) return 4;
     if (nux_port_create(task, 2, &send, &receive) != NUX_OK) return 5;
     if (nux_port_send(send, &message, 0) != NUX_OK) return 6;
+    if (nux_port_send(send, &message, 0) != NUX_OK) return 17;
+    if (nux_port_send(send, &message, 0) != NUX_E_WOULD_BLOCK) return 18;
 
     nux_message received = {
         .inline_data = output, .inline_capacity = 2
@@ -40,6 +42,8 @@ int main(void)
     if (received.id != 42 || received.inline_size != sizeof(input)) return 9;
     for (unsigned long i = 0; i < sizeof(input); ++i)
         if (output[i] != input[i]) return 10;
+    received.inline_capacity = sizeof(output);
+    if (nux_port_receive(receive, &received, 0) != NUX_OK) return 19;
 
     if (nux_port_set_create(task, &set) != NUX_OK) return 11;
     if (nux_port_set_add(set, receive) != NUX_OK) return 12;
