@@ -12,4 +12,5 @@ nux_status nux_capability_system_init(void);
 nux_status nux_capability_create(nux_object_type type, nux_object_id object_id, nux_rights rights, nux_capability *out);
 nux_status nux_capability_check(nux_capability cap, nux_object_type type, nux_rights required_rights, nux_object_id *object_id);
 nux_status nux_capability_revoke(nux_capability cap);
+nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_id);
 #endif
