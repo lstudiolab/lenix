@@ -3,6 +3,7 @@
 #include <nux/vm.h>
 #include <nux/processor.h>
 #include <nux/exception.h>
+#include <nux/user.h>
 #include <nux/boot.h>
 #include <nux/user.h>
 
