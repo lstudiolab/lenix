@@ -19,16 +19,16 @@ jobs:
       - name: Install cross toolchains
         run: |
           sudo apt-get update
-          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
+          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso
       - name: Validate public headers and build both kernels
         run: make -C XCU clean all
-      - name: Publish ELF artifacts
+      - name: Package UEFI boot images\n        run: make -C XCU iso\n      - name: Publish kernel and boot image artifacts
         uses: actions/upload-artifact@v4
         with:
           name: nux-kernel-elf
           path: |
             XCU/Build/x86_64/nux.elf
-            XCU/Build/aarch64/nux.elf
+            XCU/Build/aarch64/nux.elf\n            XCU/Build/lenix-x86_64.iso\n            XCU/Build/lenix-aarch64.iso
 
   macos-cross-build:
     runs-on: macos-latest
@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install LLVM
         run: |
-          brew install llvm
+          brew install llvm xorriso
           echo "$(brew --prefix llvm)/bin" >> "$GITHUB_PATH"
       - name: Build and test both ELF targets with Clang/LLD
         run: make -C XCU clean all
