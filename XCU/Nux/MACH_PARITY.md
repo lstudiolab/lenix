@@ -38,7 +38,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 - [x] Initial task registry and task state model (Foundation; not a complete task implementation)
 - [ ] Task creation from executable image
-- [ ] Task destruction and resource reclamation
+- [x] Task destruction gated on live-thread check and address-space release (Foundation; task-wide port/capability reclamation remains)
 - [ ] Task suspension, resume, termination, and restart
 - [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
 - [ ] Address-space teardown, inheritance, and per-task resource accounting
