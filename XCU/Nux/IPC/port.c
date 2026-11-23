@@ -157,6 +157,55 @@ rollback:
     return status;
 }
 
+nux_status nux_port_task_destroy(nux_task_id owner)
+{
+    if (!owner) return NUX_E_INVALID;
+
+    nux_arch_lock(&port_lock);
+    for (nux_u32 i = 0; i < NUX_PORT_SET_LIMIT; ++i) {
+        if (port_sets[i].active && port_sets[i].owner == owner) {
+            port_sets[i].active = 0;
+            port_sets[i].count = 0;
+        }
+    }
+    nux_arch_unlock(&port_lock);
+
+    for (;;) {
+        nux_capability send_handle = 0;
+        nux_capability receive_handle = 0;
+        nux_u32 found = 0;
+
+        nux_arch_lock(&port_lock);
+        for (nux_u32 i = 0; i < NUX_PORT_LIMIT; ++i) {
+            nux_port_entry *port = &ports[i];
+            if (!port->active || port->owner != owner) continue;
+            send_handle = port->send_capability;
+            receive_handle = port->receive_capability;
+            while (port->count) {
+                nux_u16 encoded = port->queue[port->head];
+                if (encoded && encoded <= NUX_PORT_MESSAGE_POOL_LIMIT)
+                    messages[encoded - 1].active = 0;
+                port->queue[port->head] = 0;
+                port->head = (port->head + 1) % port->queue_limit;
+                --port->count;
+            }
+            port->active = 0;
+            port->object_id = 0;
+            port->owner = 0;
+            port->send_capability = 0;
+            port->receive_capability = 0;
+            found = 1;
+            break;
+        }
+        nux_arch_unlock(&port_lock);
+
+        if (!found) break;
+        if (send_handle) (void)nux_capability_revoke(send_handle);
+        if (receive_handle) (void)nux_capability_revoke(receive_handle);
+    }
+    return NUX_OK;
+}
+
 nux_status nux_port_destroy(nux_capability control)
 {
     nux_object_id object_id;
