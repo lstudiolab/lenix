@@ -78,17 +78,17 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 4. Ports, capabilities, and IPC
 
-- [x] Generation-checked capability handles and rights validation (Foundation; global table only)
-- [ ] Per-task capability namespaces
-- [x] Port creation/destruction and bounded queue metadata (Foundation; owner metadata is not yet a task namespace)
-- [x] Capability-checked send/receive rights (Foundation; send-once and per-task right namespaces remain)
-- [ ] Right copy, move, make-send, and transfer
+- [x] Generation-checked task-owned capability handles and caller authorization (Foundation; globally backed table)
+- [ ] Separate per-task capability tables and quotas
+- [x] Port creation/destruction and bounded queue metadata with receive-owner authorization
+- [x] Capability-checked send/receive/send-once rights with atomic one-use consumption
+- [x] Move send, receive, and send-once rights between task owners (Foundation; copy/make-send derivation remains)
 - [ ] Port death, no-senders, and lifecycle notifications
 - [x] Port sets with nonblocking wait-on-any scan (Foundation; scheduler-backed blocking waits remain)
 - [x] FIFO bounded inline-message queues with backpressure
 - [ ] Message send/receive timeouts and interruption
 - [ ] Inline and out-of-line message payloads
-- [ ] Atomic transfer of port rights and memory descriptors
+- [x] Atomic capability movement between task owners (Foundation; message-attached memory/port descriptors remain)
 - [x] Inline message validation, size limits, and fixed-pool resource accounting
 - [x] Asynchronous bounded messaging (synchronous RPC/reply protocol remains)
 - [ ] Reply ports and transaction correlation
