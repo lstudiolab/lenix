@@ -12,6 +12,10 @@ nux_status nux_vm_space_create(nux_u64 *out)
     *out = test_next_space++;
     return NUX_OK;
 }
+nux_status nux_vm_space_activate(nux_u64 id)
+{
+    return id ? NUX_OK : NUX_OK;
+}
 nux_status nux_vm_space_destroy(nux_u64 id)
 {
     return id ? NUX_OK : NUX_E_INVALID;
