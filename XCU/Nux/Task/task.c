@@ -9,12 +9,13 @@ static nux_task_id next_id;
 static nux_task_id current_id;
 static nux_u32 cursor;
 
-static nux_size nux_name_length(const char *s)
+static nux_size nux_name_length(const char *name)
 {
-    nux_size n = 0;
-    if (s == NUX_NULL) return 0;
-    while (s[n] != '\0' && n + 1 < NUX_TASK_NAME_LENGTH) ++n;
-    return n;
+    nux_size length = 0;
+    if (name == NUX_NULL) return 0;
+    while (name[length] != '\0' && length + 1 < NUX_TASK_NAME_LENGTH)
+        ++length;
+    return length;
 }
 
 nux_status nux_task_system_init(void)
@@ -100,11 +101,14 @@ nux_task_id nux_scheduler_choose(void)
 {
     nux_task_id chosen = 0;
     nux_arch_lock(&task_lock);
-    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i)\n        if (tasks[i].state == NUX_TASK_RUNNING) tasks[i].state = NUX_TASK_READY;\n    current_id = 0;\n    for (nux_u32 n = 0; n < NUX_TASK_LIMIT; ++n) {
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
+        if (tasks[i].state == NUX_TASK_RUNNING)
+            tasks[i].state = NUX_TASK_READY;
+    }
+    current_id = 0;
+    for (nux_u32 n = 0; n < NUX_TASK_LIMIT; ++n) {
         nux_u32 i = (cursor + n) % NUX_TASK_LIMIT;
-        if (tasks[i].state != NUX_TASK_READY && tasks[i].state != NUX_TASK_RUNNING)
-            continue;
-        if (tasks[i].id == current_id) tasks[i].state = NUX_TASK_READY;
+        if (tasks[i].state != NUX_TASK_READY) continue;
         tasks[i].state = NUX_TASK_RUNNING;
         tasks[i].runtime++;
         current_id = tasks[i].id;
