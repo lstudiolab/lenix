@@ -32,7 +32,7 @@ int main(void)
     nux_task_id task, other_task;
     nux_capability send, receive, orphan_send, orphan_receive;
     nux_capability duplicate_send, send_once, moved_send;
-    nux_capability transfer_send, transfer_receive, moved_receive;
+    nux_capability transfer_send, transfer_receive, moved_receive, duplicate_receive;
     nux_object_id object_id;
     nux_port_set_id set;
     char input[] = "nux ipc";
@@ -91,9 +91,14 @@ int main(void)
 
     if (nux_port_create(task, 2, &transfer_send, &transfer_receive) != NUX_OK) return 32;
     if (nux_port_send(task, transfer_send, &message, 0) != NUX_OK) return 33;
+    if (nux_capability_create(task, NUX_OBJECT_PORT, 2,
+                              NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL,
+                              &duplicate_receive) != NUX_OK) return 43;
     if (nux_port_move_right(task, transfer_receive, other_task,
                             NUX_PORT_RIGHT_RECEIVE, &moved_receive) != NUX_OK) return 34;
     if (nux_port_receive(task, transfer_receive, &received, 0) != NUX_E_ACCESS) return 35;
+    if (nux_port_receive(task, duplicate_receive, &received, 0) != NUX_E_ACCESS) return 44;
+    if (nux_port_destroy(task, duplicate_receive) != NUX_E_ACCESS) return 45;
     if (nux_port_create(task, 2, &orphan_send, &orphan_receive) != NUX_OK) return 36;
     if (nux_task_destroy(task) != NUX_OK) return 37;
     if (nux_port_send(task, orphan_send, &message, 0) != NUX_E_ACCESS) return 38;
