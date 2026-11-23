@@ -548,6 +548,9 @@ nux_status nux_port_move_right(nux_task_id source_owner,
             }
         }
         port->owner = destination;
+        (void)nux_capability_revoke_owner_object_rights(
+            source_owner, NUX_OBJECT_PORT, object_id,
+            NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL);
     }
     nux_arch_unlock(&port_lock);
     return NUX_OK;
