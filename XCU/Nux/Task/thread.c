@@ -3,6 +3,7 @@
 #include <nux/vm.h>
 #include <nux/processor.h>
 #include <nux/exception.h>
+#include <nux/user.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
