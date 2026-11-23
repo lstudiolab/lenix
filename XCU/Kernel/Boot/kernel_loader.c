@@ -162,12 +162,6 @@ static efi_status fail(efi_system_table *system, efi_status status)
     return status ? status : NUX_EFI_ERROR;
 }
 
-static int address_below_limit(efi_u64 address, efi_u64 length)
-{
-    return address < NUX_PHYSICAL_LIMIT &&
-           length <= NUX_PHYSICAL_LIMIT - address;
-}
-
 static int address_identity_mapped(efi_u64 address, efi_u64 length)
 {
     return address < NUX_IDENTITY_LIMIT &&
