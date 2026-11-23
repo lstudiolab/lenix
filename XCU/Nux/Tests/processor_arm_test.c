@@ -24,8 +24,10 @@ int main(void)
     if(nux_processor_count()!=1)return 2;
     if (nux_processor_current_id() != 0) return 19;
     if(nux_processor_get_info(0,&info)!=NUX_OK)return 3;
-    if(info.architecture!=NUX_PROCESSOR_ARCH_ARM64||!info.online||
-       info.logical_id!=9||info.hardware_id!=0x800000ULL)return 4;
+    if(info.architecture!=NUX_PROCESSOR_ARCH_ARM64)return 4;
+    if(!info.online)return 7;
+    if(info.logical_id!=9)return 8;
+    if(info.hardware_id!=0x800000ULL)return 9;
     if(nux_processor_start(0)!=NUX_OK)return 5;
     if(nux_processor_stop(0)!=NUX_E_ACCESS)return 6;
     return 0;
