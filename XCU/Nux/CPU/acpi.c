@@ -139,11 +139,23 @@ static nux_status parse_madt(nux_u64 physical, nux_acpi_info *out)
                     cpu->hardware_id |= (nux_u64)r[68 + i] << (i * 8);
                 cpu->apic_id = 0;
                 cpu->x2apic = 2;
+                ++out->gic_cpu_interface_count;
             }
+        } else if (record->type == 12 && record->length >= 24) {
+            const nux_u8 *r = cursor;
+            out->gic_distributor_address = 0;
+            for (nux_u32 i = 0; i < 8; ++i)
+                out->gic_distributor_address |= (nux_u64)r[8 + i] << (i * 8);
+        } else if (record->type == 14 && record->length >= 16) {
+            const nux_u8 *r = cursor;
+            out->gic_redistributor_address = 0;
+            for (nux_u32 i = 0; i < 8; ++i)
+                out->gic_redistributor_address |= (nux_u64)r[4 + i] << (i * 8);
         }
         cursor += record->length;
     }
-    return out->local_apic_address ? NUX_OK : NUX_E_BAD_STATE;
+    return (out->local_apic_address || out->gic_distributor_address)
+        ? NUX_OK : NUX_E_BAD_STATE;
 }
 
 nux_status nux_acpi_discover(const void *rsdp_address, nux_acpi_info *out)
