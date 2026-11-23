@@ -18,20 +18,27 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 
 ### 0. Firmware boot and kernel startup
 
-- [x] UEFI-to-Limine boot protocol handoff on x86-64 and AArch64
-- [x] Explicit Limine request delimiters retained by architecture linker scripts
-- [x] x86-64 entry stack alignment, interrupt masking, and IDT installation
-- [x] AArch64 EL2/VHE normalization to EL1h before entering the common kernel
-- [x] AArch64 kernel/user translation split: TTBR1 retains kernel mappings and TTBR0 starts from an empty root
-- [x] Common staged initialization with debugger-visible phase and failure code
-- [x] Bootable UEFI ISO and removable-media image generation for both architectures (Secure Boot signing remains pending)
-- [ ] Firmware console and early serial/framebuffer diagnostics
+- [x] First-party UEFI Boot Manager for x86-64 and AArch64; no third-party bootloader in the boot chain
+- [x] First-party PE32+ EFI child-image validation, architecture checks, and EFI-to-EFI handoff
+- [x] First-party ELF64 kernel validation and bounded PT_LOAD segment loading
+- [x] Physical kernel-image and dedicated boot-stack reservation
+- [x] Versioned boot-info ABI with signature, version, structure size, architecture, kernel range, memory-map, ACPI, and direct-map fields
+- [x] Final UEFI memory-map capture and retry-safe ExitBootServices handoff
+- [x] x86-64 identity/direct/kernel mappings and AArch64 TTBR0/TTBR1 identity/direct/kernel mappings
+- [x] 4 GiB EFI identity window and 64 GiB high-half direct-map window
+- [x] High-half kernel entry with a direct-map boot stack that survives user address-space activation
+- [x] x86-64 exception entry and IDT installation
+- [x] AArch64 EL1 vector setup and TTBR0 user address-space support
 - [x] ACPI RSDP, XSDT/RSDT, and MADT parsing for x86 APIC/x2APIC/IO-APIC and ARM GICC/GICD/GICR topology (Foundation; Device Tree and CPU feature enumeration remain)
-- [ ] Timer and interrupt-controller initialization before enabling interrupts
-- [ ] Launch the first isolated user-space bootstrap task
-- [x] QEMU UEFI firmware boot smoke tests reach Nux READY on x86-64 and AArch64
+- [x] First-party UEFI removable-media image and EFI-bootable ISO generation for both architectures
+- [x] QEMU UEFI firmware boot reaches Nux READY on x86-64 and AArch64
 - [x] QEMU user-mode smoke ELF enters ring 3/EL0, exercises a kernel-thread handoff, invokes the exit syscall, and returns to the kernel on both architectures
+- [ ] Signed boot manifest, cryptographic verification, Secure Boot key enrollment, and recovery policy
+- [ ] Firmware framebuffer/serial diagnostics and boot configuration UI
+- [ ] Device Tree support for platforms without ACPI
+- [ ] Timer and interrupt-controller initialization before enabling interrupts
 - [ ] Physical-machine boot qualification on both architectures
+- [ ] Launch the first isolated user-space bootstrap task
 
 
 Legend: **Foundation** = some code exists; **Interface** = public contract declared; **Planned** = implementation remains.
