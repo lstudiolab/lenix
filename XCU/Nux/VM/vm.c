@@ -190,7 +190,7 @@ nux_status nux_vm_map(nux_u64 id,nux_vm_address *address,nux_vm_size size,nux_u3
     nux_u64 va=*address;
     if(!va){nux_status st=choose_address(s,size,&va);if(st!=NUX_OK){nux_arch_unlock(&vm_lock);return st;}}
     if((va&(NUX_VM_PAGE_SIZE-1))||va<NUX_VM_USER_BASE||va>=NUX_VM_USER_END||size>NUX_VM_USER_END-va){nux_arch_unlock(&vm_lock);return NUX_E_INVALID;}
-    nux_vm_region r={va,size,prot,NUX_VM_INHERIT_NONE,0,object,offset};
+    nux_vm_region r={va,size,prot,NUX_VM_INHERIT_NONE,0,object,offset,0};
     nux_status st=region_insert(s,r);if(st!=NUX_OK){nux_arch_unlock(&vm_lock);return st;}
     nux_u64 root=s->root;
     nux_u32 first_page=o?(nux_u32)(offset/NUX_VM_PAGE_SIZE):0;
