@@ -25,9 +25,11 @@ int main(void)
     if (nux_processor_system_init() != NUX_OK) return 1;
     if (nux_processor_count() != 1) return 2;
     if (nux_processor_get_info(0, &info) != NUX_OK) return 3;
-    if (info.id != 0 || !info.online ||
-        info.architecture != NUX_PROCESSOR_ARCH_X86_64 ||
-        info.logical_id != 7 || info.hardware_id != 3) return 4;
+    if (info.id != 0) return 4;
+    if (!info.online) return 15;
+    if (info.architecture != NUX_PROCESSOR_ARCH_X86_64) return 16;
+    if (info.logical_id != 7) return 17;
+    if (info.hardware_id != 3) return 18;
     if (nux_processor_start(0) != NUX_OK) return 5;
     if (nux_processor_stop(0) != NUX_E_ACCESS) return 6;
     if (nux_processor_get_info(1, &info) != NUX_E_NOT_FOUND) return 7;
