@@ -32,6 +32,7 @@ int main(void)
     nux_task_id task, other_task;
     nux_capability send, receive, orphan_send, orphan_receive;
     nux_capability duplicate_send, send_once, moved_send;
+    nux_capability send2, receive2, moved_receive;
     nux_capability transfer_send, transfer_receive, moved_receive;
     nux_object_id object_id;
     nux_port_set_id set;
