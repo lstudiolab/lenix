@@ -9,6 +9,7 @@ nux_arch_user_enter:
     mov x4, #0x3c0
     msr spsr_el1, x4
     msr cpacr_el1, xzr
+    msr tpidr_el0, xzr
     mov x0, x3
     mov x1, xzr
     mov x2, xzr
