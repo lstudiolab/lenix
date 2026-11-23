@@ -1,4 +1,5 @@
 #include <nux/thread.h>
+#include <nux/boot.h>
 #include <nux/time.h>
 #include <nux/vm.h>
 #include <nux/processor.h>
@@ -628,7 +629,7 @@ nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
         !address_space)
         return NUX_E_BAD_STATE;
     if (nux_vm_fault(address_space, entry, NUX_VM_PROT_EXEC) != NUX_OK ||
-        nux_vm_fault(address_space, stack - 1, NUX_VM_PROT_WRITE) != NUX_OK)
+        nux_vm_fault(address_space, stack, NUX_VM_PROT_WRITE) != NUX_OK)
         return NUX_E_ACCESS;
 
     nux_thread_id id;
@@ -653,11 +654,3 @@ nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
     return NUX_OK;
 }
 
-nux_status nux_thread_exit_current(void)
-{
-    nux_thread_id id = current_thread_id;
-    if (!id) return NUX_E_BAD_STATE;
-    nux_status status = nux_thread_terminate(id);
-    if (status != NUX_OK) return status;
-    return nux_thread_yield();
-}
