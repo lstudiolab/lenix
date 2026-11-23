@@ -30,6 +30,6 @@ nux_status nux_memory_object_destroy(nux_memory_object_id object);
 nux_status nux_memory_object_map(nux_memory_object_id object, nux_u64 space_id, nux_vm_address *address, nux_vm_size size, nux_u32 protection);
 nux_status nux_memory_object_lock(nux_memory_object_id object, nux_u64 offset, nux_vm_size size);
 nux_status nux_memory_object_unlock(nux_memory_object_id object, nux_u64 offset, nux_vm_size size);
-nux_status nux_memory_object_pager_register(nux_u32 owner, nux_memory_object_id object, nux_capability pager);
+nux_status nux_memory_object_pager_register(nux_task_id owner, nux_memory_object_id object, nux_capability pager);
 nux_status nux_vm_copy_on_write(nux_u64 source_space, nux_u64 destination_space, nux_vm_address address, nux_vm_size size);
 #endif
