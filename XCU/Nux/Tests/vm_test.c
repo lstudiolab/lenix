@@ -10,6 +10,8 @@ static nux_u64 next_root=1;
 typedef struct {nux_u64 root,va,pa;nux_u32 prot;nux_u8 active;} map_entry;
 static map_entry maps[MAP_LIMIT];
 
+nux_u32 nux_thread_task_busy(nux_task_id task){(void)task;return 0;}
+
 void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
 nux_u64 nux_phys_alloc_page(void){
@@ -58,8 +60,9 @@ int main(void){
     if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_OK)return 22;
     if(nux_task_get_address_space(task_b,&task_space_b)!=NUX_OK)return 23;
     if(!task_space_a||!task_space_b||task_space_a==task_space_b)return 24;
-    if(nux_vm_space_destroy(task_space_a)!=NUX_OK)return 25;
-    if(nux_vm_space_destroy(task_space_b)!=NUX_OK)return 26;
+    if(nux_task_destroy(task_a)!=NUX_OK)return 25;
+    if(nux_task_destroy(task_b)!=NUX_OK)return 26;
+    if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_E_NOT_FOUND)return 28;
     if(nux_vm_space_create(&space)!=NUX_OK)return 2;
     if(nux_vm_map(space,&address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 3;
     if(address<0x10000000ULL||nux_vm_fault(space,address,NUX_VM_PROT_READ)!=NUX_OK)return 4;
