@@ -75,7 +75,7 @@ int main(void){
     if(nux_vm_map(space,&read_base,NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ,0,0)!=NUX_OK)return 30;
     if(nux_vm_write(space,write_base+NUX_VM_PAGE_SIZE-2,input,sizeof(input))!=NUX_E_ACCESS)return 31;
     if(nux_vm_read(space,write_base+NUX_VM_PAGE_SIZE-2,output,sizeof(output))!=NUX_OK)return 32;
-    if(output[0]!=0x11||output[1]!=0x22||output[2]!=0||output[3]!=0)return 33;
+    if(output[0]!=0||output[1]!=0||output[2]!=0||output[3]!=0)return 33;
     if(nux_vm_write(space,read_base,input,1)!=NUX_E_ACCESS)return 34;
     if(nux_vm_unmap(space,write_base,NUX_VM_PAGE_SIZE)!=NUX_OK)return 35;
     if(nux_vm_unmap(space,read_base,NUX_VM_PAGE_SIZE)!=NUX_OK)return 36;
