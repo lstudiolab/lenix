@@ -51,8 +51,10 @@ aarch64:
 
 test-processor:
 	mkdir -p Build
-	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -I Nux/Include Nux/Tests/processor_test.c Nux/CPU/processor.c -o Build/processor_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -DNUX_PROCESSOR_TEST -DNUX_PROCESSOR_TEST_X86_64 -I Nux/Include Nux/Tests/processor_test.c Nux/CPU/processor.c -o Build/processor_test
 	./Build/processor_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -DNUX_PROCESSOR_TEST -DNUX_PROCESSOR_TEST_ARM64 -I Nux/Include Nux/Tests/processor_arm_test.c Nux/CPU/processor.c -o Build/processor_arm_test
+	./Build/processor_arm_test
 
 test-acpi:
 	mkdir -p Build
