@@ -59,6 +59,7 @@ jobs:
           echo "QEMU ARM exit status: $qemu_status"
           cat XCU/Build/qemu-arm.log || true
           cat XCU/Build/qemu-arm-serial.log || true
+          head -n 80 XCU/Build/qemu-arm-cpu.log || true
           tail -n 120 XCU/Build/qemu-arm-cpu.log || true
           grep -q 'NUX:USER_EXIT' XCU/Build/qemu-arm.log
           grep -q 'NUX:READY' XCU/Build/qemu-arm.log
@@ -75,6 +76,9 @@ jobs:
             XCU/Build/lenix-x86_64-uefi.img
             XCU/Build/lenix-aarch64-uefi.img
             XCU/Build/lenix-aarch64-qemu-uefi.img
+            XCU/Build/aarch64-qemu/nux.elf
+            XCU/Build/qemu-arm.log
+            XCU/Build/qemu-arm-cpu.log
 
   macos-cross-build:
     runs-on: macos-latest
