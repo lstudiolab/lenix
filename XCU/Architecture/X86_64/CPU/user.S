@@ -24,8 +24,8 @@ nux_arch_user_enter:
     movq %cr0, %rax
     orq $0x8, %rax
     movq %rax, %cr0
-    xorq %eax, %eax
-    xorq %edx, %edx
+    xorl %eax, %eax
+    xorl %edx, %edx
     movl $0xc0000100, %ecx
     wrmsr
     movl $0xc0000101, %ecx
