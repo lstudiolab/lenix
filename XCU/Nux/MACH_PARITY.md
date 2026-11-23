@@ -25,7 +25,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Task destruction and resource reclamation
 - [ ] Task suspension, resume, termination, and restart
 - [x] Distinct VM address space allocated and associated with each task (Foundation; task teardown and lifecycle reclamation remain)
-- [ ] Per-task address space
+- [ ] Address-space teardown, inheritance, and per-task resource accounting
 - [ ] Per-task capability/port namespace
 - [ ] Task inheritance and creation attributes
 - [ ] Task information, accounting, and limits
@@ -48,6 +48,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 3. Scheduling and execution
 
 - [x] Cooperative round-robin dispatch and real context switching between kernel threads (Foundation; no preemption)
+- [x] Activate the selected kernel thread's owning task address space on scheduler handoff (Foundation; user-mode transitions remain)
 - [ ] Preemptive scheduling and timer-driven quanta
 - [ ] Dynamic time-sharing priorities
 - [ ] Fixed-priority scheduling
