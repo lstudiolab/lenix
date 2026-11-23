@@ -191,7 +191,8 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
     nux_u64 end = address + size;
     for (nux_u64 cursor = address; cursor < end;) {
         nux_u64 page = cursor & ~(NUX_VM_PAGE_SIZE - 1);
-        if (!nux_arch_vm_translate(space->root, page)) {
+        nux_u64 physical = nux_arch_vm_translate(space->root, page);
+        if (!physical || !nux_phys_to_virt(physical)) {
             nux_arch_unlock(&vm_lock);
             return NUX_E_NOT_FOUND;
         }
@@ -209,7 +210,12 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
         nux_u64 region_remaining = region->start + region->size - cursor;
         if (amount > end - cursor) amount = end - cursor;
         if (amount > region_remaining) amount = region_remaining;
-        nux_u8 *output = (nux_u8 *)nux_phys_to_virt(physical) + offset;
+        nux_u8 *mapped = (nux_u8 *)nux_phys_to_virt(physical);
+        if (!mapped) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_BAD_STATE;
+        }
+        nux_u8 *output = mapped + offset;
         for (nux_u64 i = 0; i < amount; ++i)
             output[i] = input[i];
         input += amount;
@@ -263,7 +269,12 @@ nux_status nux_vm_read(nux_u64 id, nux_vm_address address,
         nux_u64 region_remaining = region->start + region->size - cursor;
         if (amount > end - cursor) amount = end - cursor;
         if (amount > region_remaining) amount = region_remaining;
-        const nux_u8 *input = (const nux_u8 *)nux_phys_to_virt(physical) + offset;
+        const nux_u8 *mapped = (const nux_u8 *)nux_phys_to_virt(physical);
+        if (!mapped) {
+            nux_arch_unlock(&vm_lock);
+            return NUX_E_BAD_STATE;
+        }
+        const nux_u8 *input = mapped + offset;
         for (nux_u64 i = 0; i < amount; ++i)
             output[i] = input[i];
         output += amount;
