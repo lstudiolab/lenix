@@ -9,7 +9,7 @@ typedef nux_u32 nux_capability;
 #define NUX_RIGHT_GRANT NUX_RIGHT_TRANSFER
 #define NUX_RIGHT_ADMIN NUX_RIGHT_CONTROL
 nux_status nux_capability_system_init(void);
-nux_status nux_capability_create(nux_task_id owner, nux_object_type type,
+nux_status nux_capability_create(nux_u32 owner, nux_object_type type,
                                  nux_object_id object_id, nux_rights rights,
                                  nux_capability *out);
 nux_status nux_capability_check(nux_task_id owner, nux_capability cap,
