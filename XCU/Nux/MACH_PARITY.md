@@ -80,13 +80,13 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 ### 5. Virtual memory and memory objects
 
 - [x] Physical page allocator with region tracking, allocation bitmap, and duplicate-free rejection (Foundation; boot reservations/reclaim work remains)
-- [ ] Per-task sparse virtual address spaces
-- [ ] Architecture page-table management and address-space switching
-- [ ] Map, unmap, remap, protect, and region-query operations
+- [x] Fixed-capacity sparse address-space objects (Foundation; not yet owned by task objects)
+- [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (Foundation; hardware runtime validation pending)
+- [x] Anonymous page-backed mappings and exact-region unmap/protect operations (Foundation; partial-range operations and region query remain)
 - [ ] Demand paging and page-fault resolution
-- [ ] Anonymous memory objects
+- [x] Anonymous page-backed memory objects (Foundation; fixed maximum object size)
 - [ ] Named memory entries and transferable mapping rights
-- [ ] Shared memory and memory inheritance
+- [x] Shared physical backing through memory-object mappings in multiple address spaces (Foundation; no copy-on-write or inheritance implementation)
 - [ ] Copy-on-write cloning and IPC transfer optimizations
 - [ ] External pager protocol and user-space memory managers
 - [ ] Pager initialization, data request/return, synchronize, terminate
