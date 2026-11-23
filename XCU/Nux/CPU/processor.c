@@ -167,7 +167,14 @@ nux_u32 nux_processor_set_cpu_allowed(nux_processor_set_id id, nux_cpu_id cpu)
     return allowed;
 }
 
-nux_cpu_id nux_processor_current_id(void) { return boot_cpu; }
+nux_cpu_id nux_processor_current_id(void)
+{
+    nux_u64 hardware_id = nux_arch_processor_hardware_id();
+    for (nux_u32 i = 0; i < processor_total; ++i)
+        if (processors[i].hardware_id == hardware_id && processors[i].online)
+            return i;
+    return NUX_CPU_LIMIT;
+}
 
 nux_status nux_processor_set_create(nux_processor_set_id *out)
 {
