@@ -4,6 +4,7 @@
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
 
+volatile nux_u64 nux_last_user_exit_code;
 static nux_syscall_entry calls[NUX_SYSCALL_LIMIT];
 static volatile nux_u32 syscall_lock;
 
@@ -13,7 +14,8 @@ static nux_status syscall_exit_handler(nux_syscall_word a, nux_syscall_word b,
                                         nux_syscall_word e, nux_syscall_word f,
                                         nux_syscall_word *result)
 {
-    (void)a; (void)b; (void)c; (void)d; (void)e; (void)f;
+    nux_last_user_exit_code = a;
+    (void)b; (void)c; (void)d; (void)e; (void)f;
     *result = 0;
     return nux_thread_exit_current();
 }
@@ -37,6 +39,7 @@ nux_status nux_syscall_system_init(void)
         calls[i].handler = NUX_NULL;
     }
     nux_arch_unlock(&syscall_lock);
+    nux_last_user_exit_code = 0;
     nux_status status = nux_syscall_register(NUX_SYSCALL_EXIT, syscall_exit_handler, 0);
     if (status != NUX_OK) return status;
     return nux_syscall_register(NUX_SYSCALL_YIELD, syscall_yield_handler, 0);
