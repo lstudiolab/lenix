@@ -95,8 +95,6 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Memory pressure, reclaim, and per-task accounting
 - [ ] Guard pages, W^X enforcement, and mapping validation
 
-- [x] Host IPC regression test covers create/send/receive/backpressure/buffer sizing/port sets/revocation
-
 ## 6. Synchronization and wait primitives
 
 - [x] Bounded counting semaphores with nonblocking wait/post (Foundation; wait queues and post-all remain)
@@ -185,7 +183,7 @@ Distributed IPC is an optional extension, not a prerequisite for a local microke
 ## Runtime support
 
 - [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives
-- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch
+- [x] Host-side regression tests for runtime primitives, IPC queues (create/send/receive/backpressure/buffer sizing/port sets/revocation), physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch
 - [ ] Full compiler runtime support and sanitizer/fuzz coverage
 
 ## Public interface headers
