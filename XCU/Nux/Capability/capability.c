@@ -30,3 +30,26 @@ nux_status nux_capability_revoke(nux_capability cap) {
  e->active=0;e->object_id=0;e->rights=0;e->type=NUX_OBJECT_NONE;if(++e->generation==0||e->generation>0x00ffffffu)e->generation=1;
  nux_arch_unlock(&cap_lock);return NUX_OK;
 }
+
+nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_id)
+{
+    nux_u32 revoked = 0;
+    if (type <= NUX_OBJECT_NONE || type > NUX_OBJECT_MEMORY || !object_id)
+        return 0;
+    nux_arch_lock(&cap_lock);
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        nux_capability_entry *entry = &entries[i];
+        if (!entry->active || entry->type != type ||
+            entry->object_id != object_id)
+            continue;
+        entry->active = 0;
+        entry->object_id = 0;
+        entry->rights = 0;
+        entry->type = NUX_OBJECT_NONE;
+        if (++entry->generation == 0 || entry->generation > 0x00ffffffu)
+            entry->generation = 1;
+        ++revoked;
+    }
+    nux_arch_unlock(&cap_lock);
+    return revoked;
+}
