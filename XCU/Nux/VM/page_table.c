@@ -19,7 +19,8 @@ static nux_u64 alloc_table(void) {
 #define X86_US 4ULL
 #define X86_NX (1ULL<<63)
 #define X86_ADDR 0x000ffffffffff000ULL
-static nux_u64 kernel_root;\nstatic nux_u64 current_root(void){nux_u64 r;__asm__ volatile("mov %%cr3,%0":"=r"(r));return r&X86_ADDR;}
+static nux_u64 kernel_root;
+static nux_u64 current_root(void){nux_u64 r;__asm__ volatile("mov %%cr3,%0":"=r"(r));return r&X86_ADDR;}
 static void invalidate(nux_u64 va){nux_u64 r=current_root();(void)r;__asm__ volatile("invlpg (%0)"::"r"(va):"memory");}
 nux_status nux_arch_vm_root_create(nux_u64 *out) {
     if(!out)return NUX_E_INVALID;nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;
@@ -84,12 +85,15 @@ nux_status nux_arch_vm_activate(nux_u64 root) {
 #define ARM_AP_USER_RO (3ULL<<6)
 #define ARM_PXN (1ULL<<53)
 #define ARM_UXN (1ULL<<54)
-static nux_u64 kernel_root;\nstatic void invalidate(nux_u64 va) {
+static nux_u64 kernel_root;
+static void invalidate(nux_u64 va) {
     nux_u64 operand=va>>12;
     __asm__ volatile("dsb ishst; tlbi vae1is, %0; dsb ish; isb"::"r"(operand):"memory");
 }
 nux_status nux_arch_vm_root_create(nux_u64 *out) {
-    if(!out)return NUX_E_INVALID;\n    if(!kernel_root)__asm__ volatile("mrs %0, ttbr0_el1":"=r"(kernel_root));\n    nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;*out=root;return NUX_OK;
+    if(!out)return NUX_E_INVALID;
+    if(!kernel_root)__asm__ volatile("mrs %0, ttbr0_el1":"=r"(kernel_root));
+    nux_u64 root=alloc_table();if(!root)return NUX_E_NO_MEMORY;*out=root;return NUX_OK;
 }
 nux_status nux_arch_vm_map(nux_u64 root,nux_u64 va,nux_u64 pa,nux_u32 prot) {
     if((va&4095)||(pa&4095)||va>=0x0001000000000000ULL)return NUX_E_INVALID;
