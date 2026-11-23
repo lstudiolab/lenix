@@ -12,8 +12,8 @@ Nux is intended to retain mechanisms that require kernel privilege or global coo
 
 - task/address-space ownership and lifecycle;
 - thread lifecycle and execution state;
-- cooperative kernel/user-thread scheduling and task-aware processor-set affinity (preemption remains planned);
-- IPC ports, bounded message transport, and rights transfer;
+- cooperative kernel/user-thread scheduling, task-aware processor-set affinity, and scheduler-backed wait/wake (preemption remains planned);
+- IPC ports, bounded message transport, rights transfer, and blocking receiver wakeup;
 - capability validation and revocation;
 - virtual-memory primitives, static ELF64 image loading, isolated user mappings, and initial user-stack construction;
 - interrupt and exception dispatch, user-mode entry/return, and syscall routing;
@@ -48,7 +48,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Tasks/threads | Separate registries, fixed kernel stacks, saved callee-saved contexts, ARM64/x86-64 context switch, cooperative kernel-thread scheduling, user-thread bootstrap, isolated user entry with sanitized registers and dedicated kernel stack, task suspension/resume, task-aware scheduling, one distinct VM address space per task, address-space activation on scheduler handoff, and task teardown/revocation | Preemption, per-CPU queues, TLS, FP/SIMD context, stack reclamation, task resource inheritance |
 | Capabilities | Separate 255-entry generation-checked capability spaces per task, object types, owner authorization, quotas, constrained derivation that cannot duplicate unique receive/control rights, cross-task move, one-use consumption, object/task revocation | Dynamic quotas, audit/tracing, delegated-right policy |
 | Processor topology | ACPI MADT discovery for x86 APIC/x2APIC and ARM GICC/GICD/GICR, hardware-to-logical CPU mapping, processor sets, CPU membership and policy metadata, scheduler-enforced thread affinity on the current CPU | AP startup, IPI, per-CPU scheduling, affinity enforcement, CPU feature/frequency enumeration |
-| IPC | Task-scoped capability-checked ports, FIFO bounded inline queues, port sets, backpressure, send-once, make/copy-send, atomic send/receive/send-once right transfer, receive-owner migration, destruction/revocation | Blocking waits, deadlines, out-of-line memory, RPC/reply, notifications |
+| IPC | Task-scoped capability-checked ports, FIFO bounded inline queues, backpressure, scheduler-backed blocking receive/wakeup, nonblocking port sets, send-once, make/copy-send, atomic right transfer, receive-owner migration, destruction/revocation | Multi-waiter and blocking port sets, deadlines, out-of-line memory, RPC/reply, notifications |
 | VM | Four-level ARM64/x86-64 page tables, address-space activation, anonymous/shared mappings, protection, translation, memory objects, task-owned address-space allocation, kernel VM read/write, static ELF64 PT_LOAD mapping with W^X permissions, rollback, aligned initial user stack/auxv, and QEMU user execution on both targets | Demand paging, page-fault resolution, COW, pager protocol, partial-range operations, guard pages, physical-hardware validation |
 | Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; user syscall frames and return paths; faulting user-thread termination | Recoverable exception ports, interrupt controllers, timer IRQs, debugger state/reply |
 
