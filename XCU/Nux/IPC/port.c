@@ -238,7 +238,8 @@ static nux_status nux_port_derive_send(nux_task_id owner,
 
     nux_arch_lock(&port_lock);
     port = nux_port_find(object_id);
-    if (!port || port->owner != owner) {
+    if (!port || port->owner != owner ||
+        nux_capability_check(owner, *out, NUX_OBJECT_PORT, rights, &object_id) != NUX_OK) {
         nux_arch_unlock(&port_lock);
         (void)nux_capability_revoke(owner, *out);
         *out = 0;
@@ -268,7 +269,8 @@ nux_status nux_port_copy_send(nux_task_id owner, nux_capability send,
     if (status != NUX_OK) return status;
     nux_arch_lock(&port_lock);
     nux_port_entry *port = nux_port_find(object_id);
-    if (!port) {
+    if (!port || nux_capability_check(owner, *out, NUX_OBJECT_PORT,
+                                      NUX_RIGHT_SEND, &object_id) != NUX_OK) {
         nux_arch_unlock(&port_lock);
         (void)nux_capability_revoke(owner, *out);
         *out = 0;
