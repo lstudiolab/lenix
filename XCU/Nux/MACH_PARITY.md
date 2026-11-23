@@ -33,9 +33,9 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 2. Threads and machine state
 
-- [ ] Separate thread objects and lifecycle
+- [x] Separate thread registry, creation, termination, suspend/resume, and state metadata (Foundation; no saved execution contexts or context switching yet)
 - [ ] Multiple threads per task
-- [ ] Thread creation, termination, suspend, resume, and yield
+- [x] Thread creation, termination, suspend, and resume metadata (Foundation; yield intentionally returns NOT_SUPPORTED until context switching exists)
 - [ ] Saved register contexts and architecture-specific state
 - [ ] Thread state get/set for controlled debugging
 - [ ] Kernel and user stacks
