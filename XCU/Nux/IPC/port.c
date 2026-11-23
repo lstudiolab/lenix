@@ -196,7 +196,7 @@ nux_status nux_port_send(nux_capability send, const nux_message *message,
     if (!message || message->inline_size > NUX_MESSAGE_INLINE_MAX ||
         (message->inline_size && !message->inline_data) ||
         message->descriptor_count != 0 ||
-        message->kind > NUX_PORT_MSG_RPC)
+        message->kind > (nux_u32)NUX_PORT_MSG_RPC)
         return NUX_E_INVALID;
     status = nux_capability_check(send, NUX_OBJECT_PORT,
                                   NUX_RIGHT_SEND, &object_id);
