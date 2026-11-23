@@ -2,7 +2,14 @@
 #define NUX_BOOT_STATUS_MAGIC 0x4e55580000000000ULL
 volatile nux_u64 nux_boot_status;
 
-#if defined(NUX_KERNEL) && defined(__x86_64__)
+#if defined(NUX_KERNEL) && defined(__aarch64__) && defined(NUX_QEMU_SEMIHOST)
+static void nux_boot_debug_write(const char *text)
+{
+    register nux_u64 operation __asm__("x0") = 0x04;
+    register const char *message __asm__("x1") = text;
+    __asm__ volatile("hlt #0xf000" : "+r"(operation) : "r"(message) : "memory");
+}
+#elif defined(NUX_KERNEL) && defined(__x86_64__)
 static void nux_boot_debug_write(const char *text)
 {
     while (*text) {
