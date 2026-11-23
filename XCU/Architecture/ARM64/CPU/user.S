@@ -1,4 +1,5 @@
 .section .text
+.extern nux_exception_vectors
 .global nux_arch_user_enter
 .type nux_arch_user_enter,%function
 nux_arch_user_enter:
@@ -12,6 +13,11 @@ nux_arch_user_enter:
     msr spsr_el1, x4
     msr cpacr_el1, xzr
     msr tpidr_el0, xzr
+    adrp x4, nux_exception_vectors
+    add x4, x4, :lo12:nux_exception_vectors
+    msr vbar_el1, x4
+    dsb sy
+    isb
     mov x0, x3
     mov x1, xzr
     mov x2, xzr
