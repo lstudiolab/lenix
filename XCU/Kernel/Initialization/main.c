@@ -7,6 +7,7 @@
 #include <nux/port.h>
 #include <nux/sync.h>
 #include <nux/syscall.h>
+#include <nux/vm.h>
 #include "entry.h"
 
 #if defined(__aarch64__)
@@ -43,8 +44,10 @@ void nux_kernel_main(const nux_boot_info *boot_info)
         nux_boot_failure(7);
     if (nux_syscall_system_init() != NUX_OK)
         nux_boot_failure(8);
+    if (nux_vm_system_init() != NUX_OK)
+        nux_boot_failure(9);
 
-    nux_boot_state = 0x4e55580000000009ULL;
+    nux_boot_state = 0x4e5558000000000aULL;
 
     /*
      * Interrupts remain masked until timer and interrupt-controller support
