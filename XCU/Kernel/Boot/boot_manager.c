@@ -1,4 +1,5 @@
 #include "uefi.h"
+#include "pe_image.h"
 
 static const efi_guid loaded_image_guid = {
     0x5b1b31a1, 0x9562, 0x11d2, {0x8e,0x3f,0x00,0xa0,0xc9,0x69,0x72,0x3b}
@@ -24,88 +25,6 @@ static const efi_char16 invalid_image[] = {
     'k','e','r','n','e','l',' ','i','m','a','g','e',' ','(','P','E','/','C','O','F','F',' ',
     'r','e','q','u','i','r','e','d',')','\\r','\\n',0
 };
-
-static efi_u16 read_u16(const efi_u8 *bytes)
-{
-    return (efi_u16)((efi_u16)bytes[0] | ((efi_u16)bytes[1] << 8));
-}
-
-static efi_u32 read_u32(const efi_u8 *bytes)
-{
-    return (efi_u32)bytes[0] | ((efi_u32)bytes[1] << 8) |
-           ((efi_u32)bytes[2] << 16) | ((efi_u32)bytes[3] << 24);
-}
-
-/* UEFI LoadImage accepts PE/COFF, not the ELF kernel emitted by XCU today. */
-static int valid_kernel_image(const efi_u8 *image, efi_u64 size)
-{
-    efi_u32 pe_offset;
-    efi_u16 machine;
-    efi_u16 section_count;
-    efi_u16 optional_size;
-    efi_u16 optional_magic;
-    efi_u32 image_size;
-    efi_u32 headers_size;
-    efi_u64 section_table;
-    efi_u64 section_bytes;
-
-    if (!image || size < 64 || image[0] != 'M' || image[1] != 'Z')
-        return 0;
-    pe_offset = read_u32(image + 0x3c);
-    if ((efi_u64)pe_offset > size || size - pe_offset < 24)
-        return 0;
-    if (read_u32(image + pe_offset) != 0x00004550u)
-        return 0;
-
-    machine = read_u16(image + pe_offset + 4);
-#if defined(__x86_64__)
-    if (machine != 0x8664u) return 0;
-#elif defined(__aarch64__)
-    if (machine != 0xaa64u) return 0;
-#else
-#error Unsupported EFI boot architecture
-#endif
-
-    section_count = read_u16(image + pe_offset + 6);
-    optional_size = read_u16(image + pe_offset + 20);
-    if (section_count == 0 || section_count > 96 ||
-        optional_size < 70 ||
-        (efi_u64)pe_offset + 24u + optional_size > size)
-        return 0;
-
-    const efi_u8 *optional = image + pe_offset + 24;
-    optional_magic = read_u16(optional);
-    if (optional_magic != 0x20bu || read_u16(optional + 68) != 10u)
-        return 0; /* PE32+ EFI application subsystem. */
-
-    image_size = read_u32(optional + 56);
-    headers_size = read_u32(optional + 60);
-    if (image_size == 0 || image_size > EFI_MAX_IMAGE_SIZE ||
-        headers_size == 0 || headers_size > size)
-        return 0;
-
-    section_table = (efi_u64)pe_offset + 24u + optional_size;
-    section_bytes = (efi_u64)section_count * 40u;
-    if (section_table > size || section_bytes > size - section_table ||
-        section_table + section_bytes > headers_size)
-        return 0;
-
-    for (efi_u16 i = 0; i < section_count; ++i) {
-        const efi_u8 *section = image + section_table + (efi_u64)i * 40u;
-        efi_u32 virtual_size = read_u32(section + 8);
-        efi_u32 virtual_address = read_u32(section + 12);
-        efi_u32 raw_size = read_u32(section + 16);
-        efi_u32 raw_offset = read_u32(section + 20);
-        if (raw_size && ((efi_u64)raw_offset > size ||
-                         (efi_u64)raw_size > size - raw_offset))
-            return 0;
-        if (virtual_address > image_size ||
-            virtual_size > image_size - virtual_address ||
-            raw_size > image_size - virtual_address)
-            return 0;
-    }
-    return 1;
-}
 
 static void print(efi_system_table *system, const efi_char16 *message)
 {
