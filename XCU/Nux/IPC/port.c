@@ -1,4 +1,5 @@
 #include <nux/port.h>
+#include <nux/thread.h>
 
 #define NUX_PORT_MESSAGE_POOL_LIMIT 256u
 #define NUX_PORT_SET_WIDTH 64u
@@ -27,6 +28,7 @@ typedef struct {
     nux_u32 head;
     nux_u32 tail;
     nux_u32 count;
+    nux_thread_id receiver_waiter;
     nux_u8 active;
 } nux_port_entry;
 
@@ -79,6 +81,7 @@ nux_status nux_port_system_init(void)
     for (nux_u32 i = 0; i < NUX_PORT_LIMIT; ++i) {
         ports[i].active = 0;
         ports[i].count = 0;
+        ports[i].receiver_waiter = 0;
         ports[i].head = 0;
         ports[i].tail = 0;
     }
