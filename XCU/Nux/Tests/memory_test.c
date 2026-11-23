@@ -28,7 +28,7 @@ int main(void)
     };
 
     if (nux_memory_init(&boot) != NUX_OK) return 1;
-    if (nux_phys_to_virt(0x1000) != arena) return 2;
+    if (nux_phys_to_virt(0x1000) != arena + NUX_PAGE_SIZE) return 2;
 
     nux_u64 a = nux_phys_alloc_page();
     nux_u64 b = nux_phys_alloc_page();
