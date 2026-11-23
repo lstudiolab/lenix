@@ -111,7 +111,7 @@ int main(void)
     current_task = 2;
     if (nux_bootstrap_lookup("console", &received) != NUX_E_NOT_FOUND) return 11;
     if (nux_task_get_special_port(1, NUX_SPECIAL_PORT_TASK, &received) != NUX_E_NOT_FOUND) return 23;
-    if (nux_bootstrap_register("this-name-is-far-too-long-for-the-fixed-service-name-slot", 8)
+    if (nux_bootstrap_register("this-service-name-is-deliberately-longer-than-the-maximum-supported-service-name-length", 8)
         != NUX_E_INVALID) return 12;
     nux_u32 initial_task = 77;
     if (nux_bootstrap_start_initial_task(0, 128, &initial_task) != NUX_E_INVALID ||
