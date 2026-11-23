@@ -226,6 +226,10 @@ nux_status nux_port_destroy(nux_task_id owner, nux_capability control)
         nux_arch_unlock(&port_lock);
         return NUX_E_NOT_FOUND;
     }
+    if (port->owner != owner) {
+        nux_arch_unlock(&port_lock);
+        return NUX_E_ACCESS;
+    }
 
     while (port->count) {
         nux_u16 encoded = port->queue[port->head];
@@ -440,6 +444,9 @@ nux_status nux_port_move_right(nux_task_id source_owner,
         }
         port->owner = destination;
         nux_arch_unlock(&port_lock);
+        (void)nux_capability_revoke_owner_object_rights(
+            source_owner, NUX_OBJECT_PORT, object_id,
+            NUX_RIGHT_RECEIVE | NUX_RIGHT_CONTROL);
     }
     return NUX_OK;
 }
