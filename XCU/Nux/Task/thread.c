@@ -453,6 +453,41 @@ static nux_u32 nux_thread_task_runnable(nux_task_id task_id)
         task.state != NUX_TASK_UNUSED;
 }
 
+nux_status nux_thread_prepare_wait_current(nux_thread_id *out)
+{
+    if (!out) return NUX_E_INVALID;
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *thread = nux_thread_find(current_thread_id);
+    if (!thread || thread->info.state != NUX_THREAD_RUNNING) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_BAD_STATE;
+    }
+    thread->info.state = NUX_THREAD_WAITING;
+    *out = thread->info.id;
+    nux_arch_unlock(&thread_lock);
+    return NUX_OK;
+}
+
+nux_status nux_thread_wake(nux_thread_id id)
+{
+    if (!id) return NUX_E_INVALID;
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *thread = nux_thread_find(id);
+    if (!thread || thread->info.state == NUX_THREAD_TERMINATED) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_NOT_FOUND;
+    }
+    if (thread->info.state == NUX_THREAD_WAITING)
+        thread->info.state = NUX_THREAD_READY;
+    else if (thread->info.state != NUX_THREAD_READY &&
+             thread->info.state != NUX_THREAD_RUNNING) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_BAD_STATE;
+    }
+    nux_arch_unlock(&thread_lock);
+    return NUX_OK;
+}
+
 nux_status nux_thread_yield(void)
 {
     nux_thread_entry *old_thread;
