@@ -17,7 +17,7 @@ nux_arch_early_init:
     msr sp_el1, x10
     mov x10, #0x3c5
     msr spsr_el2, x10
-    ldr x10, =1f
+    adr x10, 1f
     msr elr_el2, x10
 
     /* Permit EL1 physical/virtual counter reads and disable EL2 VHE. */
@@ -35,10 +35,10 @@ nux_arch_early_init:
     isb
     msr daifset, #0xf
 2:
-    ldr x0, =nux_exception_vectors
+    adrp x0, nux_exception_vectors
+    add x0, x0, :lo12:nux_exception_vectors
     msr vbar_el1, x0
     dsb sy
     isb
     ret
 .size nux_arch_early_init, .-nux_arch_early_init
-.ltorg
