@@ -193,7 +193,7 @@ invalid_image:
 
 load_failed:
     if (stack_mapped)
-        (void)nux_vm_unmap(address_space, stack_base, ELF_USER_STACK_SIZE);
+        (void)nux_vm_unmap(address_space, stack_base, NUX_ELF_STACK_SIZE);
     while (loaded_count) {
         --loaded_count;
         (void)nux_vm_unmap(address_space, loaded[loaded_count].address,
