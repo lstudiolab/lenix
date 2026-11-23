@@ -1,6 +1,7 @@
 #include <nux/task.h>
 #include <nux/thread.h>
 #include <nux/port.h>
+#include <nux/bootstrap.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -117,6 +118,7 @@ nux_status nux_task_destroy(nux_task_id id)
         return status;
     }
 
+    nux_bootstrap_task_destroy(id);
     (void)nux_port_task_destroy(id);
 
     nux_arch_lock(&task_lock);
