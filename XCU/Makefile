@@ -11,8 +11,8 @@ C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physic
 all: headers x86_64 aarch64
 
 headers:
-\t$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
-\t$(CC_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -fsyntax-only Nux/Tests/header_check.c
+	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
+	$(CC_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -fsyntax-only Nux/Tests/header_check.c
 
 x86_64:
 	mkdir -p Build/x86_64
