@@ -8,6 +8,7 @@
 #include <nux/capability.h>
 #include <nux/port.h>
 #include <nux/vm.h>
+#include <nux/elf.h>
 #include <nux/sync.h>
 #include <nux/processor.h>
 #include <nux/acpi.h>
@@ -24,9 +25,10 @@ nux_status nux_header_contract_check(void)
     nux_message message = {0};
     nux_thread_info thread = {0};
     nux_vm_region region = {0};
+    nux_elf_load_result elf = {0};
     nux_processor_info processor = {0};
     nux_acpi_info acpi = {0};
     nux_host_info host = {0};
     return (nux_status)(message.id + thread.id + region.start +
-                        processor.id + host.cpu_count + acpi.cpu_count);
+                        processor.id + host.cpu_count + acpi.cpu_count + elf.entry);
 }
