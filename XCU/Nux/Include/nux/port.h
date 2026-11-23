@@ -19,6 +19,7 @@ nux_status nux_port_system_init(void);
 nux_status nux_port_task_destroy(nux_task_id owner);
 nux_status nux_port_create(nux_task_id owner, nux_u32 queue_limit, nux_capability *send, nux_capability *receive);
 nux_status nux_port_make_send(nux_task_id owner, nux_capability receive, nux_capability *out);
+nux_status nux_port_copy_send(nux_task_id owner, nux_capability send, nux_capability *out);
 nux_status nux_port_make_send_once(nux_task_id owner, nux_capability receive, nux_capability *out);
 nux_status nux_port_destroy(nux_task_id owner, nux_capability control);
 nux_status nux_port_send(nux_task_id sender, nux_capability send, const nux_message *message, nux_u64 timeout_ns);
