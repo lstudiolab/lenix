@@ -22,7 +22,7 @@ X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers x86_64 aarch64 iso iso-x86_64 iso-aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
+.PHONY: all headers x86_64 aarch64 iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
 all: headers x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
 
 headers:
@@ -137,3 +137,25 @@ iso-aarch64: aarch64 $(LIMINE_DIR)/limine
 	cp $(LIMINE_DIR)/limine-uefi-cd.bin Build/iso-aarch64/boot/limine/
 	cp $(LIMINE_DIR)/BOOTAA64.EFI Build/iso-aarch64/EFI/BOOT/
 	xorriso -as mkisofs -R -r -J -hfsplus -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-aarch64 -o Build/lenix-aarch64.iso
+
+uefi-disk: uefi-disk-x86_64 uefi-disk-aarch64
+
+uefi-disk-x86_64: x86_64 $(LIMINE_DIR)/limine
+	rm -f Build/lenix-x86_64-uefi.img
+	dd if=/dev/zero of=Build/lenix-x86_64-uefi.img bs=1M count=128
+	mformat -i Build/lenix-x86_64-uefi.img -F ::
+	mmd -i Build/lenix-x86_64-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
+	mcopy -i Build/lenix-x86_64-uefi.img $(LIMINE_DIR)/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
+	mcopy -i Build/lenix-x86_64-uefi.img limine.conf ::/limine.conf
+	mcopy -i Build/lenix-x86_64-uefi.img limine.conf ::/boot/limine/limine.conf
+	mcopy -i Build/lenix-x86_64-uefi.img Build/x86_64/nux.elf ::/boot/nux.elf
+
+uefi-disk-aarch64: aarch64 $(LIMINE_DIR)/limine
+	rm -f Build/lenix-aarch64-uefi.img
+	dd if=/dev/zero of=Build/lenix-aarch64-uefi.img bs=1M count=128
+	mformat -i Build/lenix-aarch64-uefi.img -F ::
+	mmd -i Build/lenix-aarch64-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
+	mcopy -i Build/lenix-aarch64-uefi.img $(LIMINE_DIR)/BOOTAA64.EFI ::/EFI/BOOT/BOOTAA64.EFI
+	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/limine.conf
+	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/boot/limine/limine.conf
+	mcopy -i Build/lenix-aarch64-uefi.img Build/aarch64/nux.elf ::/boot/nux.elf
