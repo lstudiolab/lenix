@@ -36,6 +36,8 @@ typedef struct {
     nux_port_set_id id;
     nux_task_id owner;
     nux_capability ports[NUX_PORT_SET_WIDTH];
+    nux_object_id object_ids[NUX_PORT_SET_WIDTH];
+    nux_thread_id receiver_waiter;
     nux_u32 count;
     nux_u8 active;
 } nux_port_set_entry;
@@ -90,6 +92,7 @@ nux_status nux_port_system_init(void)
     for (nux_u32 i = 0; i < NUX_PORT_SET_LIMIT; ++i) {
         port_sets[i].active = 0;
         port_sets[i].count = 0;
+        port_sets[i].receiver_waiter = 0;
     }
     next_port_id = 1;
     next_port_set_id = 1;
@@ -648,6 +651,7 @@ nux_status nux_port_set_create(nux_task_id owner, nux_port_set_id *out)
         set->active = 1;
         set->owner = owner;
         set->count = 0;
+        set->receiver_waiter = 0;
         set->id = next_port_set_id++;
         if (!set->id) set->id = next_port_set_id++;
         *out = set->id;
