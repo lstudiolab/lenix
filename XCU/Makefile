@@ -22,7 +22,7 @@ X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers x86_64 aarch64 iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
+.PHONY: all headers x86_64 aarch64 aarch64-qemu iso iso-x86_64 iso-aarch64 uefi-disk uefi-disk-x86_64 uefi-disk-aarch64 uefi-disk-aarch64-qemu test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
 all: headers x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
 
 headers:
@@ -159,3 +159,23 @@ uefi-disk-aarch64: aarch64 $(LIMINE_DIR)/limine
 	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/limine.conf
 	mcopy -i Build/lenix-aarch64-uefi.img limine.conf ::/boot/limine/limine.conf
 	mcopy -i Build/lenix-aarch64-uefi.img Build/aarch64/nux.elf ::/boot/nux.elf
+
+aarch64-qemu:
+	mkdir -p Build/aarch64-qemu
+	@for source in $(C_SOURCES); do object=Build/aarch64-qemu/$$(echo $$source | tr '/.' '__').o; $(CC_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c $$source -o $$object || exit 1; done
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/Boot/entry.S -o Build/aarch64-qemu/entry.o
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/early.S -o Build/aarch64-qemu/early.o
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64-qemu/lock.o
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/exception.S -o Build/aarch64-qemu/exception.o
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/context.S -o Build/aarch64-qemu/context.o
+	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64-qemu/nux.elf Build/aarch64-qemu/*.o
+
+uefi-disk-aarch64-qemu: aarch64-qemu $(LIMINE_DIR)/limine
+	rm -f Build/lenix-aarch64-qemu-uefi.img
+	dd if=/dev/zero of=Build/lenix-aarch64-qemu-uefi.img bs=1048576 count=128
+	mformat -i Build/lenix-aarch64-qemu-uefi.img -F ::
+	mmd -i Build/lenix-aarch64-qemu-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
+	mcopy -i Build/lenix-aarch64-qemu-uefi.img $(LIMINE_DIR)/BOOTAA64.EFI ::/EFI/BOOT/BOOTAA64.EFI
+	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/limine.conf
+	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/boot/limine/limine.conf
+	mcopy -i Build/lenix-aarch64-qemu-uefi.img Build/aarch64-qemu/nux.elf ::/boot/nux.elf
