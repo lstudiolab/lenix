@@ -43,6 +43,7 @@ int main(void)
     if (nux_port_system_init() != NUX_OK) return 3;
     if (nux_task_create("ipc-test", 10, &task) != NUX_OK) return 4;
     if (nux_port_create(task, 2, &send, &receive) != NUX_OK) return 5;
+    if (nux_capability_check(receive, NUX_OBJECT_PORT, NUX_RIGHT_CONTROL, &object_id) != NUX_OK) return 31;
     if (nux_port_send(send, &message, 0) != NUX_OK) return 6;
     if (nux_port_send(send, &message, 0) != NUX_OK) return 17;
     if (nux_port_send(send, &message, 0) != NUX_E_WOULD_BLOCK) return 18;
