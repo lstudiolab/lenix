@@ -1,4 +1,5 @@
 #include <nux/thread.h>
+#include <nux/time.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -23,6 +24,7 @@ static volatile nux_u32 thread_lock;
 static nux_thread_id next_thread_id;
 static nux_thread_id current_thread_id;
 static nux_u32 scheduler_cursor;
+static nux_u64 thread_slice_start_ns;
 
 static nux_thread_entry *nux_thread_find(nux_thread_id id)
 {
@@ -79,6 +81,7 @@ nux_status nux_thread_system_init(void)
     next_thread_id = 1;
     current_thread_id = 0;
     scheduler_cursor = 0;
+    thread_slice_start_ns = 0;
     nux_arch_unlock(&thread_lock);
     return NUX_OK;
 }
@@ -329,6 +332,12 @@ nux_status nux_thread_yield(void)
     nux_arch_lock(&thread_lock);
     old_id = current_thread_id;
     old_thread = old_id ? nux_thread_find(old_id) : NUX_NULL;
+    nux_u64 now_ns = nux_clock_now(NUX_CLOCK_MONOTONIC);
+    if (old_thread && thread_slice_start_ns && now_ns >= thread_slice_start_ns) {
+        nux_u64 elapsed = now_ns - thread_slice_start_ns;
+        old_thread->info.runtime_ns += elapsed;
+        (void)nux_time_account_thread(old_id, elapsed);
+    }
     if (old_thread && old_thread->info.state == NUX_THREAD_RUNNING)
         old_thread->info.state = NUX_THREAD_READY;
 
@@ -346,6 +355,7 @@ nux_status nux_thread_yield(void)
     if (next_thread) {
         next_thread->info.state = NUX_THREAD_RUNNING;
         current_thread_id = next_thread->info.id;
+        thread_slice_start_ns = now_ns;
         if (next_thread == old_thread) {
             nux_arch_unlock(&thread_lock);
             return NUX_OK;
@@ -359,12 +369,14 @@ nux_status nux_thread_yield(void)
     if (old_thread && old_thread->info.state == NUX_THREAD_READY) {
         old_thread->info.state = NUX_THREAD_RUNNING;
         current_thread_id = old_thread->info.id;
+        thread_slice_start_ns = now_ns;
         nux_arch_unlock(&thread_lock);
         return NUX_OK;
     }
 
     if (old_thread) {
         current_thread_id = 0;
+        thread_slice_start_ns = 0;
         nux_arch_unlock(&thread_lock);
         nux_arch_context_switch(&old_thread->context, &idle_context);
         return NUX_OK;
