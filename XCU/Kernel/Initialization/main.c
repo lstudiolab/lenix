@@ -21,41 +21,35 @@ static volatile nux_u64 nux_boot_state;
 static void nux_boot_failure(nux_u64 code)
 {
     nux_boot_state = 0x4e55580000000000ULL | code;
-    for (;;) {
-        if (nux_thread_yield() == NUX_E_WOULD_BLOCK)
-            NUX_CPU_WAIT();
-    }
+    for (;;) NUX_CPU_WAIT();
 }
 
 void nux_kernel_main(const nux_boot_info *boot_info)
 {
     if (boot_info == NUX_NULL)
         nux_boot_failure(1);
-
     if (nux_memory_init(boot_info) != NUX_OK)
         nux_boot_failure(2);
-
     if (nux_task_system_init() != NUX_OK)
         nux_boot_failure(3);
-
     if (nux_capability_system_init() != NUX_OK)
         nux_boot_failure(4);
-
     if (nux_thread_system_init() != NUX_OK)
         nux_boot_failure(5);
-
     if (nux_port_system_init() != NUX_OK)
         nux_boot_failure(6);
-
     if (nux_sync_system_init() != NUX_OK)
         nux_boot_failure(7);
 
     nux_boot_state = 0x4e55580000000008ULL;
 
     /*
-     * Interrupts stay masked until architecture vector tables and timer
-     * delivery are installed. Kernel threads currently run cooperatively;
-     * preemption and user-mode dispatch remain disabled.
+     * Interrupts remain masked until timer and interrupt-controller support
+     * is ready. Kernel threads currently run cooperatively; user dispatch
+     * and preemption remain disabled.
      */
-    for (;;) NUX_CPU_WAIT();
+    for (;;) {
+        if (nux_thread_yield() == NUX_E_WOULD_BLOCK)
+            NUX_CPU_WAIT();
+    }
 }
