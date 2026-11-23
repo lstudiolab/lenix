@@ -329,13 +329,17 @@ nux_status nux_thread_yield(void)
     nux_arch_context *old_context;
     nux_thread_id old_id;
 
+    (void)nux_timer_poll();
     nux_arch_lock(&thread_lock);
     old_id = current_thread_id;
     old_thread = old_id ? nux_thread_find(old_id) : NUX_NULL;
     nux_u64 now_ns = nux_clock_now(NUX_CLOCK_MONOTONIC);
     if (old_thread && thread_slice_start_ns && now_ns >= thread_slice_start_ns) {
         nux_u64 elapsed = now_ns - thread_slice_start_ns;
-        old_thread->info.runtime_ns += elapsed;
+        if (elapsed > NUX_U64_MAX - old_thread->info.runtime_ns)
+            old_thread->info.runtime_ns = NUX_U64_MAX;
+        else
+            old_thread->info.runtime_ns += elapsed;
         (void)nux_time_account_thread(old_id, elapsed);
     }
     if (old_thread && old_thread->info.state == NUX_THREAD_RUNNING)
