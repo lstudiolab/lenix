@@ -2,16 +2,23 @@
 .global nux_arch_user_enter
 .type nux_arch_user_enter,@function
 nux_arch_user_enter:
-    movq %rdi, %rax
-    movq %rdx, %rdi
+    movq %rdi, %r12
+    movq %rsi, %r13
+    movq %rdx, %r14
+    movq %rcx, %r15
+    movq %r15, %rdi
+    call nux_arch_set_kernel_stack
+    movq %r15, %rsp
+    andq $-16, %rsp
+    movq %r14, %rdi
     movw $0x1b, %cx
     movw %cx, %ds
     movw %cx, %es
     pushq $0x1b
-    pushq %rsi
+    pushq %r13
     pushq $0x2
     pushq $0x23
-    pushq %rax
+    pushq %r12
     iretq
 .size nux_arch_user_enter, .-nux_arch_user_enter
 
