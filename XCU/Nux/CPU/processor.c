@@ -170,7 +170,9 @@ nux_u32 nux_processor_set_cpu_allowed(nux_processor_set_id id, nux_cpu_id cpu)
 
 nux_cpu_id nux_processor_current_id(void)
 {
-    nux_u64 hardware_id = nux_arch_processor_hardware_id();
+    nux_u64 hardware_id;
+    if (processor_total == 1 && processors[0].online) return 0;
+    hardware_id = nux_arch_processor_hardware_id();
     for (nux_u32 i = 0; i < processor_total; ++i)
         if (processors[i].hardware_id == hardware_id && processors[i].online)
             return i;
