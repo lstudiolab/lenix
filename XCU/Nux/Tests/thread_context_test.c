@@ -11,6 +11,12 @@ static nux_u64 last_task_space;
 
 static nux_u64 test_next_space = 1;
 static nux_u64 mock_clock;
+static nux_u64 mock_user_entry, mock_user_stack;
+nux_status nux_vm_fault(nux_u64 space,nux_u64 address,nux_u32 access)
+{ (void)space; if(address==mock_user_entry&&access==NUX_VM_PROT_EXEC)return NUX_OK; if(address==mock_user_stack&&access==NUX_VM_PROT_WRITE)return NUX_OK; return NUX_E_ACCESS; }
+void nux_arch_set_kernel_stack(nux_u64 top){(void)top;}
+__attribute__((noreturn)) void nux_arch_user_enter(nux_u64 entry,nux_u64 stack,nux_u64 argument)
+{(void)entry;(void)stack;(void)argument;for(;;){} }
 nux_cpu_id nux_processor_current_id(void) { return 0; }
 nux_u32 nux_processor_set_cpu_allowed(nux_processor_set_id set, nux_cpu_id cpu)
 { (void)set; (void)cpu; return 1; }
@@ -78,6 +84,8 @@ int main(void)
     nux_thread_id first, second;
     nux_thread_info info;
     nux_u64 first_space, second_space, shared_space;
+    nux_thread_id user_thread;
+    mock_user_entry=0x400000;mock_user_stack=0x7ffefffffb00ULL;
 
     if (nux_task_system_init() != NUX_OK) return 1;
     if (nux_thread_system_init() != NUX_OK) return 2;
@@ -87,6 +95,9 @@ int main(void)
     if (nux_task_get_address_space(task, &second_space) != NUX_OK || second_space == first_space) return 12;
     if (nux_task_create("context-test", 10, &task) != NUX_OK) return 13;
     if (nux_task_get_address_space(task, &shared_space) != NUX_OK) return 14;
+    if (nux_thread_create_user(task,mock_user_entry,mock_user_stack,123,10,&user_thread)!=NUX_OK)return 20;
+    if(nux_thread_get_info(user_thread,&info)!=NUX_OK||!info.user_mode||info.state!=NUX_THREAD_READY)return 21;
+    if(nux_thread_terminate(user_thread)!=NUX_OK)return 22;
     if (nux_thread_create_kernel(task, first_thread, NUX_NULL, 10, &first) != NUX_OK) return 4;
     if (nux_task_destroy(task) != NUX_E_BUSY) return 16;
     if (nux_task_get_address_space(task, &shared_space) != NUX_OK) return 17;
