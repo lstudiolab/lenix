@@ -79,3 +79,17 @@ _start:
 #endif
 
 .size _start, .-_start
+
+/* First-party UEFI handoff: X0 points to the versioned Nux boot record. */
+.global _start_uefi
+.type _start_uefi, %function
+_start_uefi:
+    msr daifset, #0xf
+    mov x19, x0
+    bl nux_arch_early_init
+    mov x0, x19
+    bl nux_kernel_main
+8:
+    wfe
+    b 8b
+.size _start_uefi, .-_start_uefi
