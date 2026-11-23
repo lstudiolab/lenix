@@ -6,8 +6,10 @@ nux_arch_enter_user:
     movq %rsi, %r13
     movq %rdx, %r14
     movq %rcx, %r15
+    subq $8, %rsp
     movq %r15, %rdi
     call nux_arch_set_kernel_stack
+    addq $8, %rsp
     movq %r15, %rsp
     andq $-16, %rsp
     movq %r14, %rdi
