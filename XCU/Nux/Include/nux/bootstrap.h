@@ -10,6 +10,7 @@ nux_status nux_bootstrap_system_init(void);
 nux_status nux_bootstrap_register(const char *name, nux_capability service_port);
 nux_status nux_bootstrap_lookup(const char *name, nux_capability *service_port);
 nux_status nux_bootstrap_unregister(const char *name);
+void nux_bootstrap_task_destroy(nux_task_id owner);
 nux_status nux_bootstrap_start_initial_task(nux_u64 image_address, nux_u64 image_size, nux_u32 *task_id);
 nux_status nux_task_get_special_port(nux_u32 task_id, nux_u32 which, nux_capability *out);
 nux_status nux_task_set_special_port(nux_u32 task_id, nux_u32 which, nux_capability port);
