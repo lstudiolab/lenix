@@ -26,6 +26,9 @@ typedef struct {
     nux_u32 flags;
     nux_u32 cpu_count;
     nux_u32 ioapic_count;
+    nux_u64 gic_distributor_address;
+    nux_u64 gic_redistributor_address;
+    nux_u32 gic_cpu_interface_count;
     nux_acpi_cpu cpus[NUX_ACPI_CPU_LIMIT];
     nux_acpi_ioapic ioapics[NUX_ACPI_IOAPIC_LIMIT];
 } nux_acpi_info;
