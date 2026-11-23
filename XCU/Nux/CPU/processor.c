@@ -25,7 +25,7 @@ extern void nux_arch_unlock(volatile nux_u32 *lock);
 static nux_processor_set_entry *processor_set_find(nux_processor_set_id id)
 {
     for (nux_u32 i = 0; i < NUX_PROCESSOR_SET_LIMIT; ++i)
-        if (processor_sets[i].active && processor_sets[i].id == id)
+        if (processor_sets[i].active == 1 && processor_sets[i].id == id)
             return &processor_sets[i];
     return NUX_NULL;
 }
