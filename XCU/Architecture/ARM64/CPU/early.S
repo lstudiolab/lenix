@@ -11,7 +11,7 @@ nux_arch_early_init:
     msr daifset, #0xf
     mrs x9, CurrentEL
     cmp x9, #0x8
-    b.ne 2f
+    b.ne 1f
 
     mov x10, sp
     msr sp_el1, x10
