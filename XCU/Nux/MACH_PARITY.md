@@ -189,7 +189,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Kernel boot environment and validated boot modules
 - [ ] First user task and initial address space
 - [ ] Bootstrap/service manager
-- [ ] Service registration, lookup, and restart policy
+- [x] Capability-validated service registration, lookup, owner-only unregister, and owner-task cleanup (Foundation; service startup policy and restart supervision remain)
+- [ ] Service restart policy
 - [ ] Special ports for task, thread, host, and bootstrap services
 - [ ] User-space default memory pager
 - [ ] User-space device manager and driver servers
