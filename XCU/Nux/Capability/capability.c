@@ -75,14 +75,6 @@ static nux_capability_entry *entry_from_handle(nux_capability_space *space,
     return &space->entries[slot - 1];
 }
 
-static void space_release(nux_capability_space *space)
-{
-    if (!space) return;
-    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i)
-        if (space->entries[i].state) entry_revoke(&space->entries[i]);
-    space->owner = 0;
-    space->active = 0;
-}
 
 static nux_status task_is_live(nux_task_id owner)
 {
