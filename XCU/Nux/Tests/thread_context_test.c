@@ -15,8 +15,8 @@ static nux_u64 mock_user_entry, mock_user_stack;
 nux_status nux_vm_fault(nux_u64 space,nux_u64 address,nux_u32 access)
 { (void)space; if(address==mock_user_entry&&access==NUX_VM_PROT_EXEC)return NUX_OK; if(address+1==mock_user_stack&&access==NUX_VM_PROT_WRITE)return NUX_OK; return NUX_E_ACCESS; }
 void nux_arch_set_kernel_stack(nux_u64 top){(void)top;}
-__attribute__((noreturn)) void nux_arch_enter_user(nux_u64 entry,nux_u64 stack,nux_u64 argument)
-{(void)entry;(void)stack;(void)argument;for(;;){} }
+__attribute__((noreturn)) void nux_arch_enter_user(nux_u64 entry,nux_u64 stack,nux_u64 argument,nux_u64 kernel_stack)
+{(void)entry;(void)stack;(void)argument;(void)kernel_stack;for(;;){} }
 nux_cpu_id nux_processor_current_id(void) { return 0; }
 nux_u32 nux_processor_set_cpu_allowed(nux_processor_set_id set, nux_cpu_id cpu)
 { (void)set; (void)cpu; return 1; }
