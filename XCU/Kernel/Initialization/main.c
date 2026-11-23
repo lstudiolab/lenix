@@ -12,6 +12,7 @@
 #include <nux/time.h>
 #include <nux/acpi.h>
 #include <nux/processor.h>
+#include <nux/user.h>
 #include "entry.h"
 
 #if defined(__aarch64__)
@@ -49,6 +50,7 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     if (nux_syscall_system_init() != NUX_OK) nux_boot_fail(9);
     nux_boot_mark(NUX_BOOT_PHASE_TIME);
     (void)nux_time_system_init();
+    if (nux_user_smoke_test() != NUX_OK) nux_boot_fail(11);
     nux_boot_mark(NUX_BOOT_PHASE_READY);
 
     /* Keep interrupts masked until timer and interrupt-controller support exists. */
