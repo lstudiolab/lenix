@@ -71,6 +71,66 @@ nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *id)
     return NUX_E_LIMIT;
 }
 
+nux_status nux_task_destroy(nux_task_id id)
+{
+    nux_u64 address_space = 0;
+    nux_task_state previous_state = NUX_TASK_UNUSED;
+
+    if (!id) return NUX_E_INVALID;
+    nux_arch_lock(&task_lock);
+    nux_task_info *task = NUX_NULL;
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
+        if (tasks[i].id == id) {
+            task = &tasks[i];
+            break;
+        }
+    }
+    if (!task || task->state == NUX_TASK_UNUSED ||
+        task->state == NUX_TASK_DYING) {
+        nux_arch_unlock(&task_lock);
+        return task ? NUX_E_BAD_STATE : NUX_E_NOT_FOUND;
+    }
+    previous_state = task->state;
+    task->state = NUX_TASK_DYING;
+    address_space = task->address_space;
+    nux_arch_unlock(&task_lock);
+
+    /* A task cannot release its address space while one of its threads lives. */
+    if (nux_thread_task_busy(id)) {
+        nux_arch_lock(&task_lock);
+        for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i)
+            if (tasks[i].id == id && tasks[i].state == NUX_TASK_DYING)
+                tasks[i].state = previous_state;
+        nux_arch_unlock(&task_lock);
+        return NUX_E_BUSY;
+    }
+
+    nux_status status = nux_vm_space_destroy(address_space);
+    if (status != NUX_OK) {
+        nux_arch_lock(&task_lock);
+        for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i)
+            if (tasks[i].id == id && tasks[i].state == NUX_TASK_DYING)
+                tasks[i].state = previous_state;
+        nux_arch_unlock(&task_lock);
+        return status;
+    }
+
+    nux_arch_lock(&task_lock);
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
+        if (tasks[i].id != id) continue;
+        tasks[i].id = 0;
+        tasks[i].state = NUX_TASK_UNUSED;
+        tasks[i].priority = 0;
+        tasks[i].quantum = 0;
+        tasks[i].runtime = 0;
+        tasks[i].address_space = 0;
+        tasks[i].name[0] = '\0';
+        break;
+    }
+    nux_arch_unlock(&task_lock);
+    return NUX_OK;
+}
+
 nux_status nux_task_set_state(nux_task_id id, nux_task_state state)
 {
     if (!id || state < NUX_TASK_READY || state > NUX_TASK_DYING)
