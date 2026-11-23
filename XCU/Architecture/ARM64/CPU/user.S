@@ -1,7 +1,7 @@
 .section .text
-.global nux_arch_enter_user
-.type nux_arch_enter_user,%function
-nux_arch_enter_user:
+.global nux_arch_user_enter
+.type nux_arch_user_enter,%function
+nux_arch_user_enter:
     mov sp, x3
     msr sp_el0, x1
     mov x3, x2
@@ -11,6 +11,6 @@ nux_arch_enter_user:
     mov x0, x3
     isb
     eret
-.size nux_arch_enter_user, .-nux_arch_enter_user
+.size nux_arch_user_enter, .-nux_arch_user_enter
 
 .section .note.GNU-stack,"",%progbits
