@@ -19,12 +19,12 @@ jobs:
       - name: Install cross toolchains and ISO tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso
+          sudo apt-get install -y make gcc-x86-64-linux-gnu binutils-x86-64-linux-gnu gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu xorriso qemu-system-x86
       - name: Validate headers, build kernels, and run tests
         run: make -C XCU clean all
       - name: Package UEFI boot images
         run: make -C XCU iso
-      - name: Publish kernels and boot images
+      - name: Boot x86-64 ISO under QEMU\n        run: |\n          timeout 15s qemu-system-x86_64 -machine q35 -m 1G -cdrom XCU/Build/lenix-x86_64.iso -display none -serial none -monitor none -debugcon file:XCU/Build/qemu-x86.log -global isa-debugcon.iobase=0xe9 -no-reboot -no-shutdown || test $? -eq 124\n          grep -q 'NUX:READY' XCU/Build/qemu-x86.log\n      - name: Publish kernels and boot images
         uses: actions/upload-artifact@v4
         with:
           name: nux-kernels-and-uefi-images
