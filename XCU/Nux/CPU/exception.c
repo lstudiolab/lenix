@@ -1,5 +1,6 @@
 #include <nux/types.h>
 #include <nux/exception.h>
+#include <nux/user.h>
 #include <nux/types.h>
 
 #if defined(__x86_64__)
@@ -114,15 +115,17 @@ void nux_arch_exception_init(void)
     nux_arch_privilege_init();
     nux_u16 selector;
     nux_idtr descriptor;
+    nux_arch_user_init();
     __asm__ volatile("mov %%cs, %0" : "=r"(selector));
     for (nux_u32 i = 0; i < 256; ++i)
         nux_idt_set(i, nux_isr_stub_table[i], selector);
+    idt[128].attributes = 0xee;
     descriptor.limit = (nux_u16)(sizeof(idt) - 1);
     descriptor.base = (nux_u64)(nux_uptr)idt;
     __asm__ volatile("lidt %0" : : "m"(descriptor));
 }
 #elif defined(__aarch64__)
-void nux_arch_exception_init(void) { }
+void nux_arch_exception_init(void) { nux_arch_user_init(); }
 #else
 #error Unsupported Nux architecture
 #endif
