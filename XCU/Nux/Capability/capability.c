@@ -155,3 +155,29 @@ nux_u32 nux_capability_revoke_task(nux_task_id owner)
     nux_arch_unlock(&cap_lock);
     return revoked;
 }
+
+nux_status nux_capability_consume(nux_capability cap, nux_object_type type,
+                                  nux_rights required, nux_object_id *object_id)
+{
+    nux_u32 slot = cap & 0xffu;
+    nux_u32 generation = cap >> 8;
+    if (!slot || slot > NUX_CAPABILITY_LIMIT || !generation ||
+        !object_id || type == NUX_OBJECT_NONE || !required)
+        return NUX_E_INVALID;
+    nux_arch_lock(&cap_lock);
+    nux_capability_entry *entry = &entries[slot - 1];
+    if (!entry->active || entry->generation != generation ||
+        entry->type != type || (entry->rights & required) != required) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    *object_id = entry->object_id;
+    entry->active = 0;
+    entry->object_id = 0;
+    entry->rights = 0;
+    entry->type = NUX_OBJECT_NONE;
+    if (++entry->generation == 0 || entry->generation > 0x00ffffffu)
+        entry->generation = 1;
+    nux_arch_unlock(&cap_lock);
+    return NUX_OK;
+}
