@@ -21,7 +21,10 @@ static volatile nux_u64 nux_boot_state;
 static void nux_boot_failure(nux_u64 code)
 {
     nux_boot_state = 0x4e55580000000000ULL | code;
-    for (;;) NUX_CPU_WAIT();
+    for (;;) {
+        if (nux_thread_yield() == NUX_E_WOULD_BLOCK)
+            NUX_CPU_WAIT();
+    }
 }
 
 void nux_kernel_main(const nux_boot_info *boot_info)
