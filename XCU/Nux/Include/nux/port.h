@@ -4,6 +4,7 @@
 #include <nux/status.h>
 #include <nux/object.h>
 #include <nux/capability.h>
+#include <nux/task.h>
 #define NUX_PORT_LIMIT 1024u
 #define NUX_PORT_SET_LIMIT 128u
 #define NUX_PORT_QUEUE_DEFAULT 64u
