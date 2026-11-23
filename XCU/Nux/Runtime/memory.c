@@ -13,7 +13,7 @@ void *memmove(void *destination, const void *source, nux_size size)
     nux_u8 *out = (nux_u8 *)destination;
     const nux_u8 *in = (const nux_u8 *)source;
     if (out == in || size == 0) return destination;
-    if (out < in) {
+    if ((nux_uptr)out < (nux_uptr)in) {
         for (nux_size i = 0; i < size; ++i) out[i] = in[i];
     } else {
         while (size != 0) {
