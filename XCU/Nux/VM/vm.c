@@ -10,7 +10,7 @@
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
-extern void nux_memset(void *dst, nux_u8 value, nux_size size);
+extern void *memset(void *dst, int value, nux_size size);
 extern nux_status nux_arch_vm_root_create(nux_u64 *root);
 extern nux_status nux_arch_vm_map(nux_u64 root, nux_u64 va, nux_u64 pa, nux_u32 prot);
 extern nux_status nux_arch_vm_unmap(nux_u64 root, nux_u64 va);
@@ -126,7 +126,7 @@ nux_status nux_vm_map(nux_u64 id,nux_vm_address *address,nux_vm_size size,nux_u3
     for(;mapped<pages;mapped++){
         nux_u64 pa;
         if(o)pa=o->pages[first_page+mapped];
-        else {pa=nux_phys_alloc_page();if(!pa){st=NUX_E_NO_MEMORY;break;}nux_memset(nux_phys_to_virt(pa),0,NUX_VM_PAGE_SIZE);}
+        else {pa=nux_phys_alloc_page();if(!pa){st=NUX_E_NO_MEMORY;break;}memset(nux_phys_to_virt(pa),0,NUX_VM_PAGE_SIZE);}
         st=nux_arch_vm_map(root,va+(nux_u64)mapped*NUX_VM_PAGE_SIZE,pa,prot);
         if(st!=NUX_OK){if(!o)(void)nux_phys_free_page(pa);break;}
     }
@@ -182,7 +182,7 @@ nux_status nux_memory_object_create(nux_vm_size size,nux_memory_object_id *out) 
     if(!o){nux_arch_unlock(&vm_lock);return NUX_E_LIMIT;}
     o->id=next_object_id++;if(!o->id)o->id=next_object_id++;o->size=size;o->page_count=(nux_u32)(size/NUX_VM_PAGE_SIZE);o->locks=0;o->pager=0;
     nux_u32 made=0;
-    for(;made<o->page_count;made++){o->pages[made]=nux_phys_alloc_page();if(!o->pages[made])break;nux_memset(nux_phys_to_virt(o->pages[made]),0,NUX_VM_PAGE_SIZE);}
+    for(;made<o->page_count;made++){o->pages[made]=nux_phys_alloc_page();if(!o->pages[made])break;memset(nux_phys_to_virt(o->pages[made]),0,NUX_VM_PAGE_SIZE);}
     if(made!=o->page_count){while(made)(void)nux_phys_free_page(o->pages[--made]);o->page_count=0;nux_arch_unlock(&vm_lock);return NUX_E_NO_MEMORY;}
     o->active=1;*out=o->id;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
