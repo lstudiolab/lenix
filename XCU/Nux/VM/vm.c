@@ -206,7 +206,9 @@ nux_status nux_vm_write(nux_u64 id, nux_vm_address address,
         nux_u64 physical = nux_arch_vm_translate(space->root, page);
         nux_u64 offset = cursor & (NUX_VM_PAGE_SIZE - 1);
         nux_u64 amount = NUX_VM_PAGE_SIZE - offset;
+        nux_u64 region_remaining = region->start + region->size - cursor;
         if (amount > end - cursor) amount = end - cursor;
+        if (amount > region_remaining) amount = region_remaining;
         nux_u8 *output = (nux_u8 *)nux_phys_to_virt(physical) + offset;
         for (nux_u64 i = 0; i < amount; ++i)
             output[i] = input[i];
