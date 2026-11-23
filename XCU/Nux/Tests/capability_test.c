@@ -36,7 +36,7 @@ int main(void)
     if(nux_capability_create(2,NUX_OBJECT_PORT,9,NUX_RIGHT_SEND_ONCE,&one_shot)!=NUX_OK)return 7;
     if(nux_capability_consume(2,one_shot,NUX_OBJECT_PORT,NUX_RIGHT_SEND_ONCE,&object)!=NUX_OK||object!=9)return 8;
     if(nux_capability_consume(2,one_shot,NUX_OBJECT_PORT,NUX_RIGHT_SEND_ONCE,&object)!=NUX_E_ACCESS)return 9;
-    if(nux_capability_revoke_task(1)!=1)return 10;
+    if(nux_capability_revoke_task(1)!=2)return 10;
 
     for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT;i++)
         if(nux_capability_create(1,NUX_OBJECT_MEMORY,i+1,NUX_RIGHT_READ,&cap)!=NUX_OK)return 11;
