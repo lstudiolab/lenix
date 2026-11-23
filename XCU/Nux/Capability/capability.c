@@ -297,6 +297,78 @@ nux_status nux_capability_consume(nux_task_id owner, nux_capability cap,
     return NUX_OK;
 }
 
+
+nux_status nux_capability_derive(nux_task_id owner, nux_capability source,
+                                 nux_rights required, nux_rights granted,
+                                 nux_capability *out)
+{
+    if (!owner || !required || !granted || !out)
+        return NUX_E_INVALID;
+    if (task_is_live(owner) != NUX_OK) return NUX_E_ACCESS;
+
+    nux_u32 source_generation, destination_slot = NUX_CAPABILITY_LIMIT;
+    nux_u32 destination_generation = 0;
+    nux_object_id object_id = 0;
+    nux_object_type type = NUX_OBJECT_NONE;
+    nux_arch_lock(&cap_lock);
+    nux_capability_space *space = space_find(owner);
+    nux_capability_entry *source_entry = entry_from_handle(
+        space, source, NUX_NULL, &source_generation);
+    if (!source_entry || source_entry->state != 1 ||
+        source_entry->generation != source_generation ||
+        (source_entry->rights & required) != required ||
+        (granted & ~source_entry->rights)) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        if (space->entries[i].state) continue;
+        destination_slot = i;
+        break;
+    }
+    if (destination_slot == NUX_CAPABILITY_LIMIT) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_LIMIT;
+    }
+    nux_capability_entry *destination = &space->entries[destination_slot];
+    destination_generation = destination->generation;
+    object_id = source_entry->object_id;
+    type = source_entry->type;
+    destination->state = 2;
+    destination->type = type;
+    destination->object_id = object_id;
+    destination->rights = granted;
+    *out = (destination_generation << 8) | (destination_slot + 1);
+    nux_arch_unlock(&cap_lock);
+
+    if (task_is_live(owner) != NUX_OK) {
+        nux_arch_lock(&cap_lock);
+        space = space_find(owner);
+        if (space) {
+            destination = &space->entries[destination_slot];
+            if (destination->state == 2 &&
+                destination->generation == destination_generation)
+                entry_revoke(destination);
+        }
+        nux_arch_unlock(&cap_lock);
+        *out = 0;
+        return NUX_E_ACCESS;
+    }
+
+    nux_arch_lock(&cap_lock);
+    space = space_find(owner);
+    destination = space ? &space->entries[destination_slot] : NUX_NULL;
+    if (!destination || destination->state != 2 ||
+        destination->generation != destination_generation) {
+        nux_arch_unlock(&cap_lock);
+        *out = 0;
+        return NUX_E_ACCESS;
+    }
+    destination->state = 1;
+    nux_arch_unlock(&cap_lock);
+    return NUX_OK;
+}
+
 nux_status nux_capability_move(nux_task_id source_owner,
                                nux_capability source,
                                nux_task_id destination_owner,

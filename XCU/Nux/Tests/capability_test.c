@@ -14,12 +14,15 @@ nux_status nux_task_get(nux_task_id id,nux_task_info *out)
 
 int main(void)
 {
-    nux_capability first, moved, one_shot, cap;
+    nux_capability first, derived, moved, one_shot, cap;
     nux_object_id object;
     if(nux_capability_system_init()!=NUX_OK)return 1;
     if(nux_capability_create(1,NUX_OBJECT_MEMORY,7,
        NUX_RIGHT_READ|NUX_RIGHT_TRANSFER,&first)!=NUX_OK)return 2;
     if(nux_capability_check(2,first,NUX_OBJECT_MEMORY,NUX_RIGHT_READ,&object)!=NUX_E_ACCESS)return 3;
+    if(nux_capability_derive(1,first,NUX_RIGHT_TRANSFER,NUX_RIGHT_READ,&derived)!=NUX_OK)return 18;
+    if(nux_capability_check(1,derived,NUX_OBJECT_MEMORY,NUX_RIGHT_READ,&object)!=NUX_OK)return 19;
+    if(nux_capability_check(1,derived,NUX_OBJECT_MEMORY,NUX_RIGHT_TRANSFER,&object)!=NUX_E_ACCESS)return 20;
     if(nux_capability_move(1,first,2,NUX_OBJECT_MEMORY,
        NUX_RIGHT_TRANSFER|NUX_RIGHT_READ,NUX_RIGHT_READ,&object,&moved)!=NUX_OK)return 4;
     if(object!=7||nux_capability_check(1,first,NUX_OBJECT_MEMORY,NUX_RIGHT_READ,&object)!=NUX_E_ACCESS)return 5;
@@ -27,7 +30,7 @@ int main(void)
     if(nux_capability_create(2,NUX_OBJECT_PORT,9,NUX_RIGHT_SEND_ONCE,&one_shot)!=NUX_OK)return 7;
     if(nux_capability_consume(2,one_shot,NUX_OBJECT_PORT,NUX_RIGHT_SEND_ONCE,&object)!=NUX_OK||object!=9)return 8;
     if(nux_capability_consume(2,one_shot,NUX_OBJECT_PORT,NUX_RIGHT_SEND_ONCE,&object)!=NUX_E_ACCESS)return 9;
-    if(nux_capability_revoke_task(1)!=0)return 10;
+    if(nux_capability_revoke_task(1)!=1)return 10;
 
     for(nux_u32 i=0;i<NUX_CAPABILITY_LIMIT;i++)
         if(nux_capability_create(1,NUX_OBJECT_MEMORY,i+1,NUX_RIGHT_READ,&cap)!=NUX_OK)return 11;

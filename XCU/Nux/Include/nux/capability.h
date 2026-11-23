@@ -20,5 +20,8 @@ nux_u32 nux_capability_revoke_object(nux_object_type type, nux_object_id object_
 nux_u32 nux_capability_revoke_owner_object_rights(nux_task_id owner, nux_object_type type, nux_object_id object_id, nux_rights rights);
 nux_u32 nux_capability_revoke_task(nux_u32 owner);
 nux_status nux_capability_consume(nux_u32 owner, nux_capability cap, nux_object_type type, nux_rights required, nux_object_id *object_id);
+nux_status nux_capability_derive(nux_u32 owner, nux_capability source,
+                                 nux_rights required, nux_rights granted,
+                                 nux_capability *out);
 nux_status nux_capability_move(nux_u32 source_owner, nux_capability source, nux_u32 destination_owner, nux_object_type type, nux_rights required, nux_rights granted, nux_object_id *object_id, nux_capability *out);
 #endif
