@@ -59,11 +59,6 @@ static nux_u64 align_up_page(nux_u64 value)
     return (value + NUX_VM_PAGE_SIZE - 1) & ~(NUX_VM_PAGE_SIZE - 1);
 }
 
-static nux_u32 read_u16(const nux_u8 *p)
-{
-    return (nux_u32)p[0] | ((nux_u32)p[1] << 8);
-}
-
 nux_status nux_elf_load(nux_task_id task, const void *image,
                         nux_size image_size, nux_elf_load_result *result)
 {
