@@ -12,7 +12,6 @@
 #define NUX_VM_INHERIT_SHARE 2u
 #define NUX_VM_PAGE_SIZE 4096ULL
 #define NUX_VM_OBJECT_MAX_PAGES 256u
-#define NUX_VM_REGION_COW (1u << 0)
 typedef nux_u64 nux_vm_address;
 typedef nux_u64 nux_vm_size;
 typedef nux_u64 nux_memory_object_id;
