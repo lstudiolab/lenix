@@ -21,6 +21,11 @@ limine_request limine_hhdm_request = {
     .id = LIMINE_HHDM_REQUEST_ID, .revision = 0, .response = 0
 };
 
+__attribute__((used, aligned(8), section(".limine_requests")))
+limine_request limine_rsdp_request = {
+    .id = LIMINE_RSDP_REQUEST_ID, .revision = 0, .response = 0
+};
+
 __attribute__((used, aligned(8), section(".limine_requests_end")))
 const nux_u64 limine_requests_end_marker[2] = {
     0xadc0e0531bb10d03ULL, 0x9572709f31764c62ULL
