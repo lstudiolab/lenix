@@ -84,6 +84,7 @@ nux_exception_vectors:
     mov x3, xzr
     b nux_arch_exception_dispatch
 .Lnux_vector_8:
+    msr spsel, #1
     sub sp, sp, #288
     stp x0, x1, [sp, #0]
     stp x2, x3, [sp, #16]
