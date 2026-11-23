@@ -31,3 +31,10 @@ nux_arch_load_gdt:
     ltr %si
     ret
 .size nux_arch_load_gdt, .-nux_arch_load_gdt
+
+.global nux_arch_syscall_entry
+.type nux_arch_syscall_entry,@function
+nux_arch_syscall_entry:
+    int $0x80
+    ret
+.size nux_arch_syscall_entry, .-nux_arch_syscall_entry
