@@ -16,6 +16,7 @@ typedef __INT64_TYPE__  nux_i64;
 typedef __SIZE_TYPE__   nux_size;
 typedef __UINTPTR_TYPE__ nux_uptr;
 typedef __INTPTR_TYPE__  nux_iptr;
+typedef nux_u32 nux_task_id;
 
 #define NUX_NULL ((void *)0)
 #define NUX_U64_MAX ((nux_u64)~(nux_u64)0)
