@@ -269,16 +269,14 @@ nux_status nux_capability_move(nux_task_id source_owner,
     destination_entry->object_id = source_entry->object_id;
     destination_entry->rights = granted;
     destination_entry->type = type;
+    if (granted & ~source_entry->rights) {
+        nux_capability_entry_revoke(destination_entry);
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
     *object_id = source_entry->object_id;
     *out = (destination_entry->generation << 8) | (destination_slot + 1);
     nux_capability_entry_revoke(source_entry);
     nux_arch_unlock(&cap_lock);
-
-    if (nux_task_get(destination_owner, &task) != NUX_OK ||
-        task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING) {
-        (void)nux_capability_revoke(destination_owner, *out);
-        *out = 0;
-        return NUX_E_ACCESS;
-    }
     return NUX_OK;
 }
