@@ -76,6 +76,7 @@ int main(void){
     if(nux_vm_unmap(space,address,2*NUX_VM_PAGE_SIZE)!=NUX_OK)return 14;
     if(nux_memory_object_destroy(object)!=NUX_OK)return 15;
     if(nux_vm_space_activate(space)!=NUX_OK)return 16;
+    if(nux_vm_space_activate(0)!=NUX_OK)return 27;
     if(nux_vm_space_destroy(space)!=NUX_OK)return 17;
     if(nux_vm_space_destroy(space)!=NUX_E_NOT_FOUND)return 18;
     return 0;
