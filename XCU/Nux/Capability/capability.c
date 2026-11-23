@@ -195,3 +195,25 @@ nux_status nux_capability_consume(nux_task_id owner, nux_capability cap, nux_obj
     nux_arch_unlock(&cap_lock);
     return NUX_OK;
 }
+
+nux_u32 nux_capability_revoke_owner_object_rights(nux_task_id owner,
+                                                   nux_object_type type,
+                                                   nux_object_id object_id,
+                                                   nux_rights rights)
+{
+    nux_u32 revoked = 0;
+    if (!owner || type <= NUX_OBJECT_NONE || type > NUX_OBJECT_MEMORY ||
+        !object_id || !rights)
+        return 0;
+    nux_arch_lock(&cap_lock);
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        nux_capability_entry *entry = &entries[i];
+        if (!entry->active || entry->owner != owner || entry->type != type ||
+            entry->object_id != object_id || !(entry->rights & rights))
+            continue;
+        nux_capability_entry_revoke(entry);
+        ++revoked;
+    }
+    nux_arch_unlock(&cap_lock);
+    return revoked;
+}
