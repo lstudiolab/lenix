@@ -6,7 +6,7 @@
 #include <nux/vm.h>
 
 #define USER_IMAGE_SIZE 8192u
-#define USER_ENTRY_ADDRESS 0x400000ULL
+#define USER_ENTRY_ADDRESS 0x40000000ULL
 #define USER_SEGMENT_OFFSET 4096u
 
 static nux_u8 user_image[USER_IMAGE_SIZE];
