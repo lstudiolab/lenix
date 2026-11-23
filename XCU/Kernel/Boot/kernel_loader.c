@@ -591,5 +591,6 @@ efi_status nux_kernel_loader_main(efi_handle image, efi_system_table *system)
         }
     }
     if (!exited) return status ? status : NUX_EFI_ERROR;
-    enter_kernel(kernel_entry, NUX_DIRECT_MAP_BASE + boot_stack_physical +\n        (efi_u64)NUX_BOOT_STACK_PAGES * NUX_PAGE_SIZE);
+    enter_kernel(kernel_entry, NUX_DIRECT_MAP_BASE + boot_stack_physical +
+        (efi_u64)NUX_BOOT_STACK_PAGES * NUX_PAGE_SIZE);
 }
