@@ -4,6 +4,12 @@
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
+static nux_task_info tasks[NUX_TASK_LIMIT];
+static volatile nux_u32 task_lock;
+static nux_task_id next_id;
+static nux_task_id current_id;
+static nux_u32 cursor;
+
 static nux_task_destroy_hook task_destroy_hook;
 
 void nux_task_set_destroy_hook(nux_task_destroy_hook hook)
@@ -13,11 +19,6 @@ void nux_task_set_destroy_hook(nux_task_destroy_hook hook)
     nux_arch_unlock(&task_lock);
 }
 
-static nux_task_info tasks[NUX_TASK_LIMIT];
-static volatile nux_u32 task_lock;
-static nux_task_id next_id;
-static nux_task_id current_id;
-static nux_u32 cursor;
 
 static nux_size nux_name_length(const char *name)
 {
