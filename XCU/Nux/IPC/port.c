@@ -285,6 +285,15 @@ static nux_status nux_port_send_internal(nux_task_id sender, nux_capability send
             nux_arch_unlock(&port_lock);
             return status == NUX_OK ? NUX_E_ACCESS : status;
         }
+    } else {
+        nux_object_id verified_object = 0;
+        status = nux_capability_check(sender, send, NUX_OBJECT_PORT,
+                                      NUX_RIGHT_SEND, &verified_object);
+        if (status != NUX_OK || verified_object != object_id) {
+            messages[index].active = 0;
+            nux_arch_unlock(&port_lock);
+            return status == NUX_OK ? NUX_E_ACCESS : status;
+        }
     }
 
     nux_port_message_slot *slot = &messages[index];
