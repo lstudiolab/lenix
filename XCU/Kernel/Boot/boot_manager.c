@@ -1,4 +1,5 @@
 #include "uefi.h"
+#include "pe_image.h"
 
 static const efi_guid loaded_image_guid = {
     0x5b1b31a1, 0x9562, 0x11d2, {0x8e,0x3f,0x00,0xa0,0xc9,0x69,0x72,0x3b}
@@ -12,6 +13,11 @@ static const efi_char16 banner[] = {
 static const efi_char16 loading[] = {
     'L','o','a','d','i','n','g',' ','N','u','x',' ','k','e','r','n','e','l',' ','i','m','a','g','e','\r','\n',0
 };
+static const efi_char16 invalid_image[] = {
+    'L','e','n','i','x',':',' ','i','n','v','a','l','i','d',' ','P','E','3','2','+',' ',
+    'E','F','I',' ','k','e','r','n','e','l',' ','i','m','a','g','e','\\r','\\n',0
+};
+
 static const efi_char16 failed[] = {
     'L','e','n','i','x',' ','B','o','o','t',' ','M','a','n','a','g','e','r',':',' ','b','o','o','t',' ','f','a','i','l','e','d','\r','\n',0
 };
@@ -123,6 +129,12 @@ efi_status nux_boot_manager_main(efi_handle image, efi_system_table *system)
     if (EFI_ERROR(status) || read_size != (efi_uintn)image_size) {
         (void)system->boot_services->free_pool(image_buffer);
         return fail(system, status);
+    }
+
+    if (!lenix_pe_image_valid((const efi_u8 *)image_buffer, image_size)) {
+        (void)system->boot_services->free_pool(image_buffer);
+        print(system, invalid_image);
+        return fail(system, EFI_ERROR_BIT | 1ULL);
     }
 
     print(system, loading);
