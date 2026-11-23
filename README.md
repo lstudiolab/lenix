@@ -41,9 +41,9 @@ See [the first-party boot architecture](XCU/Kernel/Boot/BOOT_ARCHITECTURE.md) fo
 
 Nux has progressed beyond an architecture skeleton. Both architecture targets cross-build, the host-side regression suite passes in CI, and the first-party UEFI images reach the Nux `READY` phase in QEMU on x86-64 and AArch64.
 
-Implemented foundations include physical memory management, architecture page tables and address-space switching, kernel and user threads, cooperative context switching, task-scoped capabilities, bounded IPC, synchronization primitives, x86-64 `int 0x80` and AArch64 `SVC` syscall paths, ACPI topology discovery, static ELF64 loading, and initial user-stack construction.
+Implemented foundations include physical memory management, architecture page tables and address-space switching, kernel and user threads, cooperative context switching, task-scoped capabilities, bounded IPC, synchronization primitives, anonymous demand-zero paging, anonymous copy-on-write with page reference counting and fault-time splitting, x86-64 `int 0x80` and AArch64 `SVC` syscall paths, ACPI topology discovery, static ELF64 loading, and initial user-stack construction.
 
-**Nux is not yet a complete general-purpose or production-ready microkernel.** Preemptive scheduling, blocking IPC deadlines and RPC, demand paging/COW, recoverable exception ports, interrupt-controller and timer integration, SMP startup, TLS/FP state management, a persistent user-space bootstrap/service manager, and device/filesystem/network servers remain incomplete. The detailed implementation matrix is maintained in [XCU/Nux/MACH_PARITY.md](XCU/Nux/MACH_PARITY.md), and the subsystem overview is in [XCU/Nux/README.md](XCU/Nux/README.md).
+**Nux is not yet a complete general-purpose or production-ready microkernel.** Preemptive scheduling, blocking IPC deadlines and RPC, external pager/file-backed demand paging, recoverable exception ports, interrupt-controller and timer integration, SMP startup, TLS/FP state management, a persistent user-space bootstrap/service manager, and device/filesystem/network servers remain incomplete. The detailed implementation matrix is maintained in [XCU/Nux/MACH_PARITY.md](XCU/Nux/MACH_PARITY.md), and the subsystem overview is in [XCU/Nux/README.md](XCU/Nux/README.md).
 
 ## Building from macOS
 
