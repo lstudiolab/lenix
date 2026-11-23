@@ -217,3 +217,68 @@ nux_u32 nux_capability_revoke_owner_object_rights(nux_task_id owner,
     nux_arch_unlock(&cap_lock);
     return revoked;
 }
+
+nux_status nux_capability_move(nux_task_id source_owner,
+                               nux_capability source,
+                               nux_task_id destination_owner,
+                               nux_object_type type,
+                               nux_rights required,
+                               nux_rights granted,
+                               nux_object_id *object_id,
+                               nux_capability *out)
+{
+    const nux_rights allowed = NUX_RIGHT_READ | NUX_RIGHT_WRITE |
+        NUX_RIGHT_SEND | NUX_RIGHT_RECEIVE | NUX_RIGHT_MAP |
+        NUX_RIGHT_CONTROL | NUX_RIGHT_TRANSFER | NUX_RIGHT_SEND_ONCE;
+    nux_task_info task;
+    nux_u32 source_slot = source & 0xffu;
+    nux_u32 source_generation = source >> 8;
+    nux_u32 destination_slot = NUX_CAPABILITY_LIMIT;
+
+    if (!source_owner || !destination_owner || source_owner == destination_owner ||
+        !source_slot || source_slot > NUX_CAPABILITY_LIMIT || !source_generation ||
+        type == NUX_OBJECT_NONE || !required || !granted ||
+        (granted & ~allowed) || !object_id || !out)
+        return NUX_E_INVALID;
+    if (nux_task_get(destination_owner, &task) != NUX_OK ||
+        task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING)
+        return NUX_E_ACCESS;
+
+    nux_arch_lock(&cap_lock);
+    nux_capability_entry *source_entry = &entries[source_slot - 1];
+    if (!source_entry->active || source_entry->generation != source_generation ||
+        source_entry->owner != source_owner || source_entry->type != type ||
+        (source_entry->rights & required) != required) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_ACCESS;
+    }
+    for (nux_u32 i = 0; i < NUX_CAPABILITY_LIMIT; ++i) {
+        if (!entries[i].active) {
+            destination_slot = i;
+            break;
+        }
+    }
+    if (destination_slot == NUX_CAPABILITY_LIMIT) {
+        nux_arch_unlock(&cap_lock);
+        return NUX_E_LIMIT;
+    }
+
+    nux_capability_entry *destination_entry = &entries[destination_slot];
+    destination_entry->active = 1;
+    destination_entry->owner = destination_owner;
+    destination_entry->object_id = source_entry->object_id;
+    destination_entry->rights = granted;
+    destination_entry->type = type;
+    *object_id = source_entry->object_id;
+    *out = (destination_entry->generation << 8) | (destination_slot + 1);
+    nux_capability_entry_revoke(source_entry);
+    nux_arch_unlock(&cap_lock);
+
+    if (nux_task_get(destination_owner, &task) != NUX_OK ||
+        task.state == NUX_TASK_UNUSED || task.state == NUX_TASK_DYING) {
+        (void)nux_capability_revoke(destination_owner, *out);
+        *out = 0;
+        return NUX_E_ACCESS;
+    }
+    return NUX_OK;
+}
