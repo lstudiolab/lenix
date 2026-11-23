@@ -1,5 +1,6 @@
 #include <nux/bootstrap.h>
 #include <nux/thread.h>
+#include <nux/elf.h>
 #include <nux/object.h>
 
 static nux_task_id current_task = 1;
@@ -34,6 +35,45 @@ nux_status nux_capability_create(nux_u32 owner, nux_object_type type,
     return NUX_OK;
 }
 
+
+static nux_status task_create_status;
+static nux_status elf_load_status;
+static nux_status user_thread_status;
+static nux_u32 destroyed_tasks;
+nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *out)
+{
+    if (!name || priority != 31 || !out) return NUX_E_INVALID;
+    if (task_create_status != NUX_OK) return task_create_status;
+    *out = 99;
+    return NUX_OK;
+}
+nux_status nux_elf_load(nux_task_id task, const void *image, nux_size size,
+                        nux_elf_load_result *result)
+{
+    if (task != 99 || !image || !size || !result) return NUX_E_INVALID;
+    if (elf_load_status != NUX_OK) return elf_load_status;
+    result->entry = 0x400000;
+    result->stack_pointer = 0x7fff0000;
+    return NUX_OK;
+}
+nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
+                                  nux_u64 stack, nux_u64 argument,
+                                  nux_u8 priority, nux_thread_id *out)
+{
+    (void)argument;
+    if (task != 99 || entry != 0x400000 || stack != 0x7fff0000 ||
+        priority != 31 || !out) return NUX_E_INVALID;
+    if (user_thread_status != NUX_OK) return user_thread_status;
+    *out = 123;
+    return NUX_OK;
+}
+nux_status nux_task_destroy(nux_task_id task)
+{
+    if (task != 99) return NUX_E_NOT_FOUND;
+    ++destroyed_tasks;
+    return NUX_OK;
+}
+
 int main(void)
 {
     nux_capability received = 0;
@@ -57,5 +97,18 @@ int main(void)
     if (nux_bootstrap_lookup("console", &received) != NUX_E_NOT_FOUND) return 11;
     if (nux_bootstrap_register("this-name-is-far-too-long-for-the-fixed-service-name-slot", 8)
         != NUX_E_INVALID) return 12;
+    nux_u32 initial_task = 77;
+    if (nux_bootstrap_start_initial_task(0, 128, &initial_task) != NUX_E_INVALID ||
+        initial_task != 77) return 13;
+    elf_load_status = NUX_E_INVALID;
+    if (nux_bootstrap_start_initial_task(0x1000, 128, &initial_task) != NUX_E_INVALID ||
+        initial_task != 0 || destroyed_tasks != 1) return 14;
+    elf_load_status = NUX_OK;
+    user_thread_status = NUX_E_NO_MEMORY;
+    if (nux_bootstrap_start_initial_task(0x1000, 128, &initial_task) != NUX_E_NO_MEMORY ||
+        destroyed_tasks != 2) return 15;
+    user_thread_status = NUX_OK;
+    if (nux_bootstrap_start_initial_task(0x1000, 128, &initial_task) != NUX_OK ||
+        initial_task != 99) return 16;
     return 0;
 }
