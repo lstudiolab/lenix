@@ -11,6 +11,7 @@ typedef struct {nux_u64 root,va,pa;nux_u32 prot;nux_u8 active;} map_entry;
 static map_entry maps[MAP_LIMIT];
 
 nux_u32 nux_thread_task_busy(nux_task_id task){(void)task;return 0;}
+nux_status nux_port_task_destroy(nux_task_id owner){(void)owner;return NUX_OK;}
 
 void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
