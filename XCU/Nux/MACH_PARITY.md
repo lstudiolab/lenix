@@ -178,7 +178,7 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 Distributed IPC is an optional extension, not a prerequisite for a local microkernel.
 
-## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, and physical page ownership\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
+## Runtime support\n\n- [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives\n- [x] Host-side regression tests for runtime primitives, IPC queues, physical page ownership, semaphores, and lock sets\n- [ ] Full compiler runtime support and sanitizer/fuzz coverage\n\n## Public interface headers
 
 The initial public contracts are under `Include/nux/`:
 
