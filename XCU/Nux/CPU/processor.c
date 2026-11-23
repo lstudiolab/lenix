@@ -116,6 +116,7 @@ nux_status nux_processor_system_init(void)
         for (nux_u32 i = 0; i < processor_total; ++i)
             online_found |= processors[i].online;
         if (!online_found) {
+            processors[0].hardware_id = current_id;
             processors[0].online = 1;
             boot_cpu = 0;
         }
