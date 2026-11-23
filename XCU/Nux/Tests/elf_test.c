@@ -48,6 +48,10 @@ int main(void)
     if(result.stack_base!=0x00007fff00000000ULL-65536ULL||
        result.stack_pointer!=0x00007fff00000000ULL||
        result.stack_size!=65536ULL||(result.stack_pointer&15ULL))return 8;
+    fail_stack_map=1;
+    if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_NO_MEMORY)return 9;
+    if(result.entry||result.stack_pointer||unmaps!=2)return 10;
+    fail_stack_map=0;
     if(nux_elf_load(7,image,100,&result)!=NUX_E_BAD_STATE)return 3;
     put32(image+64+56,2);
     if(nux_elf_load(7,image,sizeof(image),&result)!=NUX_E_NOT_SUPPORTED)return 4;
