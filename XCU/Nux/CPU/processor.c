@@ -32,7 +32,10 @@ static nux_processor_set_entry *processor_set_find(nux_processor_set_id id)
 
 static nux_u64 nux_arch_processor_hardware_id(void)
 {
-#if defined(__x86_64__)
+#if defined(NUX_PROCESSOR_TEST)
+    extern nux_u64 nux_processor_test_hardware_id(void);
+    return nux_processor_test_hardware_id();
+#elif defined(__x86_64__)
     nux_u32 eax, ebx, ecx, edx;
     __asm__ volatile("cpuid" : "=a"(eax), "=b"(ebx), "=c"(ecx), "=d"(edx)
                      : "a"(0), "c"(0));
@@ -68,7 +71,7 @@ nux_status nux_processor_system_init(void)
     for (nux_u32 i = 0; i < NUX_CPU_LIMIT; ++i) {
         processors[i].id = i;
         processors[i].architecture =
-#if defined(__x86_64__)
+#if defined(NUX_PROCESSOR_TEST_X86_64) || (!defined(NUX_PROCESSOR_TEST) && defined(__x86_64__))
             NUX_PROCESSOR_ARCH_X86_64;
 #else
             NUX_PROCESSOR_ARCH_ARM64;
