@@ -142,7 +142,7 @@ uefi-disk: uefi-disk-x86_64 uefi-disk-aarch64
 
 uefi-disk-x86_64: x86_64 $(LIMINE_DIR)/limine
 	rm -f Build/lenix-x86_64-uefi.img
-	dd if=/dev/zero of=Build/lenix-x86_64-uefi.img bs=1M count=128
+	dd if=/dev/zero of=Build/lenix-x86_64-uefi.img bs=1048576 count=128
 	mformat -i Build/lenix-x86_64-uefi.img -F ::
 	mmd -i Build/lenix-x86_64-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
 	mcopy -i Build/lenix-x86_64-uefi.img $(LIMINE_DIR)/BOOTX64.EFI ::/EFI/BOOT/BOOTX64.EFI
