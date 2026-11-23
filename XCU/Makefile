@@ -198,6 +198,7 @@ aarch64-qemu:
 	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64-qemu/lock.o
 	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/exception.S -o Build/aarch64-qemu/exception.o
 	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/context.S -o Build/aarch64-qemu/context.o
+	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/user.S -o Build/aarch64-qemu/user.o
 	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64-qemu/nux.elf Build/aarch64-qemu/*.o
 
 uefi-disk-aarch64-qemu: aarch64-qemu $(LIMINE_DIR)/limine
