@@ -180,16 +180,6 @@ aarch64-qemu:
 	$(AS_ARM) $(COMMON_CFLAGS) -DNUX_QEMU_SEMIHOST -mgeneral-regs-only -c Architecture/ARM64/CPU/user.S -o Build/aarch64-qemu/user.o
 	$(LD_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64-qemu/nux.elf Build/aarch64-qemu/*.o
 
-uefi-disk-aarch64-qemu: aarch64-qemu $(LIMINE_DIR)/limine
-	rm -f Build/lenix-aarch64-qemu-uefi.img
-	dd if=/dev/zero of=Build/lenix-aarch64-qemu-uefi.img bs=1048576 count=128
-	mformat -i Build/lenix-aarch64-qemu-uefi.img -F ::
-	mmd -i Build/lenix-aarch64-qemu-uefi.img ::/EFI ::/EFI/BOOT ::/boot ::/boot/limine
-	mcopy -i Build/lenix-aarch64-qemu-uefi.img $(LIMINE_DIR)/BOOTAA64.EFI ::/EFI/BOOT/BOOTAA64.EFI
-	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/limine.conf
-	mcopy -i Build/lenix-aarch64-qemu-uefi.img limine.conf ::/boot/limine/limine.conf
-	mcopy -i Build/lenix-aarch64-qemu-uefi.img Build/aarch64-qemu/nux.elf ::/boot/nux.elf
-
 BOOT_CC ?= clang
 BOOT_LD ?= lld-link
 BOOT_FLAGS := -ffreestanding -fno-stack-protector -fno-builtin -fshort-wchar -Wall -Wextra -Werror
