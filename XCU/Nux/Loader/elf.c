@@ -66,8 +66,9 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
 {
     const nux_u8 *bytes = (const nux_u8 *)image;
     const elf64_header *header;
-    loaded_segment loaded[ELF_PROGRAM_LIMIT];
+    loaded_segment loaded[ELF_PROGRAM_LIMIT + 1];
     nux_u32 loaded_count = 0;
+    nux_u32 mapping_count = 0;
     nux_u64 address_space = 0;
     nux_u32 executable_entry = 0;
     nux_u32 stack_mapped = 0;
@@ -77,6 +78,9 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     if (!task || !image || !result || image_size < ELF_HEADER_SIZE)
         return NUX_E_INVALID;
     result->entry = 0;
+    result->stack_base = 0;
+    result->stack_pointer = 0;
+    result->stack_size = 0;
     result->segment_count = 0;
     result->reserved = 0;
     result->stack_base = 0;
@@ -139,6 +143,7 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
             ((program->flags & ELF_PF_W) ? NUX_VM_PROT_WRITE : 0) |
             ((program->flags & ELF_PF_X) ? NUX_VM_PROT_EXEC : 0);
         ++loaded_count;
+        ++mapping_count;
 
         if (program->filesz) {
             status = nux_vm_write(address_space, program->vaddr,
