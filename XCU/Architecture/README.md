@@ -25,4 +25,4 @@ The boot protocol request region is explicitly delimited and retained by both li
 
 ## Boot limitations
 
-The current boot contract is a Limine handoff, not a native Apple bootloader implementation. The repository still needs bootable image packaging, a user-space init/bootstrap executable, a real console, timer/interrupt-controller setup, and QEMU/real-hardware boot qualification for both targets. An ELF cross-build alone does not prove that firmware can boot the image.
+The current boot contract is a Limine handoff, not a native Apple bootloader implementation. The repository now builds UEFI ISO and removable-media images for both targets. x86-64 and AArch64 UEFI boot both reach NUX:READY in QEMU; the AArch64 diagnostic image uses semihosting. The macOS Clang/LLD cross-build is verified. A user-space init/bootstrap executable, a real console, timer/interrupt-controller setup, and physical-hardware qualification remain. An ELF cross-build alone does not prove that firmware can boot the image.
