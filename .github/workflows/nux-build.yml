@@ -32,6 +32,10 @@ jobs:
         run: |
           nm -n XCU/Build/x86_64/nux.elf | head -n 80
           objdump -d --start-address=0xffffffff800003e0 --stop-address=0xffffffff80000480 XCU/Build/x86_64/nux.elf
+      - name: Inspect ARM64 exception and user-entry addresses
+        run: |
+          aarch64-linux-gnu-addr2line -f -e XCU/Build/aarch64/nux.elf 0xffffffff80000924 || true
+          aarch64-linux-gnu-objdump -d --start-address=0xffffffff800008e0 --stop-address=0xffffffff80000960 XCU/Build/aarch64/nux.elf || true
       - name: Boot x86-64 image under QEMU
         run: |
           cp /usr/share/OVMF/OVMF_VARS_4M.fd XCU/Build/OVMF_VARS.fd
