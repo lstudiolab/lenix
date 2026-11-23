@@ -30,6 +30,7 @@ Nux is an original Lenix microkernel. This document defines the complete Mach-de
 - [ ] Timer and interrupt-controller initialization before enabling interrupts
 - [ ] Launch the first isolated user-space bootstrap task
 - [x] QEMU UEFI firmware boot smoke tests reach Nux READY on x86-64 and AArch64
+- [x] QEMU user-mode smoke ELF enters ring 3/EL0, exercises a kernel-thread handoff, invokes the exit syscall, and returns to the kernel on both architectures
 - [ ] Physical-machine boot qualification on both architectures
 
 
@@ -60,12 +61,13 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Thread-local storage and per-CPU state
 - [ ] Thread naming, information, and accounting
 - [x] Thread-to-processor-set affinity metadata and CPU-set membership (Foundation; current-CPU eligibility is enforced, SMP migration remains)
+- [x] User-thread bootstrap with isolated address space, dedicated kernel stack, sanitized general registers, and architecture privilege transition (Foundation; no TLS or saved FP/SIMD state)
 - [ ] Thread exception state and special ports
 
 ### 3. Scheduling and execution
 
 - [x] Cooperative round-robin dispatch and real context switching between kernel threads (Foundation; no preemption)
-- [x] Activate the selected kernel thread's owning task address space on scheduler handoff (Foundation; user-mode transitions remain)
+- [x] Activate the selected thread's owning task address space on scheduler handoff (Foundation; cooperative only)
 - [ ] Preemptive scheduling and timer-driven quanta
 - [ ] Dynamic time-sharing priorities
 - [ ] Fixed-priority scheduling
@@ -102,7 +104,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [x] Fixed-capacity sparse address-space objects (Foundation; task creation allocates and records one address space)
 - [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (Foundation; hardware runtime validation pending)
 - [x] Anonymous page-backed mappings and exact-region unmap/protect operations (Foundation; partial-range operations and region query remain)
-- [x] Static ELF64 PT_LOAD executable loader for both architectures with segment validation, W^X permissions, rollback, and initial user stack/auxv construction (Foundation; user-mode entry remains)
+- [x] Static ELF64 PT_LOAD executable loader for both architectures with segment validation, W^X permissions, rollback, and initial user stack/auxv construction (Foundation; demand paging and dynamic linking remain)
+- [x] QEMU validation of isolated user executable mappings and initial user-stack execution on both architectures
 - [ ] Demand paging and page-fault resolution
 - [x] Anonymous page-backed memory objects (Foundation; fixed maximum object size)
 - [ ] Named memory entries and transferable mapping rights
@@ -136,9 +139,10 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 - [ ] Per-task and per-thread exception ports
 - [ ] Exception delivery with identity and machine state
 - [ ] Exception reply/recovery and thread termination
-- [x] Versioned syscall dispatch registry and handler validation (Foundation; no user entry/return path yet)
+- [x] Versioned syscall dispatch registry and handler validation
 - [x] Kernel-side syscall dispatch with six-word argument contract and registered handlers
-- [ ] User-to-kernel and kernel-to-user transition assembly
+- [x] x86-64 DPL3 int 0x80 and AArch64 EL0 SVC entry/return frames, including six-argument dispatch and result restoration
+- [x] User fault containment by terminating the faulting thread (Foundation; exception ports and machine-state recovery remain)
 - [ ] System-call redirection/emulation hooks for compatibility servers
 - [ ] Debugger attach/detach authorization
 
