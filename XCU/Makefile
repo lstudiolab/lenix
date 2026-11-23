@@ -68,7 +68,7 @@ test-syscall:
 
 test-vm:
 	mkdir -p Build
-	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/vm_test.c Nux/VM/vm.c Nux/Runtime/memory.c -o Build/vm_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/vm_test.c Nux/VM/vm.c Nux/Task/task.c Nux/Runtime/memory.c -o Build/vm_test
 	./Build/vm_test
 
 test-time:
