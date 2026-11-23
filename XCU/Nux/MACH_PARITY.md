@@ -123,12 +123,12 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 8. Time and clocks
 
-- [ ] Monotonic, realtime, boot, and CPU clocks
-- [ ] Architecture timer drivers and clock source selection
-- [ ] One-shot and periodic timers
-- [ ] Thread sleep/wakeup and timed waits
-- [ ] Timer cancellation and expiration delivery
-- [ ] CPU-time accounting and profiling clocks
+- [x] Monotonic and boot clocks backed by ARM generic timer or x86 TSC when frequency discovery is available (Foundation; realtime and per-thread clocks remain)
+- [x] Architecture clock-source frequency discovery on both supported targets
+- [x] Software one-shot and periodic timer metadata with polling and cancellation (Foundation; no interrupt-driven expiry delivery)
+- [ ] Scheduler-integrated thread sleep/wakeup and timed waits
+- [x] Timer cancellation and polling-based expiration accounting
+- [x] Explicit per-thread runtime accounting API (Foundation; not yet wired into scheduler preemption)
 - [ ] Time-constraint scheduler integration
 
 ### 9. Processors and multiprocessor operation
@@ -183,7 +183,7 @@ Distributed IPC is an optional extension, not a prerequisite for a local microke
 ## Runtime support
 
 - [x] Freestanding byte-copy, overlap-safe move, fill, and compare primitives
-- [x] Host-side regression tests for runtime primitives, IPC queues (create/send/receive/backpressure/buffer sizing/port sets/revocation), physical page ownership, semaphores, lock sets, x86 context switching, and syscall dispatch
+- [x] Host-side regression tests for runtime primitives, IPC queues (create/send/receive/backpressure/buffer sizing/port sets/revocation), physical page ownership, semaphores, lock sets, x86 context switching, syscall dispatch, VM objects, and software timers
 - [ ] Full compiler runtime support and sanitizer/fuzz coverage
 
 ## Public interface headers
