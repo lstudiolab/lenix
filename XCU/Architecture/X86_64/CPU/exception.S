@@ -891,8 +891,61 @@ nux_isr_127:
 nux_isr_128:
     pushq $0
     pushq $128
-    jmp nux_isr_common
+    jmp nux_syscall_common
 .size nux_isr_128, .-nux_isr_128
+
+.type nux_syscall_common,@function
+nux_syscall_common:
+    pushq %rax
+    pushq %rcx
+    pushq %rdx
+    pushq %rbx
+    pushq %rbp
+    pushq %rsi
+    pushq %rdi
+    pushq %r8
+    pushq %r9
+    pushq %r10
+    pushq %r11
+    pushq %r12
+    pushq %r13
+    pushq %r14
+    pushq %r15
+    subq $48, %rsp
+    movq 112+48(%rsp), %rdi
+    movq 64+48(%rsp), %rax
+    movq %rax, 0(%rsp)
+    movq 72+48(%rsp), %rax
+    movq %rax, 8(%rsp)
+    movq 96+48(%rsp), %rax
+    movq %rax, 16(%rsp)
+    movq 40+48(%rsp), %rax
+    movq %rax, 24(%rsp)
+    movq 56+48(%rsp), %rax
+    movq %rax, 32(%rsp)
+    movq 48+48(%rsp), %rax
+    movq %rax, 40(%rsp)
+    movq %rsp, %rsi
+    call nux_syscall_invoke
+    movq %rax, 112+48(%rsp)
+    addq $48, %rsp
+    popq %r15
+    popq %r14
+    popq %r13
+    popq %r12
+    popq %r11
+    popq %r10
+    popq %r9
+    popq %r8
+    popq %rdi
+    popq %rsi
+    popq %rbp
+    popq %rbx
+    popq %rdx
+    popq %rcx
+    popq %rax
+    addq $16, %rsp
+    iretq
 .global nux_isr_129
 .type nux_isr_129,@function
 nux_isr_129:
