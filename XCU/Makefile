@@ -9,8 +9,8 @@ X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c
 
-.PHONY: all headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync clean
-all: headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync
+.PHONY: all headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread clean
+all: headers x86_64 aarch64 test-runtime test-ipc test-memory test-sync test-thread
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -55,6 +55,11 @@ test-sync:
 	mkdir -p Build
 	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin -I Nux/Include Nux/Tests/sync_test.c Nux/Sync/sync.c -o Build/sync_test
 	./Build/sync_test
+
+test-thread:
+	mkdir -p Build
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -mno-sse -mno-mmx -msoft-float -mno-red-zone -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
+	./Build/thread_context_test
 
 clean:
 	rm -rf Build
