@@ -108,8 +108,8 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 ### 7. Exceptions, traps, and system calls
 
-- [ ] AArch64 exception vectors and x86-64 IDT/TSS setup
-- [ ] Fault classification and safe kernel exception handling
+- [x] AArch64 EL1 exception vector table and x86-64 IDT with 256 vector stubs (Foundation; fatal capture only, no recovery or TSS/IST setup)
+- [ ] Fault classification, recoverable kernel exception handling, and panic diagnostics
 - [ ] Per-task and per-thread exception ports
 - [ ] Exception delivery with identity and machine state
 - [ ] Exception reply/recovery and thread termination
