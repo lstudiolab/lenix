@@ -14,6 +14,8 @@ nux_status nux_vm_space_destroy(nux_u64 id)
     return id ? NUX_OK : NUX_E_INVALID;
 }
 
+nux_u32 nux_thread_task_busy(nux_task_id task){(void)task;return 0;}
+
 void nux_arch_lock(volatile nux_u32 *lock)
 {
     while (*lock) { }
