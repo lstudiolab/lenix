@@ -69,8 +69,22 @@ int main(void){
     if(nux_vm_space_create(&space)!=NUX_OK)return 2;
     if(nux_vm_map(space,&address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 3;
     if(address<0x10000000ULL||nux_vm_fault(space,address,NUX_VM_PROT_READ)!=NUX_OK)return 4;
+    {
+        const nux_u8 payload[8]={1,2,3,4,5,6,7,8};
+        nux_u64 first_pa=0,second_pa=0;
+        if(nux_vm_write(space,address+NUX_VM_PAGE_SIZE-4,payload,sizeof(payload))!=NUX_OK)return 29;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)if(maps[i].active&&maps[i].va==address)first_pa=maps[i].pa;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)if(maps[i].active&&maps[i].va==address+NUX_VM_PAGE_SIZE)second_pa=maps[i].pa;
+        if(!first_pa||!second_pa)return 30;
+        for(nux_u32 i=0;i<4;i++)if(arena[first_pa+i+NUX_VM_PAGE_SIZE-4]!=payload[i])return 31;
+        for(nux_u32 i=0;i<4;i++)if(arena[second_pa+i]!=payload[i+4])return 32;
+    }
     if(nux_vm_fault(space,address,NUX_VM_PROT_EXEC)!=NUX_E_ACCESS)return 5;
     if(nux_vm_protect(space,address,2*NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ)!=NUX_OK)return 6;
+    {
+        const nux_u8 byte=0xff;
+        if(nux_vm_write(space,address,&byte,1)!=NUX_E_ACCESS)return 33;
+    }
     if(nux_vm_fault(space,address,NUX_VM_PROT_WRITE)!=NUX_E_ACCESS)return 7;
     if(nux_vm_unmap(space,address,2*NUX_VM_PAGE_SIZE)!=NUX_OK)return 8;
     if(nux_memory_object_create(2*NUX_VM_PAGE_SIZE,&object)!=NUX_OK)return 9;
