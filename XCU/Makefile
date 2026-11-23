@@ -18,7 +18,7 @@ headers:
 
 x86_64:
 	mkdir -p Build/x86_64
-	@for source in $(C_SOURCES); do object=Build/x86_64/$$(echo $$source | tr '/.' '__').o; $(CC_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c $source -o $object || exit 1; done
+	@for source in $(C_SOURCES); do object=Build/x86_64/$$(echo $$source | tr '/.' '__').o; $(CC_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c $$source -o $$object || exit 1; done
 	$(AS_X86) $(COMMON_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/Boot/entry.S -o Build/x86_64/entry.o
 	$(AS_X86) $(COMMON_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/early.S -o Build/x86_64/early.o
 	$(AS_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/lock.S -o Build/x86_64/lock.o
