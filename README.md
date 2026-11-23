@@ -28,9 +28,9 @@ The kernel architecture is **XCU**. Its microkernel, **Nux**, is designed and im
 
 Nux has progressed beyond an architecture skeleton. Both architecture targets cross-build, the host-side regression suite passes in CI, and UEFI images have reached the Nux `READY` phase in QEMU on x86-64 and AArch64.
 
-Implemented foundations include physical memory management, architecture page tables and address-space switching, kernel threads and cooperative context switching, task-scoped capabilities, bounded IPC, synchronization primitives, syscall dispatch registration, ACPI topology discovery, static ELF64 loading, and initial user-stack construction.
+Implemented foundations include physical memory management, architecture page tables and address-space switching, kernel and user threads, cooperative context switching, task-scoped capabilities, bounded IPC, synchronization primitives, x86-64 `int 0x80` and AArch64 `SVC` syscall paths, ACPI topology discovery, static ELF64 loading, and initial user-stack construction. QEMU smoke tests execute a user ELF and exit through the syscall ABI on both architectures.
 
-**Nux is not yet a complete general-purpose or production-ready microkernel.** In particular, it does not yet launch an isolated user-space bootstrap task. User-mode context entry/return, syscall isolation, preemptive scheduling, blocking IPC, demand paging/COW, recoverable exception delivery, interrupt-controller and timer integration, SMP startup, and user-space service infrastructure remain incomplete. The detailed implementation matrix is maintained in [XCU/Nux/MACH_PARITY.md](XCU/Nux/MACH_PARITY.md), and the subsystem overview is in [XCU/Nux/README.md](XCU/Nux/README.md).
+**Nux is not yet a complete general-purpose or production-ready microkernel.** The initial user-mode entry and syscall paths are now exercised in QEMU, but there is no persistent user-space bootstrap/service manager yet. Preemptive scheduling, blocking IPC, demand paging/COW, recoverable exception ports, interrupt-controller and timer integration, SMP startup, TLS/FP state management, and user-space service infrastructure remain incomplete. The detailed implementation matrix is maintained in [XCU/Nux/MACH_PARITY.md](XCU/Nux/MACH_PARITY.md), and the subsystem overview is in [XCU/Nux/README.md](XCU/Nux/README.md).
 
 ## Building from macOS
 
