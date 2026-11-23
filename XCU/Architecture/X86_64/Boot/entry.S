@@ -7,10 +7,14 @@
 .extern limine_hhdm_request
 
 _start:
+    movb $0x45, %al
+    outb %al, $0xe9
     cli
     cld
     andq $-16, %rsp
     call nux_arch_early_init
+    movb $0x41, %al
+    outb %al, $0xe9
 
     /* nux_boot_info is 40 bytes; keep the call site 16-byte aligned. */
     subq $48, %rsp
