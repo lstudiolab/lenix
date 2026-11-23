@@ -109,7 +109,10 @@ nux_status nux_memory_init(const struct nux_boot_info *boot_info)
 
         end = nux_align_down(entry->base + entry->length);
         start = nux_align_up(entry->base);
-        if (start == 0 || end <= start)
+        if (start == 0 && entry->base != 0)
+            continue;
+        if (start == 0) start = NUX_PAGE_SIZE;
+        if (end <= start)
             continue;
 
         pages = (end - start) >> NUX_PAGE_SHIFT;
