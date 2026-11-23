@@ -31,7 +31,7 @@ int main(void)
 {
     nux_task_id task, other_task;
     nux_capability send, receive, orphan_send, orphan_receive;
-    nux_capability duplicate_send, send_once, moved_send;
+    nux_capability duplicate_send, send_once, moved_send, derived_send;
     nux_capability transfer_send, transfer_receive, moved_receive, duplicate_receive;
     nux_object_id object_id;
     nux_port_set_id set;
@@ -73,18 +73,24 @@ int main(void)
     if (nux_port_send_once(task, send_once, &message) != NUX_E_ACCESS) return 19;
     if (nux_port_receive(task, receive, &received, 0) != NUX_OK) return 20;
 
-    if (nux_port_set_create(task, &set) != NUX_OK) return 21;
-    if (nux_port_set_add(task, set, receive) != NUX_OK) return 22;
-    if (nux_port_set_receive(other_task, set, &received, 0) != NUX_E_ACCESS) return 23;
+    if (nux_port_make_send(task, receive, &derived_send) != NUX_OK) return 21;
+    if (nux_port_send(task, derived_send, &message, 0) != NUX_OK) return 22;
+    if (nux_port_receive(task, receive, &received, 0) != NUX_OK) return 23;
+    if (nux_port_copy_send(task, send, &duplicate_send) != NUX_OK) return 24;
+    if (nux_port_send(task, duplicate_send, &message, 0) != NUX_OK) return 25;
+    if (nux_port_receive(task, receive, &received, 0) != NUX_OK) return 26;
+    if (nux_port_set_create(task, &set) != NUX_OK) return 27;
+    if (nux_port_set_add(task, set, receive) != NUX_OK) return 28;
+    if (nux_port_set_receive(other_task, set, &received, 0) != NUX_E_ACCESS) return 29;
     if (nux_port_move_right(task, send, other_task,
-                            NUX_PORT_RIGHT_SEND, &moved_send) != NUX_OK) return 24;
-    if (nux_port_send(task, send, &message, 0) != NUX_E_ACCESS) return 25;
-    if (nux_port_send(other_task, moved_send, &message, 0) != NUX_OK) return 26;
-    if (nux_port_set_receive(task, set, &received, 0) != NUX_OK) return 27;
+                            NUX_PORT_RIGHT_SEND, &moved_send) != NUX_OK) return 30;
+    if (nux_port_send(task, send, &message, 0) != NUX_E_ACCESS) return 31;
+    if (nux_port_send(other_task, moved_send, &message, 0) != NUX_OK) return 32;
+    if (nux_port_set_receive(task, set, &received, 0) != NUX_OK) return 33;
 
     if (nux_port_make_send(task, receive, &duplicate_send) != NUX_OK) return 28;
-    if (nux_port_destroy(task, receive) != NUX_OK) return 29;
-    if (nux_port_send(task, duplicate_send, &message, 0) != NUX_E_ACCESS) return 30;
+    if (nux_port_destroy(task, receive) != NUX_OK) return 35;
+    if (nux_port_send(task, duplicate_send, &message, 0) != NUX_E_ACCESS) return 36;
     if (nux_port_send(other_task, moved_send, &message, 0) != NUX_E_ACCESS) return 31;
 
     if (nux_port_create(task, 2, &transfer_send, &transfer_receive) != NUX_OK) return 32;
