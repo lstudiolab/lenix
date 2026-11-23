@@ -182,7 +182,7 @@ aarch64-qemu:
 
 BOOT_CC ?= clang
 BOOT_LD ?= lld-link
-BOOT_FLAGS := -ffreestanding -fno-stack-protector -fno-builtin -fshort-wchar -Wall -Wextra -Werror
+BOOT_FLAGS := -I Nux/Include -I Kernel/Entry -ffreestanding -fno-stack-protector -fno-builtin -fshort-wchar -Wall -Wextra -Werror
 
 boot-manager:
 	mkdir -p Build/boot
