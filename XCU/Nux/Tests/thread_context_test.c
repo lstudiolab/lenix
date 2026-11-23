@@ -1,5 +1,6 @@
 #include <nux/task.h>
 #include <nux/thread.h>
+#include <nux/time.h>
 
 static volatile nux_u32 first_count;
 static volatile nux_u32 second_count;
@@ -8,6 +9,19 @@ static nux_u64 active_space;
 static nux_u64 last_task_space;
 
 static nux_u64 test_next_space = 1;
+static nux_u64 mock_clock;
+nux_u64 nux_clock_now(nux_clock_id clock)
+{
+    (void)clock;
+    return ++mock_clock;
+}
+nux_u32 nux_timer_poll(void) { return 0; }
+nux_status nux_time_account_thread(nux_u32 id, nux_u64 elapsed)
+{
+    (void)id;
+    (void)elapsed;
+    return NUX_OK;
+}
 nux_status nux_vm_space_create(nux_u64 *out)
 {
     if (!out) return NUX_E_INVALID;
