@@ -4,7 +4,14 @@
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
-extern void nux_bootstrap_task_destroy(nux_u32 owner) __attribute__((weak));
+static nux_task_destroy_hook task_destroy_hook;
+
+void nux_task_set_destroy_hook(nux_task_destroy_hook hook)
+{
+    nux_arch_lock(&task_lock);
+    task_destroy_hook = hook;
+    nux_arch_unlock(&task_lock);
+}
 
 static nux_task_info tasks[NUX_TASK_LIMIT];
 static volatile nux_u32 task_lock;
@@ -118,7 +125,7 @@ nux_status nux_task_destroy(nux_task_id id)
         return status;
     }
 
-    if (nux_bootstrap_task_destroy) nux_bootstrap_task_destroy(id);
+    if (task_destroy_hook) task_destroy_hook(id);
     (void)nux_port_task_destroy(id);
 
     nux_arch_lock(&task_lock);
