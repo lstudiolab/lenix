@@ -71,6 +71,8 @@ nux_status nux_thread_set_policy(nux_thread_id thread, nux_sched_policy policy,
                                  nux_u8 priority, nux_u64 quantum_ns);
 nux_status nux_thread_set_time_constraint(nux_thread_id thread, nux_u64 period_ns,
                                           nux_u64 budget_ns, nux_u64 deadline_ns);
+nux_status nux_thread_prepare_wait_current(nux_thread_id *out);
+nux_status nux_thread_wake(nux_thread_id thread);
 nux_status nux_thread_yield(void);
 nux_task_id nux_thread_current_task(void);
 nux_status nux_thread_exit_current(void);
