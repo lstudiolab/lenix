@@ -15,7 +15,7 @@ static const efi_char16 loading[] = {
 };
 static const efi_char16 invalid_image[] = {
     'L','e','n','i','x',':',' ','i','n','v','a','l','i','d',' ','P','E','3','2','+',' ',
-    'E','F','I',' ','k','e','r','n','e','l',' ','i','m','a','g','e','\\r','\\n',0
+    'E','F','I',' ','k','e','r','n','e','l',' ','i','m','a','g','e','\r','\n',0
 };
 
 static const efi_char16 failed[] = {
