@@ -1,4 +1,7 @@
 #include <nux/syscall.h>
+#include <nux/task.h>
+#include <nux/vm.h>
+#include <nux/port.h>
 
 void nux_arch_lock(volatile nux_u32 *lock)
 {
@@ -33,14 +36,14 @@ int main(void)
     nux_syscall_word args[6] = {1, 2, 3, 4, 5, 6};
     nux_syscall_word result = 99;
     if (nux_syscall_system_init() != NUX_OK) return 1;
-    if (nux_syscall_dispatch(7, args, &result) != NUX_E_NOT_SUPPORTED) return 2;
+    if (nux_syscall_dispatch(8, args, &result) != NUX_E_NOT_SUPPORTED) return 2;
     if (nux_syscall_dispatch(0x100000000ULL, args, &result) != NUX_E_INVALID) return 11;
     if (nux_syscall_dispatch(NUX_SYSCALL_YIELD, args, &result) != NUX_OK) return 8;
     if (nux_syscall_invoke(NUX_SYSCALL_YIELD, args) != 0) return 9;
     if ((nux_i64)nux_syscall_invoke(999, args) != NUX_E_INVALID) return 10;
-    if (nux_syscall_register(7, add_handler, 0) != NUX_OK) return 3;
+    if (nux_syscall_register(8, add_handler, 0) != NUX_OK) return 3;
     if (nux_syscall_register(7, add_handler, 0) != NUX_E_BUSY) return 4;
-    if (nux_syscall_dispatch(7, args, &result) != NUX_OK) return 5;
+    if (nux_syscall_dispatch(8, args, &result) != NUX_OK) return 5;
     if (result != 21) return 6;
     if (nux_syscall_register(NUX_SYSCALL_LIMIT, add_handler, 0) != NUX_E_INVALID) return 7;
     return 0;
