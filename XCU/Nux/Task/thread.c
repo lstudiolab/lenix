@@ -598,3 +598,14 @@ nux_u32 nux_thread_processor_set_busy(nux_u32 set)
     return busy;
 }
 
+
+nux_task_id nux_thread_current_task(void)
+{
+    nux_task_id task = 0;
+    nux_arch_lock(&thread_lock);
+    nux_thread_entry *thread = nux_thread_find(current_thread_id);
+    if (thread && thread->info.state == NUX_THREAD_RUNNING)
+        task = thread->info.task;
+    nux_arch_unlock(&thread_lock);
+    return task;
+}
