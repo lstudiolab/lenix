@@ -65,6 +65,10 @@ int main(void){
     if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_OK)return 22;
     if(nux_task_get_address_space(task_b,&task_space_b)!=NUX_OK)return 23;
     if(!task_space_a||!task_space_b||task_space_a==task_space_b)return 24;
+    if(nux_task_set_state(task_a,NUX_TASK_DYING)!=NUX_E_INVALID)return 43;
+    if(nux_task_set_state(task_a,NUX_TASK_RUNNING)!=NUX_E_INVALID)return 44;
+    if(nux_task_set_state(task_a,NUX_TASK_BLOCKED)!=NUX_OK)return 45;
+    if(nux_task_set_state(task_a,NUX_TASK_READY)!=NUX_OK)return 46;
     if(nux_task_suspend(task_a)!=NUX_OK)return 39;
     if(nux_task_suspend(task_a)!=NUX_E_BAD_STATE)return 40;
     if(nux_task_resume(task_a)!=NUX_OK)return 41;
