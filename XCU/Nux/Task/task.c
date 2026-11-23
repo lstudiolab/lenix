@@ -154,6 +154,48 @@ nux_status nux_task_set_state(nux_task_id id, nux_task_state state)
     return NUX_E_NOT_FOUND;
 }
 
+
+nux_status nux_task_suspend(nux_task_id id)
+{
+    if (!id) return NUX_E_INVALID;
+    nux_arch_lock(&task_lock);
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
+        if (tasks[i].id != id) continue;
+        if (tasks[i].state == NUX_TASK_DYING ||
+            tasks[i].state == NUX_TASK_UNUSED) {
+            nux_arch_unlock(&task_lock);
+            return NUX_E_BAD_STATE;
+        }
+        if (tasks[i].state == NUX_TASK_SUSPENDED) {
+            nux_arch_unlock(&task_lock);
+            return NUX_E_BAD_STATE;
+        }
+        tasks[i].state = NUX_TASK_SUSPENDED;
+        nux_arch_unlock(&task_lock);
+        return NUX_OK;
+    }
+    nux_arch_unlock(&task_lock);
+    return NUX_E_NOT_FOUND;
+}
+
+nux_status nux_task_resume(nux_task_id id)
+{
+    if (!id) return NUX_E_INVALID;
+    nux_arch_lock(&task_lock);
+    for (nux_u32 i = 0; i < NUX_TASK_LIMIT; ++i) {
+        if (tasks[i].id != id) continue;
+        if (tasks[i].state != NUX_TASK_SUSPENDED) {
+            nux_arch_unlock(&task_lock);
+            return NUX_E_BAD_STATE;
+        }
+        tasks[i].state = NUX_TASK_READY;
+        nux_arch_unlock(&task_lock);
+        return NUX_OK;
+    }
+    nux_arch_unlock(&task_lock);
+    return NUX_E_NOT_FOUND;
+}
+
 nux_status nux_task_get(nux_task_id id, nux_task_info *out)
 {
     if (!id || !out) return NUX_E_INVALID;
