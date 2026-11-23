@@ -69,6 +69,8 @@ int main(void){
     if(nux_task_destroy(task_b)!=NUX_OK)return 26;
     if(nux_task_get_address_space(task_a,&task_space_a)!=NUX_E_NOT_FOUND)return 28;
     if(nux_vm_space_create(&space)!=NUX_OK)return 2;
+    if(nux_vm_read(space,0x30000000ULL,output,1)!=NUX_E_NOT_FOUND)return 37;
+    if(nux_vm_write(space,0x30000000ULL,input,1)!=NUX_E_NOT_FOUND)return 38;
     if(nux_vm_map(space,&write_base,NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 29;
     if(nux_vm_map(space,&read_base,NUX_VM_PAGE_SIZE,NUX_VM_PROT_READ,0,0)!=NUX_OK)return 30;
     if(nux_vm_write(space,write_base+NUX_VM_PAGE_SIZE-2,input,sizeof(input))!=NUX_E_ACCESS)return 31;
