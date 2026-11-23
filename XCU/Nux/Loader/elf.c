@@ -73,6 +73,7 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
     nux_u32 loaded_count = 0;
     nux_u64 address_space = 0;
     nux_u32 executable_entry = 0;
+    nux_status failure_status = NUX_E_BAD_STATE;
 
     if (!task || !image || !result || image_size < ELF_HEADER_SIZE)
         return NUX_E_INVALID;
@@ -120,7 +121,7 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
         nux_vm_address mapped = start;
         nux_status status = nux_vm_map(address_space, &mapped, end - start,
                                        protection, 0, 0);
-        if (status != NUX_OK) goto load_failed;
+        if (status != NUX_OK) { failure_status = status; goto load_failed; }
         loaded[loaded_count].address = start;
         loaded[loaded_count].size = end - start;
         loaded[loaded_count].protection =
@@ -133,7 +134,7 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
             status = nux_vm_write(address_space, program->vaddr,
                                   bytes + program->offset,
                                   (nux_size)program->filesz);
-            if (status != NUX_OK) goto load_failed;
+            if (status != NUX_OK) { failure_status = status; goto load_failed; }
         }
         if ((program->flags & ELF_PF_X) && header->entry >= program->vaddr &&
             header->entry - program->vaddr < program->memsz)
@@ -144,7 +145,7 @@ nux_status nux_elf_load(nux_task_id task, const void *image,
         nux_status status = nux_vm_protect(address_space, loaded[i].address,
                                            loaded[i].size,
                                            loaded[i].protection);
-        if (status != NUX_OK) goto load_failed;
+        if (status != NUX_OK) { failure_status = status; goto load_failed; }
     }
     result->entry = header->entry;
     result->segment_count = loaded_count;
@@ -165,5 +166,5 @@ load_failed:
         (void)nux_vm_unmap(address_space, loaded[loaded_count].address,
                            loaded[loaded_count].size);
     }
-    return NUX_E_NO_MEMORY;
+    return failure_status;
 }
