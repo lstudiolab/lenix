@@ -2,13 +2,14 @@ CC_X86 ?= x86_64-linux-gnu-gcc
 AS_X86 ?= x86_64-linux-gnu-gcc
 CC_ARM ?= aarch64-linux-gnu-gcc
 AS_ARM ?= aarch64-linux-gnu-gcc
+HOST_CC ?= cc
 
 COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c
 
-.PHONY: all headers x86_64 aarch64 clean
-all: headers x86_64 aarch64
+.PHONY: all headers x86_64 aarch64 test-runtime clean
+all: headers x86_64 aarch64 test-runtime
 
 headers:
 	$(CC_X86) $(COMMON_CFLAGS) -fsyntax-only Nux/Tests/header_check.c
@@ -31,6 +32,11 @@ aarch64:
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64/lock.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/exception.S -o Build/aarch64/exception.o
 	$(CC_ARM) $(LDFLAGS) -Wl,-T,Kernel/Linker/aarch64.ld -o Build/aarch64/nux.elf Build/aarch64/*.o
+
+test-runtime:
+	mkdir -p Build
+	$(HOST_CC) -std=c11 -Wall -Wextra -Werror -fno-builtin Nux/Tests/runtime_test.c Nux/Runtime/memory.c -o Build/runtime_test
+	./Build/runtime_test
 
 clean:
 	rm -rf Build
