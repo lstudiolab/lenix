@@ -13,6 +13,7 @@ typedef enum nux_task_state {
     NUX_TASK_READY,
     NUX_TASK_RUNNING,
     NUX_TASK_BLOCKED,
+    NUX_TASK_SUSPENDED,
     NUX_TASK_DYING
 } nux_task_state;
 
@@ -31,6 +32,8 @@ nux_status nux_task_system_init(void);
 nux_status nux_task_create(const char *name, nux_u8 priority, nux_task_id *id);
 nux_status nux_task_destroy(nux_task_id id);
 nux_status nux_task_set_state(nux_task_id id, nux_task_state state);
+nux_status nux_task_suspend(nux_task_id id);
+nux_status nux_task_resume(nux_task_id id);
 nux_status nux_task_get(nux_task_id id, nux_task_info *out);
 nux_status nux_task_get_address_space(nux_task_id id, nux_u64 *space_id);
 nux_task_id nux_scheduler_choose(void);
