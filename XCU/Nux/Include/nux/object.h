@@ -27,7 +27,8 @@ enum {
     NUX_RIGHT_RECEIVE = (nux_u64)1 << 3,
     NUX_RIGHT_MAP     = (nux_u64)1 << 4,
     NUX_RIGHT_CONTROL = (nux_u64)1 << 5,
-    NUX_RIGHT_TRANSFER= (nux_u64)1 << 6
+    NUX_RIGHT_TRANSFER= (nux_u64)1 << 6,
+    NUX_RIGHT_SEND_ONCE = (nux_u64)1 << 7
 };
 
 #endif
