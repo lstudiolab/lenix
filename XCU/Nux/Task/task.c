@@ -1,7 +1,6 @@
 #include <nux/task.h>
 #include <nux/thread.h>
 #include <nux/port.h>
-#include <nux/bootstrap.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
