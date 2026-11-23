@@ -1,10 +1,38 @@
 #include <nux/sync.h>
+#include <nux/thread.h>
+
+/*
+ * This test exercises the synchronization object's host-side state machine.
+ * It deliberately does not run a scheduler, so provide deterministic thread
+ * hooks: a wait registers one synthetic waiter, yielding reports that no
+ * scheduler can currently make progress, and wake succeeds for registered
+ * waiters. Kernel builds link these symbols to the real thread subsystem.
+ */
+static nux_thread_id test_waiter_id = 1;
+
+nux_status nux_thread_prepare_wait_current(nux_thread_id *out)
+{
+    if (!out) return NUX_E_INVALID;
+    *out = test_waiter_id;
+    return NUX_OK;
+}
+
+nux_status nux_thread_yield(void)
+{
+    return NUX_E_WOULD_BLOCK;
+}
+
+nux_status nux_thread_wake(nux_thread_id thread)
+{
+    return thread ? NUX_OK : NUX_E_INVALID;
+}
 
 void nux_arch_lock(volatile nux_u32 *lock)
 {
     while (*lock) { }
     *lock = 1;
 }
+
 void nux_arch_unlock(volatile nux_u32 *lock) { *lock = 0; }
 
 int main(void)
