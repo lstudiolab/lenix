@@ -80,6 +80,7 @@ _start:
 
 .size _start, .-_start
 
+.p2align 2
 /* First-party UEFI handoff: X0 points to the versioned Nux boot record. */
 .global _start_uefi
 .type _start_uefi, %function
