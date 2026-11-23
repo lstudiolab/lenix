@@ -1804,6 +1804,7 @@ nux_isr_common:
     movq 120(%rsp), %rdi
     movq 128(%rsp), %rsi
     movq %cr2, %rdx
+    movq %r12, %rcx
     andq $-16, %rsp
     call nux_arch_exception_dispatch
     movq %r12, %rsp
