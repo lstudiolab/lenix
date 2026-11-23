@@ -58,7 +58,7 @@ test-sync:
 
 test-thread:
 	mkdir -p Build
-	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -mno-sse -mno-mmx -msoft-float -mno-red-zone -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
+	$(HOST_CC) -std=gnu11 -Wall -Wextra -Werror -fno-builtin -fno-stack-protector -mno-sse -mno-mmx -msoft-float -mno-red-zone -I Nux/Include Nux/Tests/thread_context_test.c Nux/Task/thread.c Nux/Task/task.c Nux/Runtime/memory.c Architecture/X86_64/CPU/context.S -o Build/thread_context_test
 	./Build/thread_context_test
 
 clean:
