@@ -92,6 +92,7 @@ static nux_status parse_madt(nux_u64 physical, nux_acpi_info *out)
                 nux_acpi_cpu *cpu = &out->cpus[out->cpu_count++];
                 cpu->uid = r[2];
                 cpu->apic_id = r[3];
+                cpu->hardware_id = r[3];
                 cpu->flags = (nux_u32)r[4] | ((nux_u32)r[5] << 8) |
                     ((nux_u32)r[6] << 16) | ((nux_u32)r[7] << 24);
                 cpu->x2apic = 0;
@@ -121,9 +122,23 @@ static nux_status parse_madt(nux_u64 physical, nux_acpi_info *out)
                     ((nux_u32)r[14] << 16) | ((nux_u32)r[15] << 24);
                 cpu->apic_id = (nux_u32)r[4] | ((nux_u32)r[5] << 8) |
                     ((nux_u32)r[6] << 16) | ((nux_u32)r[7] << 24);
+                cpu->hardware_id = cpu->apic_id;
                 cpu->flags = (nux_u32)r[8] | ((nux_u32)r[9] << 8) |
                     ((nux_u32)r[10] << 16) | ((nux_u32)r[11] << 24);
                 cpu->x2apic = 1;
+            }
+        } else if (record->type == 11 && record->length >= 76) {
+            if (out->cpu_count < NUX_ACPI_CPU_LIMIT) {
+                const nux_u8 *r = cursor;
+                nux_acpi_cpu *cpu = &out->cpus[out->cpu_count++];
+                cpu->uid = (nux_u32)r[8] | ((nux_u32)r[9] << 8) |
+                    ((nux_u32)r[10] << 16) | ((nux_u32)r[11] << 24);
+                cpu->flags = (nux_u32)r[12] | ((nux_u32)r[13] << 8) |
+                    ((nux_u32)r[14] << 16) | ((nux_u32)r[15] << 24);
+                for (nux_u32 i = 0; i < 8; ++i)
+                    cpu->hardware_id |= (nux_u64)r[68 + i] << (i * 8);
+                cpu->apic_id = 0;
+                cpu->x2apic = 2;
             }
         }
         cursor += record->length;
