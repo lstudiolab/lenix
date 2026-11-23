@@ -74,9 +74,9 @@ Kernel implementation code is restricted to C and assembly. Only AArch64 and x86
 The Makefile selects Clang/LLD ELF cross-targets automatically on macOS. Install the LLVM toolchain and GNU Make:
 
 ```sh
-brew install llvm make qemu
+brew install llvm lld make qemu xorriso
 export PATH="$(brew --prefix llvm)/bin:$(brew --prefix make)/libexec/gnubin:$PATH"
-make -C XCU clean all
+make -C XCU clean all iso
 ```
 
-This produces the same x86-64 and AArch64 ELF kernels as the Linux cross-build. It does not yet produce a signed Apple boot image or boot on Apple Silicon through Apple's native boot chain; the current firmware boot contract is UEFI plus Limine.
+This produces the same x86-64 and AArch64 ELF kernels and UEFI ISO images as the Linux build. The ISO targets use a pinned, checksum-verified Limine binary release. This does not produce a signed Apple boot image or boot on Apple Silicon through Apple's native boot chain; the current firmware boot contract is UEFI plus Limine.
