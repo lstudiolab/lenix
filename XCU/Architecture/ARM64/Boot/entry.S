@@ -8,6 +8,11 @@
 .extern limine_rsdp_request
 
 _start:
+#ifdef NUX_QEMU_SEMIHOST
+    mov x0, #0x04
+    adr x1, .Lnux_start_trace
+    hlt #0xf000
+#endif
     msr daifset, #0xf
     bl nux_arch_early_init
 
@@ -65,6 +70,8 @@ _start:
     wfe
     b 5b
 #ifdef NUX_QEMU_SEMIHOST
+.Lnux_start_trace:
+    .asciz "NUX:KERNEL_ENTRY\\n"
 .Lnux_entry_trace:
     .asciz "NUX:EARLY_INIT_RETURNED\\n"
 .Lnux_main_trace:
