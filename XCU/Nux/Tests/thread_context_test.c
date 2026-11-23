@@ -68,6 +68,9 @@ static void first_thread(void *argument)
 {
     (void)argument;
     ++first_count;
+    if (nux_thread_prepare_wait_current(&waiting_thread_id) != NUX_OK ||
+        waiting_thread_id != first_thread_id)
+        failed = 1;
     if (nux_thread_yield() != NUX_OK) failed = 1;
     ++first_count;
 }
@@ -76,6 +79,7 @@ static void second_thread(void *argument)
 {
     (void)argument;
     ++second_count;
+    if (nux_thread_wake(waiting_thread_id) != NUX_OK) failed = 1;
     if (nux_thread_yield() != NUX_OK) failed = 1;
     ++second_count;
 }
@@ -101,6 +105,7 @@ int main(void)
     if(nux_thread_get_info(user_thread,&info)!=NUX_OK||!info.user_mode||info.state!=NUX_THREAD_READY)return 21;
     if(nux_thread_terminate(user_thread)!=NUX_OK)return 22;
     if (nux_thread_create_kernel(task, first_thread, NUX_NULL, 10, &first) != NUX_OK) return 4;
+    first_thread_id = first;
     if (nux_task_destroy(task) != NUX_E_BUSY) return 16;
     if (nux_task_get_address_space(task, &shared_space) != NUX_OK) return 17;
     if (nux_thread_create_kernel(task, second_thread, NUX_NULL, 10, &second) != NUX_OK) return 5;
