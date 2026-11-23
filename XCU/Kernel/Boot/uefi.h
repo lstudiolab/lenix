@@ -20,6 +20,12 @@ typedef efi_u16 efi_char16;
 #define EFI_ERROR_BIT (1ULL << 63)
 #define EFI_ERROR(status) (((status) & EFI_ERROR_BIT) != 0)
 #define EFI_OPEN_READ 1ULL
+#define EFI_ALLOCATE_ANY_PAGES 0u
+#define EFI_ALLOCATE_MAX_ADDRESS 1u
+#define EFI_LOADER_CODE 1u
+#define EFI_LOADER_DATA 2u
+#define EFI_CONVENTIONAL_MEMORY 7u
+#define EFI_MEMORY_MAP_BUFFER_SIZE (128ULL * 1024ULL)
 #define EFI_ALLOCATE_LOADER_DATA 2u
 #define EFI_MAX_IMAGE_SIZE (256ULL * 1024ULL * 1024ULL)
 
@@ -66,6 +72,15 @@ struct efi_file_protocol {
 };
 
 typedef struct {
+    efi_u32 type;
+    efi_u32 padding;
+    efi_u64 physical_start;
+    efi_u64 virtual_start;
+    efi_u64 number_of_pages;
+    efi_u64 attribute;
+} efi_memory_descriptor;
+
+typedef struct {
     efi_u64 revision;
     efi_status (LENIX_EFIAPI *open_volume)(void *, efi_file_protocol **);
 } efi_simple_file_system;
@@ -91,6 +106,10 @@ typedef struct {
     efi_status (LENIX_EFIAPI *output_string)(void *, efi_char16 *);
 } efi_text_output;
 
+typedef efi_status (LENIX_EFIAPI *efi_allocate_pages)(efi_u32, efi_u32, efi_uintn, efi_u64 *);
+typedef efi_status (LENIX_EFIAPI *efi_get_memory_map)(
+    efi_uintn *, void *, efi_uintn *, efi_uintn *, efi_u32 *);
+typedef efi_status (LENIX_EFIAPI *efi_exit_boot_services)(efi_handle, efi_uintn);
 typedef efi_status (LENIX_EFIAPI *efi_handle_protocol)(
     efi_handle, const efi_guid *, void **);
 typedef efi_status (LENIX_EFIAPI *efi_allocate_pool)(
@@ -105,9 +124,9 @@ typedef struct {
     efi_table_header header;
     void *raise_tpl;
     void *restore_tpl;
-    void *allocate_pages;
+    efi_allocate_pages allocate_pages;
     void *free_pages;
-    void *get_memory_map;
+    efi_get_memory_map get_memory_map;
     efi_allocate_pool allocate_pool;
     efi_free_pool free_pool;
     void *create_event;
@@ -127,6 +146,9 @@ typedef struct {
     void *install_configuration_table;
     efi_load_image load_image;
     efi_start_image start_image;
+    void *exit;
+    void *unload_image;
+    efi_exit_boot_services exit_boot_services;
 } efi_boot_services_prefix;
 
 typedef struct {
