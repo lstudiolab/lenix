@@ -170,7 +170,7 @@ nux_status nux_vm_inherit(nux_u64 id,nux_vm_address va,nux_vm_size size,nux_u32 
     nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;
 }
 nux_status nux_vm_fault(nux_u64 id,nux_vm_address va,nux_u32 access) {
-    if(!(access&NUX_VM_PROT_READ)||(access&~NUX_VM_VALID_PROT))return NUX_E_INVALID;
+    if(!access||(access&~NUX_VM_VALID_PROT)||((access&NUX_VM_PROT_WRITE)&&(access&NUX_VM_PROT_EXEC)))return NUX_E_INVALID;
     nux_arch_lock(&vm_lock);nux_vm_space *s=space_find(id);if(!s){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     for(nux_u32 i=0;i<s->count;i++){nux_vm_region *r=&s->regions[i];if(va>=r->start&&va-r->start<r->size){nux_status st=((r->protection&access)==access)?NUX_OK:NUX_E_ACCESS;nux_arch_unlock(&vm_lock);return st;}}
     nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;
