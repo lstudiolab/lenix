@@ -18,7 +18,7 @@ X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
 LDFLAGS := -nostdlib -static -no-pie -Wl,--build-id=none
 C_SOURCES := Kernel/Boot/limine.c Nux/Runtime/boot.c Kernel/Initialization/main.c Nux/Memory/physical.c Nux/Task/task.c Nux/Task/thread.c Nux/Capability/capability.c Nux/CPU/exception.c Nux/Runtime/memory.c Nux/IPC/port.c Nux/Sync/sync.c Nux/Syscall/syscall.c Nux/VM/vm.c Nux/VM/page_table.c Nux/Time/time.c Nux/Time/clock_arch.c
 
-.PHONY: all headers x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
+.PHONY: all headers x86_64 aarch64 iso iso-x86_64 iso-aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time clean
 all: headers x86_64 aarch64 test-boot test-runtime test-ipc test-memory test-sync test-thread test-syscall test-vm test-time
 
 headers:
@@ -92,3 +92,39 @@ test-time:
 
 clean:
 	rm -rf Build
+
+LIMINE_VERSION := 12.11.1
+LIMINE_SHA256 := 953aba25c23abc6d6b4e85e20ec8b9f3a8605450a26997103fa3fddf00e658e6
+LIMINE_ARCHIVE := Build/limine-binary.tar.gz
+LIMINE_DIR := Build/limine-binary
+
+$(LIMINE_ARCHIVE):
+	mkdir -p Build
+	curl -fL -o $@ https://github.com/Limine-Bootloader/Limine/releases/download/v$(LIMINE_VERSION)/limine-binary.tar.gz
+	printf '%s  %s\n' '$(LIMINE_SHA256)' '$@' | shasum -a 256 -c -
+
+$(LIMINE_DIR)/limine: $(LIMINE_ARCHIVE)
+	rm -rf $(LIMINE_DIR)
+	tar -xzf $(LIMINE_ARCHIVE) -C Build
+	$(MAKE) -C $(LIMINE_DIR) CC="$(HOST_CC)"
+
+iso: iso-x86_64 iso-aarch64
+
+iso-x86_64: x86_64 $(LIMINE_DIR)/limine
+	rm -rf Build/iso-x86_64
+	mkdir -p Build/iso-x86_64/boot/limine Build/iso-x86_64/EFI/BOOT
+	cp limine.conf Build/iso-x86_64/boot/limine/limine.conf
+	cp Build/x86_64/nux.elf Build/iso-x86_64/boot/nux.elf
+	cp $(LIMINE_DIR)/limine-bios.sys $(LIMINE_DIR)/limine-bios-cd.bin $(LIMINE_DIR)/limine-uefi-cd.bin Build/iso-x86_64/boot/limine/
+	cp $(LIMINE_DIR)/BOOTX64.EFI Build/iso-x86_64/EFI/BOOT/
+	xorriso -as mkisofs -R -r -J -b boot/limine/limine-bios-cd.bin -no-emul-boot -boot-load-size 4 -boot-info-table -hfsplus -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-x86_64 -o Build/lenix-x86_64.iso
+	$(LIMINE_DIR)/limine bios-install Build/lenix-x86_64.iso
+
+iso-aarch64: aarch64 $(LIMINE_DIR)/limine
+	rm -rf Build/iso-aarch64
+	mkdir -p Build/iso-aarch64/boot/limine Build/iso-aarch64/EFI/BOOT
+	cp limine.conf Build/iso-aarch64/boot/limine/limine.conf
+	cp Build/aarch64/nux.elf Build/iso-aarch64/boot/nux.elf
+	cp $(LIMINE_DIR)/limine-uefi-cd.bin Build/iso-aarch64/boot/limine/
+	cp $(LIMINE_DIR)/BOOTAA64.EFI Build/iso-aarch64/EFI/BOOT/
+	xorriso -as mkisofs -R -r -J -hfsplus -apm-block-size 2048 --efi-boot boot/limine/limine-uefi-cd.bin -efi-boot-part --efi-boot-image --protective-msdos-label Build/iso-aarch64 -o Build/lenix-aarch64.iso
