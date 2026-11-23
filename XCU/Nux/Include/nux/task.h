@@ -8,7 +8,6 @@
 #define NUX_TASK_LIMIT 128u
 #define NUX_TASK_NAME_LENGTH 32u
 
-typedef nux_u32 nux_task_id;
 typedef enum nux_task_state {
     NUX_TASK_UNUSED = 0,
     NUX_TASK_READY,
