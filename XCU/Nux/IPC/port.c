@@ -859,7 +859,15 @@ nux_status nux_port_set_receive_wait(nux_task_id owner, nux_port_set_id id,
         }
         nux_u32 has_live_port = 0;
         for (nux_u32 i = 0; i < set->count; ++i) {
-            nux_port_entry *port = nux_port_find(set->object_ids[i]);
+            nux_object_id verified_object = 0;
+            status = nux_capability_check(owner, set->ports[i],
+                                          NUX_OBJECT_PORT,
+                                          NUX_RIGHT_RECEIVE,
+                                          &verified_object);
+            if (status != NUX_OK ||
+                verified_object != set->object_ids[i])
+                continue;
+            nux_port_entry *port = nux_port_find(verified_object);
             if (!port || port->owner != owner) continue;
             has_live_port = 1;
             if (port->count) {
