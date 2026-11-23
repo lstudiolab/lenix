@@ -82,8 +82,8 @@ static void build_user_exit_image(void)
 nux_status nux_user_smoke_test(void)
 {
     nux_task_id task = 0;
-    nux_thread_id thread = 0;
-    nux_thread_info info;
+    nux_thread_id thread = 0, worker = 0;
+    nux_thread_info info, worker_info;
     nux_elf_load_result image;
     nux_status status;
 
@@ -91,6 +91,9 @@ nux_status nux_user_smoke_test(void)
     build_user_exit_image();
     status = nux_task_create("Nux user-mode smoke", 10, &task);
     if (status != NUX_OK) return status;
+    status = nux_thread_create_kernel(task, user_smoke_worker, NUX_NULL,
+                                       10, &worker);
+    if (status != NUX_OK) goto failed;
     status = nux_elf_load(task, user_image, sizeof(user_image), &image);
     if (status != NUX_OK) goto failed;
     status = nux_thread_create_user(task, image.entry, image.stack_pointer,
@@ -100,6 +103,8 @@ nux_status nux_user_smoke_test(void)
     if (status != NUX_OK) goto failed;
     status = nux_thread_get_info(thread, &info);
     if (status != NUX_OK || info.state != NUX_THREAD_TERMINATED ||
+        nux_thread_get_info(worker, &worker_info) != NUX_OK ||
+        worker_info.state != NUX_THREAD_TERMINATED || !user_smoke_worker_ran ||
         nux_last_user_exit_code != 42) {
         status = NUX_E_BAD_STATE;
         goto failed;
@@ -108,6 +113,7 @@ nux_status nux_user_smoke_test(void)
 
 failed:
     if (thread) (void)nux_thread_terminate(thread);
+    if (worker) (void)nux_thread_terminate(worker);
     if (task) (void)nux_task_destroy(task);
     return status;
 }
