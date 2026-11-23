@@ -5,8 +5,6 @@
 #include <nux/processor.h>
 #include <nux/exception.h>
 #include <nux/user.h>
-#include <nux/boot.h>
-#include <nux/user.h>
 
 extern void nux_arch_lock(volatile nux_u32 *lock);
 extern void nux_arch_unlock(volatile nux_u32 *lock);
@@ -597,60 +595,5 @@ nux_u32 nux_thread_processor_set_busy(nux_u32 set)
     }
     nux_arch_unlock(&thread_lock);
     return busy;
-}
-
-static void nux_thread_user_entry(void *argument)
-{
-    nux_thread_id id = (nux_thread_id)(nux_uptr)argument;
-    nux_u64 entry = 0, stack = 0, user_argument = 0, kernel_stack_top = 0;
-    nux_arch_lock(&thread_lock);
-    nux_thread_entry *thread = nux_thread_find(id);
-    if (thread && thread->user_thread) {
-        entry = thread->user_entry;
-        stack = thread->user_stack;
-        user_argument = thread->user_argument;
-        kernel_stack_top = (nux_u64)(nux_uptr)
-            (thread->stack + sizeof(thread->stack));
-    }
-    nux_arch_unlock(&thread_lock);
-    if (!entry || !stack || !kernel_stack_top) return;
-    nux_arch_user_enter(entry, stack, user_argument, kernel_stack_top);
-}
-
-nux_status nux_thread_create_user(nux_task_id task, nux_u64 entry,
-                                  nux_u64 stack, nux_u64 argument,
-                                  nux_u8 priority, nux_thread_id *out)
-{
-    nux_u64 address_space;
-    if (!task || !entry || !stack || !out || (stack & 0xfULL) ||
-        priority > 127)
-        return NUX_E_INVALID;
-    if (nux_task_get_address_space(task, &address_space) != NUX_OK ||
-        !address_space)
-        return NUX_E_BAD_STATE;
-    if (nux_vm_fault(address_space, entry, NUX_VM_PROT_EXEC) != NUX_OK ||
-        nux_vm_fault(address_space, stack, NUX_VM_PROT_WRITE) != NUX_OK)
-        return NUX_E_ACCESS;
-
-    nux_thread_id id;
-    nux_status status = nux_thread_create_kernel(
-        task, nux_thread_user_entry, (void *)(nux_uptr)0, priority, &id);
-    if (status != NUX_OK) return status;
-
-    nux_arch_lock(&thread_lock);
-    nux_thread_entry *thread = nux_thread_find(id);
-    if (!thread) {
-        nux_arch_unlock(&thread_lock);
-        return NUX_E_BAD_STATE;
-    }
-    thread->user_thread = 1;
-    thread->info.user_mode = 1;
-    thread->user_entry = entry;
-    thread->user_stack = stack;
-    thread->user_argument = argument;
-    thread->argument = (void *)(nux_uptr)id;
-    *out = id;
-    nux_arch_unlock(&thread_lock);
-    return NUX_OK;
 }
 
