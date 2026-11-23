@@ -23,6 +23,7 @@ nux_status nux_vm_space_activate(nux_u64 space_id);
 nux_status nux_vm_map(nux_u64 space_id, nux_vm_address *address, nux_vm_size size, nux_u32 protection, nux_memory_object_id object, nux_u64 offset);
 nux_status nux_vm_unmap(nux_u64 space_id, nux_vm_address address, nux_vm_size size);
 nux_status nux_vm_write(nux_u64 space_id, nux_vm_address address, const void *source, nux_size size);
+nux_status nux_vm_read(nux_u64 space_id, nux_vm_address address, void *destination, nux_size size);
 nux_status nux_vm_protect(nux_u64 space_id, nux_vm_address address, nux_vm_size size, nux_u32 protection);
 nux_status nux_vm_inherit(nux_u64 space_id, nux_vm_address address, nux_vm_size size, nux_u32 inheritance);
 nux_status nux_vm_fault(nux_u64 space_id, nux_vm_address address, nux_u32 access);
