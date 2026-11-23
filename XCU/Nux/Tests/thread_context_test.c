@@ -7,6 +7,8 @@
 static volatile nux_u32 first_count;
 static volatile nux_u32 second_count;
 static volatile nux_u32 failed;
+static nux_thread_id first_thread_id;
+static nux_thread_id waiting_thread_id;
 static nux_u64 active_space;
 static nux_u64 last_task_space;
 
