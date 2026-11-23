@@ -32,7 +32,6 @@ nux_arch_early_init:
 1:
     mov x10, sp
     msr sp_el1, x10
-    msr spsel, #1
     isb
     msr daifset, #0xf
 2:
