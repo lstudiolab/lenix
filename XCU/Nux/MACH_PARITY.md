@@ -104,15 +104,16 @@ Legend: **Foundation** = some code exists; **Interface** = public contract decla
 
 - [x] Physical page allocator with region tracking, allocation bitmap, and duplicate-free rejection (Foundation; boot reservations/reclaim work remains)
 - [x] Fixed-capacity sparse address-space objects (Foundation; task creation allocates and records one address space)
-- [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (Foundation; hardware runtime validation pending)
-- [x] Anonymous page-backed mappings and exact-region unmap/protect operations (Foundation; partial-range operations and region query remain)
+- [x] Four-level x86-64 and AArch64 page-table mapping, unmapping, protection, translation, and address-space activation (validated by first-party QEMU user-mode boots on both targets)
+- [x] Eager anonymous page-backed mappings and exact-region unmap/protect operations (partial-range operations and region query remain)
+- [x] Zero-filled anonymous demand mappings with fault-time allocation and cross-page software read/write support (external pager-backed file faults remain)
 - [x] Static ELF64 PT_LOAD executable loader for both architectures with segment validation, W^X permissions, rollback, and initial user stack/auxv construction (Foundation; demand paging and dynamic linking remain)
 - [x] QEMU validation of isolated user executable mappings and initial user-stack execution on both architectures
-- [ ] Demand paging and page-fault resolution
+- [x] Anonymous demand-zero page-fault resolution on x86-64 and AArch64 (external pager and file-backed demand paging remain)
 - [x] Anonymous page-backed memory objects (Foundation; fixed maximum object size)
 - [ ] Named memory entries and transferable mapping rights
-- [x] Shared physical backing through memory-object mappings in multiple address spaces (Foundation; no copy-on-write or inheritance implementation)
-- [ ] Copy-on-write cloning and IPC transfer optimizations
+- [x] Shared physical backing through memory-object mappings in multiple address spaces (fixed-size objects; named entries and transferable mapping rights remain)
+- [x] Anonymous-region copy-on-write cloning with physical page reference counts, write-protection, fault-time split, and reclamation (full task-fork inheritance semantics and IPC transfer optimizations remain)
 - [ ] External pager protocol and user-space memory managers
 - [ ] Pager initialization, data request/return, synchronize, terminate
 - [ ] Page locking, unlocking, wiring, and unwiring
