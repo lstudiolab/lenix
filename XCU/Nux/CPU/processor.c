@@ -194,14 +194,31 @@ nux_status nux_processor_set_create(nux_processor_set_id *out)
 nux_status nux_processor_set_destroy(nux_processor_set_id id)
 {
     if (!id) return NUX_E_INVALID;
-    if (nux_thread_processor_set_busy(id)) return NUX_E_BUSY;
     nux_arch_lock(&processor_lock);
     nux_processor_set_entry *set = processor_set_find(id);
     if (!set) {
         nux_arch_unlock(&processor_lock);
         return NUX_E_NOT_FOUND;
     }
-    set->active = 0;
+    set->active = 2;
+    nux_arch_unlock(&processor_lock);
+
+    if (nux_thread_processor_set_busy(id)) {
+        nux_arch_lock(&processor_lock);
+        for (nux_u32 i = 0; i < NUX_PROCESSOR_SET_LIMIT; ++i)
+            if (processor_sets[i].id == id && processor_sets[i].active == 2)
+                processor_sets[i].active = 1;
+        nux_arch_unlock(&processor_lock);
+        return NUX_E_BUSY;
+    }
+
+    nux_arch_lock(&processor_lock);
+    for (nux_u32 i = 0; i < NUX_PROCESSOR_SET_LIMIT; ++i) {
+        if (processor_sets[i].id != id || processor_sets[i].active != 2)
+            continue;
+        processor_sets[i].active = 0;
+        break;
+    }
     nux_arch_unlock(&processor_lock);
     return NUX_OK;
 }

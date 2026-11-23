@@ -431,6 +431,10 @@ nux_status nux_thread_set_processor_set(nux_thread_id id, nux_u32 set)
 {
     if (!id || (set && !nux_processor_set_exists(set))) return NUX_E_INVALID;
     nux_arch_lock(&thread_lock);
+    if (set && !nux_processor_set_exists(set)) {
+        nux_arch_unlock(&thread_lock);
+        return NUX_E_NOT_FOUND;
+    }
     nux_thread_entry *entry = nux_thread_find(id);
     if (!entry || entry->info.state == NUX_THREAD_TERMINATED) {
         nux_arch_unlock(&thread_lock);
