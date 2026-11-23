@@ -14,3 +14,20 @@ nux_arch_user_enter:
     pushq %rax
     iretq
 .size nux_arch_user_enter, .-nux_arch_user_enter
+
+.global nux_arch_load_gdt
+.type nux_arch_load_gdt,@function
+nux_arch_load_gdt:
+    lgdt (%rdi)
+    pushq $0x08
+    leaq 1f(%rip), %rax
+    pushq %rax
+    lretq
+1:
+    movw $0x10, %ax
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %ss
+    ltr %si
+    ret
+.size nux_arch_load_gdt, .-nux_arch_load_gdt
