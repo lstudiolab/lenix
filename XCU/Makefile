@@ -35,7 +35,7 @@ headers:
 
 x86_64:
 	mkdir -p Build/x86_64
-	@for src in $(C_SOURCES); do obj=Build/x86_64/$(echo $src | tr '/.' '__').o; $(CC_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c "$src" -o "$obj" || exit 1; done
+	@for src in $(C_SOURCES); do obj=Build/x86_64/$(printf '%s' "$src" | tr '/.' '__').o; $(CC_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c "$src" -o "$obj" || exit 1; done
 	$(AS_X86) $(COMMON_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/Boot/entry.S -o Build/x86_64/entry.o
 	$(AS_X86) $(COMMON_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/early.S -o Build/x86_64/early.o
 	$(AS_X86) $(X86_CFLAGS) -mno-red-zone -mcmodel=kernel -c Architecture/X86_64/CPU/lock.S -o Build/x86_64/lock.o
@@ -46,7 +46,7 @@ x86_64:
 
 aarch64:
 	mkdir -p Build/aarch64
-	@for src in $(C_SOURCES); do obj=Build/aarch64/$(echo $src | tr '/.' '__').o; $(CC_ARM) $(ARM_CFLAGS) -c "$src" -o "$obj" || exit 1; done
+	@for src in $(C_SOURCES); do obj=Build/aarch64/$(printf '%s' "$src" | tr '/.' '__').o; $(CC_ARM) $(ARM_CFLAGS) -c "$src" -o "$obj" || exit 1; done
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/Boot/entry.S -o Build/aarch64/entry.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/early.S -o Build/aarch64/early.o
 	$(AS_ARM) $(COMMON_CFLAGS) -mgeneral-regs-only -c Architecture/ARM64/CPU/lock.S -o Build/aarch64/lock.o
