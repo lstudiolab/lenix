@@ -170,6 +170,34 @@ int main(void){
         if(nux_vm_space_destroy(source_space)!=NUX_OK)return 66;
         if(nux_phys_page_refcount(source_page)!=0)return 67;
     }
+    {
+        nux_u64 lazy_space=0,lazy_first=0,lazy_second=0;
+        nux_vm_address lazy_address=0x60000000ULL;
+        nux_u8 zeroes[4]={1,1,1,1};
+        const nux_u8 cross_page[4]={0x91,0x82,0x73,0x64};
+        nux_u8 readback[4]={0};
+        if(nux_vm_space_create(&lazy_space)!=NUX_OK)return 68;
+        if(nux_vm_map_lazy(lazy_space,&lazy_address,2*NUX_VM_PAGE_SIZE,
+                           NUX_VM_PROT_READ|NUX_VM_PROT_WRITE)!=NUX_OK)return 69;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)
+            if(maps[i].active&&maps[i].va>=lazy_address&&
+               maps[i].va<lazy_address+2*NUX_VM_PAGE_SIZE)return 70;
+        if(nux_vm_read(lazy_space,lazy_address,zeroes,sizeof(zeroes))!=NUX_OK)return 71;
+        for(nux_u32 i=0;i<sizeof(zeroes);i++)if(zeroes[i]!=0)return 72;
+        if(nux_vm_fault(lazy_space,lazy_address+NUX_VM_PAGE_SIZE,
+                        NUX_VM_PROT_WRITE)!=NUX_OK)return 73;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)if(maps[i].active&&maps[i].va==lazy_address)lazy_first=maps[i].pa;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)if(maps[i].active&&maps[i].va==lazy_address+NUX_VM_PAGE_SIZE)lazy_second=maps[i].pa;
+        if(!lazy_first||!lazy_second||lazy_first==lazy_second)return 74;
+        if(nux_vm_write(lazy_space,lazy_address+NUX_VM_PAGE_SIZE-2,
+                        cross_page,sizeof(cross_page))!=NUX_OK)return 75;
+        if(nux_vm_read(lazy_space,lazy_address+NUX_VM_PAGE_SIZE-2,
+                       readback,sizeof(readback))!=NUX_OK)return 76;
+        for(nux_u32 i=0;i<sizeof(cross_page);i++)if(readback[i]!=cross_page[i])return 77;
+        if(nux_vm_unmap(lazy_space,lazy_address,2*NUX_VM_PAGE_SIZE)!=NUX_OK)return 78;
+        if(nux_phys_page_refcount(lazy_first)||nux_phys_page_refcount(lazy_second))return 79;
+        if(nux_vm_space_destroy(lazy_space)!=NUX_OK)return 80;
+    }
     if(nux_vm_space_activate(space)!=NUX_OK)return 16;
     if(nux_vm_space_activate(0)!=NUX_OK)return 27;
     if(nux_vm_space_destroy(space)!=NUX_OK)return 17;
