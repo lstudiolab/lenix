@@ -212,7 +212,7 @@ nux_status nux_memory_object_unlock(nux_memory_object_id id,nux_u64 offset,nux_v
     nux_arch_lock(&vm_lock);nux_vm_object *o=object_find(id);if(!o){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}
     if(!size||offset>o->size||size>o->size-offset||!o->locks){nux_arch_unlock(&vm_lock);return NUX_E_INVALID;}--o->locks;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
-nux_status nux_memory_object_pager_register(nux_u32 owner,nux_memory_object_id id,nux_capability pager) {
+nux_status nux_memory_object_pager_register(nux_task_id owner,nux_memory_object_id id,nux_capability pager) {
     nux_object_id object; nux_status st=nux_capability_check(owner,pager,NUX_OBJECT_PORT,NUX_RIGHT_SEND,&object);if(st!=NUX_OK)return st;
     nux_arch_lock(&vm_lock);nux_vm_object *o=object_find(id);if(!o){nux_arch_unlock(&vm_lock);return NUX_E_NOT_FOUND;}o->pager=pager;nux_arch_unlock(&vm_lock);return NUX_OK;
 }
