@@ -54,8 +54,8 @@ void nux_kernel_main(const nux_boot_info *boot_info)
 
     /*
      * Interrupts stay masked until architecture vector tables and timer
-     * delivery are installed. The scheduler core is initialized but cannot
-     * dispatch tasks until context-switch and interrupt-return paths exist.
+     * delivery are installed. Kernel threads currently run cooperatively;
+     * preemption and user-mode dispatch remain disabled.
      */
     for (;;) NUX_CPU_WAIT();
 }
