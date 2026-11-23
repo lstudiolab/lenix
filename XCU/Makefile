@@ -1,8 +1,17 @@
+HOST_OS := $(shell uname -s)
+ifeq ($(HOST_OS),Darwin)
+CC_X86 ?= clang --target=x86_64-elf -fuse-ld=lld
+AS_X86 ?= clang --target=x86_64-elf
+CC_ARM ?= clang --target=aarch64-elf -fuse-ld=lld
+AS_ARM ?= clang --target=aarch64-elf
+HOST_CC ?= clang
+else
 CC_X86 ?= x86_64-linux-gnu-gcc
 AS_X86 ?= x86_64-linux-gnu-gcc
 CC_ARM ?= aarch64-linux-gnu-gcc
 AS_ARM ?= aarch64-linux-gnu-gcc
 HOST_CC ?= cc
+endif
 
 COMMON_CFLAGS := -std=gnu11 -ffreestanding -fno-stack-protector -fno-pic -fno-pie -fno-builtin -fno-unwind-tables -fno-asynchronous-unwind-tables -Wall -Wextra -Werror -O2 -I Nux/Include -I Kernel/Boot -I Kernel/Entry
 X86_CFLAGS := $(COMMON_CFLAGS) -mno-sse -mno-mmx -msoft-float
