@@ -1,5 +1,6 @@
 #include <nux/types.h>
 #include <nux/boot.h>
+#include <nux/boot.h>
 #include <nux/exception.h>
 #include <nux/syscall.h>
 #include <nux/thread.h>
