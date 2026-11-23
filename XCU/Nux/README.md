@@ -46,7 +46,7 @@ A task is not a thread, and a port name is not itself authority. Access is media
 | Synchronization | Assembly spinlock primitives on both targets | Interrupt-safe lock classes, wait queues, priority inheritance |
 | Tasks | Fixed-capacity task registry and round-robin selection policy | Separate task/thread objects, stacks, saved contexts, lifecycle cleanup |
 | Capabilities | Generation-checked handles, object types, rights checks, revocation | Per-task capability spaces, derivation, transfer, audit |
-| IPC | Stable port/message interface declarations | Port objects, queues, blocking, deadlines, rights transfer |
+| IPC | Capability-checked ports, FIFO bounded inline queues, port sets, backpressure, destruction/revocation | Blocking waits, deadlines, per-task namespaces, right transfer, out-of-line memory, RPC/notifications |
 | VM | Design boundary only | Page tables, mapping APIs, faults, address-space switching |
 | Exceptions | x86-64 IDT with 256 normalized stubs; ARM64 EL1 VBAR vector table; fatal exception capture | Recoverable exception ports, interrupt controllers, timer IRQs, syscall ABI |
 
