@@ -143,6 +143,8 @@ static efi_status read_kernel(efi_handle image, efi_system_table *system,
                               void **buffer_out, efi_u64 *size_out)
 {
     efi_loaded_image *loaded = (efi_loaded_image *)0;
+    efi_loaded_image *parent = (efi_loaded_image *)0;
+    efi_handle device_handle = (efi_handle)0;
     efi_simple_file_system *filesystem = (efi_simple_file_system *)0;
     efi_file_protocol *root = (efi_file_protocol *)0;
     efi_file_protocol *file = (efi_file_protocol *)0;
@@ -158,8 +160,16 @@ static efi_status read_kernel(efi_handle image, efi_system_table *system,
                              loaded->image_size))
         return NUX_EFI_ERROR;
 
+    device_handle = loaded->device_handle;
+    if (!device_handle && loaded->parent_handle) {
+        status = system->boot_services->handle_protocol(
+            loaded->parent_handle, &loaded_image_guid, (void **)&parent);
+        if (!EFI_ERROR(status) && parent) device_handle = parent->device_handle;
+    }
+    if (!device_handle) return NUX_EFI_ERROR;
+
     status = system->boot_services->handle_protocol(
-        loaded->device_handle, &simple_file_system_guid, (void **)&filesystem);
+        device_handle, &simple_file_system_guid, (void **)&filesystem);
     if (EFI_ERROR(status) || !filesystem)
         return status ? status : NUX_EFI_ERROR;
     status = filesystem->open_volume(filesystem, &root);
