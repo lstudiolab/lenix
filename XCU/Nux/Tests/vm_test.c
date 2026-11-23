@@ -6,6 +6,7 @@
 #define MAP_LIMIT 512u
 static nux_u8 arena[PAGE_COUNT*NUX_PAGE_SIZE];
 static nux_u8 allocated[PAGE_COUNT];
+static nux_u8 references[PAGE_COUNT];
 static nux_u64 next_root=1;
 typedef struct {nux_u64 root,va,pa;nux_u32 prot;nux_u8 active;} map_entry;
 static map_entry maps[MAP_LIMIT];
@@ -17,12 +18,22 @@ nux_u32 nux_capability_revoke_task(nux_task_id owner){(void)owner;return 0;}
 void nux_arch_lock(volatile nux_u32 *lock){while(*lock){}*lock=1;}
 void nux_arch_unlock(volatile nux_u32 *lock){*lock=0;}
 nux_u64 nux_phys_alloc_page(void){
-    for(nux_u32 i=1;i<PAGE_COUNT;i++)if(!allocated[i]){allocated[i]=1;return (nux_u64)i*NUX_PAGE_SIZE;}
+    for(nux_u32 i=1;i<PAGE_COUNT;i++)if(!allocated[i]){allocated[i]=1;references[i]=1;return (nux_u64)i*NUX_PAGE_SIZE;}
     return 0;
 }
 nux_status nux_phys_free_page(nux_u64 pa){
-    if(!pa||(pa&NUX_PAGE_MASK)||pa/NUX_PAGE_SIZE>=PAGE_COUNT||!allocated[pa/NUX_PAGE_SIZE])return NUX_E_ACCESS;
-    allocated[pa/NUX_PAGE_SIZE]=0;return NUX_OK;
+    if(!pa||(pa&NUX_PAGE_MASK)||pa/NUX_PAGE_SIZE>=PAGE_COUNT||!allocated[pa/NUX_PAGE_SIZE]||!references[pa/NUX_PAGE_SIZE])return NUX_E_ACCESS;
+    if(references[pa/NUX_PAGE_SIZE]>1){--references[pa/NUX_PAGE_SIZE];return NUX_OK;}
+    references[pa/NUX_PAGE_SIZE]=0;allocated[pa/NUX_PAGE_SIZE]=0;return NUX_OK;
+}
+nux_status nux_phys_retain_page(nux_u64 pa){
+    if(!pa||(pa&NUX_PAGE_MASK)||pa/NUX_PAGE_SIZE>=PAGE_COUNT||!allocated[pa/NUX_PAGE_SIZE]||!references[pa/NUX_PAGE_SIZE])return NUX_E_ACCESS;
+    if(references[pa/NUX_PAGE_SIZE]==0xffu)return NUX_E_LIMIT;
+    ++references[pa/NUX_PAGE_SIZE];return NUX_OK;
+}
+nux_u32 nux_phys_page_refcount(nux_u64 pa){
+    if(!pa||(pa&NUX_PAGE_MASK)||pa/NUX_PAGE_SIZE>=PAGE_COUNT)return 0;
+    return references[pa/NUX_PAGE_SIZE];
 }
 void *nux_phys_to_virt(nux_u64 pa){if(pa>=sizeof(arena))return NUX_NULL;return arena+pa;}
 nux_status nux_arch_vm_root_create(nux_u64 *out){if(!out)return NUX_E_INVALID;*out=next_root++;return NUX_OK;}
@@ -116,6 +127,49 @@ int main(void){
     if(nux_memory_object_unlock(object,0,NUX_VM_PAGE_SIZE)!=NUX_OK)return 13;
     if(nux_vm_unmap(space,address,2*NUX_VM_PAGE_SIZE)!=NUX_OK)return 14;
     if(nux_memory_object_destroy(object)!=NUX_OK)return 15;
+    {
+        nux_u64 source_space=0,destination_space=0,source_root=0,destination_root=0;
+        nux_u64 source_page=0,destination_page=0;
+        nux_vm_address cow_address=0x50000000ULL;
+        const nux_u8 original[4]={0x10,0x20,0x30,0x40};
+        const nux_u8 modified[4]={0xaa,0xbb,0xcc,0xdd};
+        nux_u8 observed[4]={0};
+        if(nux_vm_space_create(&source_space)!=NUX_OK)return 47;
+        if(nux_vm_space_create(&destination_space)!=NUX_OK)return 48;
+        if(nux_vm_map(source_space,&cow_address,NUX_VM_PAGE_SIZE,
+                      NUX_VM_PROT_READ|NUX_VM_PROT_WRITE,0,0)!=NUX_OK)return 49;
+        if(nux_vm_write(source_space,cow_address,original,sizeof(original))!=NUX_OK)return 50;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)
+            if(maps[i].active&&maps[i].va==cow_address){source_root=maps[i].root;source_page=maps[i].pa;}
+        if(!source_root||!source_page||nux_phys_page_refcount(source_page)!=1)return 51;
+        if(nux_vm_copy_on_write(source_space,destination_space,cow_address,
+                                NUX_VM_PAGE_SIZE)!=NUX_OK)return 52;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)
+            if(maps[i].active&&maps[i].va==cow_address&&maps[i].root!=source_root)
+                destination_root=maps[i].root;
+        if(!destination_root||nux_phys_page_refcount(source_page)!=2)return 53;
+        if(nux_vm_protect(destination_space,cow_address,NUX_VM_PAGE_SIZE,
+                          NUX_VM_PROT_READ|NUX_VM_PROT_WRITE)!=NUX_E_ACCESS)return 54;
+        if(nux_vm_read(destination_space,cow_address,observed,sizeof(observed))!=NUX_OK)return 55;
+        for(nux_u32 i=0;i<sizeof(original);i++)if(observed[i]!=original[i])return 56;
+        if(nux_vm_write(destination_space,cow_address,modified,sizeof(modified))!=NUX_OK)return 57;
+        if(nux_vm_read(source_space,cow_address,observed,sizeof(observed))!=NUX_OK)return 58;
+        for(nux_u32 i=0;i<sizeof(original);i++)if(observed[i]!=original[i])return 59;
+        if(nux_vm_read(destination_space,cow_address,observed,sizeof(observed))!=NUX_OK)return 60;
+        for(nux_u32 i=0;i<sizeof(modified);i++)if(observed[i]!=modified[i])return 61;
+        for(nux_u32 i=0;i<MAP_LIMIT;i++)
+            if(maps[i].active&&maps[i].root==destination_root&&maps[i].va==cow_address)
+                destination_page=maps[i].pa;
+        if(!destination_page||destination_page==source_page||
+           nux_phys_page_refcount(source_page)!=1||
+           nux_phys_page_refcount(destination_page)!=1)return 62;
+        if(nux_vm_fault(destination_space,cow_address,NUX_VM_PROT_WRITE)!=NUX_OK)return 63;
+        if(nux_vm_space_destroy(destination_space)!=NUX_OK)return 64;
+        if(nux_phys_page_refcount(destination_page)!=0||
+           nux_phys_page_refcount(source_page)!=1)return 65;
+        if(nux_vm_space_destroy(source_space)!=NUX_OK)return 66;
+        if(nux_phys_page_refcount(source_page)!=0)return 67;
+    }
     if(nux_vm_space_activate(space)!=NUX_OK)return 16;
     if(nux_vm_space_activate(0)!=NUX_OK)return 27;
     if(nux_vm_space_destroy(space)!=NUX_OK)return 17;
