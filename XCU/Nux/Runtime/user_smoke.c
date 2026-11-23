@@ -10,6 +10,13 @@
 #define USER_SEGMENT_OFFSET 4096u
 
 static nux_u8 user_image[USER_IMAGE_SIZE];
+static volatile nux_u32 user_smoke_worker_ran;
+
+static void user_smoke_worker(void *argument)
+{
+    (void)argument;
+    user_smoke_worker_ran = 1;
+}
 
 static void put16(nux_u8 *p, nux_u16 value)
 {
@@ -80,6 +87,7 @@ nux_status nux_user_smoke_test(void)
     nux_elf_load_result image;
     nux_status status;
 
+    user_smoke_worker_ran=0;
     build_user_exit_image();
     status = nux_task_create("Nux user-mode smoke", 10, &task);
     if (status != NUX_OK) return status;
