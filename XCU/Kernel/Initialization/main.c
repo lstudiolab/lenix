@@ -28,8 +28,10 @@ void nux_kernel_main(const nux_boot_info *boot_info)
     if (boot_info == NUX_NULL) nux_boot_fail(1);
     nux_boot_mark(NUX_BOOT_PHASE_MEMORY);
     if (nux_memory_init(boot_info) != NUX_OK) nux_boot_fail(2);
+    nux_boot_mark(NUX_BOOT_PHASE_ACPI);
     /* ACPI is optional at this stage; retain topology when firmware provides it. */
     (void)nux_acpi_system_init((const void *)(nux_uptr)boot_info->firmware_table);
+    nux_boot_mark(NUX_BOOT_PHASE_PROCESSORS);
     if (nux_processor_system_init() != NUX_OK) nux_boot_fail(10);
     nux_boot_mark(NUX_BOOT_PHASE_VIRTUAL_MEMORY);
     if (nux_vm_system_init() != NUX_OK) nux_boot_fail(3);

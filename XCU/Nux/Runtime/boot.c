@@ -25,8 +25,22 @@ void nux_boot_mark(nux_boot_phase phase)
 {
     nux_boot_status = NUX_BOOT_STATUS_MAGIC | ((nux_u64)phase << 32);
     __asm__ volatile("" ::: "memory");
-    if (phase == NUX_BOOT_PHASE_READY)
-        nux_boot_debug_write("NUX:READY\n");
+    switch (phase) {
+    case NUX_BOOT_PHASE_ENTRY: nux_boot_debug_write("NUX:ENTRY\n"); break;
+    case NUX_BOOT_PHASE_MEMORY: nux_boot_debug_write("NUX:MEMORY\n"); break;
+    case NUX_BOOT_PHASE_ACPI: nux_boot_debug_write("NUX:ACPI\n"); break;
+    case NUX_BOOT_PHASE_PROCESSORS: nux_boot_debug_write("NUX:PROCESSORS\n"); break;
+    case NUX_BOOT_PHASE_VIRTUAL_MEMORY: nux_boot_debug_write("NUX:VM\n"); break;
+    case NUX_BOOT_PHASE_TASKS: nux_boot_debug_write("NUX:TASKS\n"); break;
+    case NUX_BOOT_PHASE_CAPABILITIES: nux_boot_debug_write("NUX:CAPABILITIES\n"); break;
+    case NUX_BOOT_PHASE_THREADS: nux_boot_debug_write("NUX:THREADS\n"); break;
+    case NUX_BOOT_PHASE_IPC: nux_boot_debug_write("NUX:IPC\n"); break;
+    case NUX_BOOT_PHASE_SYNCHRONIZATION: nux_boot_debug_write("NUX:SYNC\n"); break;
+    case NUX_BOOT_PHASE_SYSCALLS: nux_boot_debug_write("NUX:SYSCALLS\n"); break;
+    case NUX_BOOT_PHASE_TIME: nux_boot_debug_write("NUX:TIME\n"); break;
+    case NUX_BOOT_PHASE_READY: nux_boot_debug_write("NUX:READY\n"); break;
+    default: break;
+    }
 }
 
 __attribute__((noreturn))
